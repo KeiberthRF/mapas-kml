@@ -55,7 +55,7 @@
 
   <div id="map"></div>
 
-  <!-- Librerías de mapas de alta resolución y lector KML -->
+  <!-- Librerías de mapas y lector KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
@@ -83,7 +83,7 @@
       attribution: '© Esri World Imagery'
     });
 
-    // Selector de capas
+    // Control de capas
     var baseMaps = {
       "Google Satélite + Etiquetas HD": googleHibrido,
       "Google Satélite Solo HD": googleSatelite,
@@ -91,54 +91,60 @@
     };
     L.control.layers(baseMaps).addTo(map);
 
-    // Función para convertir URLs en enlaces clicables
+    // Función para activar enlaces
     function autolink(text) {
       if (!text) return "";
       var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
       return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
     }
 
-    // Cargar y procesar el archivo honduras.kml
-    fetch('honduras.kml')
-      .then(function(response) {
-        if (!response.ok) {
-          throw new Error('No se pudo encontrar el archivo honduras.kml');
-        }
-        return response.text();
-      })
-      .then(function(kmlText) {
-        var parser = new DOMParser();
-        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
-        var geojson = toGeoJSON.kml(kmlDom);
-
-        var kmlLayer = L.geoJSON(geojson, {
-          onEachFeature: function(feature, layer) {
-            var props = feature.properties || {};
-            var nombre = props.name || "Productor sin nombre";
-            var descripcion = props.description || "";
-
-            var popupContent = "<h3>" + nombre + "</h3>";
-
-            if (descripcion) {
-              popupContent += "<div>" + autolink(descripcion) + "</div>";
-            }
-
-            layer.bindPopup(popupContent, { maxWidth: 500 });
-
-            layer.bindTooltip(nombre, {
-              permanent: false,
-              direction: 'top'
-            });
+    // Procesa el archivo KML desde la URL directa de GitHub
+    function cargarKML(url) {
+      fetch(url)
+        .then(function(response) {
+          if (!response.ok) {
+            throw new Error('No disponible en ' + url);
           }
-        }).addTo(map);
+          return response.text();
+        })
+        .then(function(kmlText) {
+          var parser = new DOMParser();
+          var kmlDom = parser.parseFromString(kmlText, 'text/xml');
+          var geojson = toGeoJSON.kml(kmlDom);
 
-        if (kmlLayer.getBounds().isValid()) {
-          map.fitBounds(kmlLayer.getBounds());
-        }
-      })
-      .catch(function(error) {
-        console.error('Error:', error);
-      });
+          var kmlLayer = L.geoJSON(geojson, {
+            onEachFeature: function(feature, layer) {
+              var props = feature.properties || {};
+              var nombre = props.name || "Productor sin nombre";
+              var descripcion = props.description || "";
+
+              var popupContent = "<h3>" + nombre + "</h3>";
+
+              if (descripcion) {
+                popupContent += "<div>" + autolink(descripcion) + "</div>";
+              }
+
+              layer.bindPopup(popupContent, { maxWidth: 500 });
+              layer.bindTooltip(nombre, { permanent: false, direction: 'top' });
+            }
+          }).addTo(map);
+
+          if (kmlLayer.getBounds().isValid()) {
+            map.fitBounds(kmlLayer.getBounds());
+          }
+        })
+        .catch(function(error) {
+          // Intentar con la ruta relativa como respaldo
+          if (url !== 'honduras.kml') {
+            cargarKML('honduras.kml');
+          } else {
+            console.error(error);
+          }
+        });
+    }
+
+    // Iniciar carga usando la URL absoluta
+    cargarKML('https://raw.githubusercontent.com/KeiberthRF/mapas-kml/main/honduras.kml');
   </script>
 </body>
 </html>
