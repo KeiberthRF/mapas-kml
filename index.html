@@ -11,27 +11,28 @@
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
     #map { height: 100vh; width: 100vw; }
 
-    /* Estilo del recuadro emergente tipo Google Earth */
+    /* Ventana emergente AMPLIADA tipo Google Earth */
     .leaflet-popup-content-wrapper {
-      border-radius: 6px;
-      padding: 12px;
-      max-height: 420px;
-      max-width: 380px;
+      border-radius: 8px;
+      padding: 15px;
+      max-height: 550px; /* Aumentado para ver más filas sin scroll tan rápido */
+      width: 480px;      /* Ancho fijo extendido para mayor comodidad de lectura */
+      max-width: 85vw;   /* Se adapta automáticamente si se abre desde un celular */
       overflow-y: auto;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     .leaflet-popup-content {
       margin: 0;
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.6;
       color: #222;
     }
     .leaflet-popup-content h3 {
-      margin: 0 0 10px 0;
+      margin: 0 0 12px 0;
       color: #1a237e;
       font-size: 16px;
       border-bottom: 2px solid #2e7d32;
-      padding-bottom: 4px;
+      padding-bottom: 6px;
     }
     .leaflet-popup-content a {
       color: #0d47a1;
@@ -98,7 +99,7 @@
     }
 
     // Cargar y procesar el archivo KML
-    fetch('honduras.kml.kml')
+    fetch('honduras.kml')
       .then(function(response) { return response.text(); })
       .then(function(kmlText) {
         var parser = new DOMParser();
@@ -118,7 +119,10 @@
               popupContent += "<div>" + autolink(descripcion) + "</div>";
             }
 
-            layer.bindPopup(popupContent);
+            // Se configura maxWidth explícito en la ventana emergente
+            layer.bindPopup(popupContent, {
+              maxWidth: 500
+            });
 
             layer.bindTooltip(nombre, {
               permanent: false,
