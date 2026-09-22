@@ -55,8 +55,9 @@
 
   <div id="map"></div>
 
-  <!-- Librerías Leaflet y Lector Omnivore KML -->
+  <!-- Librerías de mapas de alta resolución y lector KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
     // Inicialización del mapa
@@ -64,13 +65,13 @@
       maxZoom: 20
     }).setView([14.6, -87.8], 8);
 
-    // 1. Capa Satelital Google (Alta Nitidez)
+    // 1. Capa Satelital Google Solo HD
     var googleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     });
 
-    // 2. Capa Satelital Google con Etiquetas HD
+    // 2. Capa Satelital Google con Etiquetas (Híbrido HD)
     var googleHibrido = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
@@ -82,7 +83,7 @@
       attribution: '© Esri World Imagery'
     });
 
-    // Selector de capas
+    // Selector de capas en la esquina superior derecha
     var baseMaps = {
       "Google Satélite + Etiquetas HD": googleHibrido,
       "Google Satélite Solo HD": googleSatelite,
@@ -90,58 +91,58 @@
     };
     L.control.layers(baseMaps).addTo(map);
 
-    // Función para activar hipervínculos de KoboToolbox
+    // Función para convertir URLs en enlaces clicables
     function autolink(text) {
       if (!text) return "";
-      var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=_|!:,.;]*[-A-Z0-9+&@#\/%=_|])/ig;
+      var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
       return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
     }
 
-    // Procesa los datos GeoJSON
-    function procesarGeoJSON(geojson) {
-      var kmlLayer = L.geoJSON(geojson, {
-        onEachFeature: function(feature, layer) {
-          var props = feature.properties || {};
-          var nombre = props.name || "Productor sin nombre";
-          var descripcion = props.description || "";
-
-          var popupContent = "<h3>" + nombre + "</h3>";
-
-          if (descripcion) {
-            popupContent += "<div>" + autolink(descripcion) + "</div>";
-          }
-
-          layer.bindPopup(popupContent, { maxWidth: 500 });
-          layer.bindTooltip(nombre, { permanent: false, direction: 'top' });
+    // Cargar y procesar el archivo KML con el nombre exacto que está en GitHub
+    fetch('honduras.kml.kml')
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error('No se pudo encontrar el archivo KML (Código ' + response.status + ')');
         }
-      }).addTo(map);
-
-      if (kmlLayer.getBounds().isValid()) {
-        map.fitBounds(kmlLayer.getBounds());
-      }
-    }
-
-    // Método robusto para leer el KML desde el servidor sin fallos de lectura
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'honduras.kml', true);
-    xhr.onload = function() {
-      if (xhr.status === 200) {
+        return response.text();
+      })
+      .then(function(kmlText) {
         var parser = new DOMParser();
-        var kmlDom = parser.parseFromString(xhr.responseText, 'text/xml');
-        
-        // Importar conversor dinámicamente si es necesario
-        var script = document.createElement('script');
-        script.src = 'https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js';
-        script.onload = function() {
-          var geojson = toGeoJSON.kml(kmlDom);
-          procesarGeoJSON(geojson);
-        };
-        document.head.appendChild(script);
-      } else {
-        console.error('Error al cargar el archivo KML. Código de respuesta:', xhr.status);
-      }
-    };
-    xhr.send();
+        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
+        var geojson = toGeoJSON.kml(kmlDom);
+
+        var kmlLayer = L.geoJSON(geojson, {
+          onEachFeature: function(feature, layer) {
+            var props = feature.properties || {};
+            var nombre = props.name || "Productor sin nombre";
+            var descripcion = props.description || "";
+
+            var popupContent = "<h3>" + nombre + "</h3>";
+
+            if (descripcion) {
+              popupContent += "<div>" + autolink(descripcion) + "</div>";
+            }
+
+            layer.bindPopup(popupContent, {
+              maxWidth: 500
+            });
+
+            layer.bindTooltip(nombre, {
+              permanent: false,
+              direction: 'top'
+            });
+          }
+        }).addTo(map);
+
+        // Zoom automático a los puntos
+        if (kmlLayer.getBounds().isValid()) {
+          map.fitBounds(kmlLayer.getBounds());
+        }
+      })
+      .catch(function(error) {
+        console.error('Error al cargar el archivo KML:', error);
+        alert('Aviso técnico: ' + error.message);
+      });
   </script>
 </body>
 </html>
