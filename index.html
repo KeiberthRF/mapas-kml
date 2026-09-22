@@ -8,24 +8,45 @@
   <!-- Estilos de Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body { margin: 0; padding: 0; }
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
     #map { height: 100vh; width: 100vw; }
-    /* Estilos para la ventana emergente al hacer clic */
+
+    /* Estilo del recuadro emergente tipo Google Earth */
     .leaflet-popup-content-wrapper {
-      border-radius: 8px;
-      padding: 5px;
-      max-height: 300px;
+      border-radius: 6px;
+      padding: 12px;
+      max-height: 420px;
+      max-width: 380px;
       overflow-y: auto;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .leaflet-popup-content {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #222;
     }
     .leaflet-popup-content h3 {
-      margin: 0 0 5px 0;
-      color: #2e7d32;
+      margin: 0 0 10px 0;
+      color: #1a237e;
       font-size: 16px;
+      border-bottom: 2px solid #2e7d32;
+      padding-bottom: 4px;
     }
     .leaflet-popup-content a {
-      color: #1565c0;
+      color: #0d47a1;
       font-weight: bold;
+      word-break: break-all;
       text-decoration: underline;
+    }
+    .leaflet-popup-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 5px;
+    }
+    .leaflet-popup-content td {
+      padding: 4px;
+      border-bottom: 1px solid #eee;
     }
   </style>
 </head>
@@ -33,36 +54,52 @@
 
   <div id="map"></div>
 
-  <!-- Scripts de Leaflet y lector KML avanzado con Popups -->
+  <!-- Librerías de mapas de alta resolución y lector KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    // Inicializar el mapa centrado en Honduras
-    var map = L.map('map').setView([14.6, -87.8], 8);
+    // Inicialización del mapa
+    var map = L.map('map', {
+      maxZoom: 20
+    }).setView([14.6, -87.8], 8);
 
-    // Capa base de satélite tipo Google Maps / Earth
-    var satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri'
+    // 1. Capa Satelital Google (Alta Nitidez)
+    var googleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google Earth'
     });
 
-    // Capa base de calles (OpenStreetMap)
-    var calles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
+    // 2. Capa Satelital Google con Etiquetas (Nombres de lugares y carreteras)
+    var googleHibrido = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google Earth'
     }).addTo(map);
 
-    // Control para cambiar entre vista Satélite y vista Calles
+    // 3. Capa Satelital Esri HD
+    var esriSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: '© Esri World Imagery'
+    });
+
+    // Selector de capas en la esquina superior derecha
     var baseMaps = {
-      "Mapa Calles": calles,
-      "Vista Satélite": satelite
+      "Google Satélite + Etiquetas HD": googleHibrido,
+      "Google Satélite Solo HD": googleSatelite,
+      "Esri Satélite HD": esriSatelite
     };
     L.control.layers(baseMaps).addTo(map);
 
+    // Función para convertir URLs en enlaces clicables
+    function autolink(text) {
+      if (!text) return "";
+      var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=_|!:,.;]*[-A-Z0-9+&@#\/%=_|])/ig;
+      return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
+    }
+
     // Cargar y procesar el archivo KML
     fetch('honduras.kml.kml')
-      .then(function(response) {
-        return response.text();
-      })
+      .then(function(response) { return response.text(); })
       .then(function(kmlText) {
         var parser = new DOMParser();
         var kmlDom = parser.parseFromString(kmlText, 'text/xml');
@@ -74,17 +111,15 @@
             var nombre = props.name || "Productor sin nombre";
             var descripcion = props.description || "";
 
-            // Crear el contenido de la ventana emergente al hacer clic
             var popupContent = "<h3>" + nombre + "</h3>";
-            
+
             if (descripcion) {
-              popupContent += "<div>" + descripcion + "</div>";
+              // Convertir enlaces de texto plano a vínculos activos clicables
+              popupContent += "<div>" + autolink(descripcion) + "</div>";
             }
 
-            // Asignar ventana emergente al hacer clic en el punto
             layer.bindPopup(popupContent);
 
-            // Muestra el nombre al pasar el cursor sobre el punto
             layer.bindTooltip(nombre, {
               permanent: false,
               direction: 'top'
@@ -92,7 +127,7 @@
           }
         }).addTo(map);
 
-        // Ajustar el zoom automáticamente a todos los puntos cargados
+        // Zoom automático
         if (kmlLayer.getBounds().isValid()) {
           map.fitBounds(kmlLayer.getBounds());
         }
