@@ -11,27 +11,28 @@
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
     #map { height: 100vh; width: 100vw; }
 
-    /* Estilo del recuadro emergente tipo Google Earth */
+    /* Ventana emergente AMPLIADA tipo Google Earth */
     .leaflet-popup-content-wrapper {
-      border-radius: 6px;
-      padding: 12px;
-      max-height: 420px;
-      max-width: 380px;
+      border-radius: 8px;
+      padding: 15px;
+      max-height: 550px;
+      width: 480px;
+      max-width: 85vw;
       overflow-y: auto;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     .leaflet-popup-content {
       margin: 0;
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.6;
       color: #222;
     }
     .leaflet-popup-content h3 {
-      margin: 0 0 10px 0;
+      margin: 0 0 12px 0;
       color: #1a237e;
       font-size: 16px;
       border-bottom: 2px solid #2e7d32;
-      padding-bottom: 4px;
+      padding-bottom: 6px;
     }
     .leaflet-popup-content a {
       color: #0d47a1;
@@ -54,9 +55,8 @@
 
   <div id="map"></div>
 
-  <!-- Librerías de mapas de alta resolución y lector KML -->
+  <!-- Librerías Leaflet y Lector Omnivore KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
     // Inicialización del mapa
@@ -70,7 +70,7 @@
       attribution: '© Google Earth'
     });
 
-    // 2. Capa Satelital Google con Etiquetas (Nombres de lugares y carreteras)
+    // 2. Capa Satelital Google con Etiquetas HD
     var googleHibrido = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
@@ -82,7 +82,7 @@
       attribution: '© Esri World Imagery'
     });
 
-    // Selector de capas en la esquina superior derecha
+    // Selector de capas
     var baseMaps = {
       "Google Satélite + Etiquetas HD": googleHibrido,
       "Google Satélite Solo HD": googleSatelite,
@@ -90,51 +90,58 @@
     };
     L.control.layers(baseMaps).addTo(map);
 
-    // Función para convertir URLs en enlaces clicables
+    // Función para activar hipervínculos de KoboToolbox
     function autolink(text) {
       if (!text) return "";
       var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=_|!:,.;]*[-A-Z0-9+&@#\/%=_|])/ig;
       return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
     }
 
-    // Cargar y procesar el archivo KML
-    fetch('honduras.kml.kml')
-      .then(function(response) { return response.text(); })
-      .then(function(kmlText) {
-        var parser = new DOMParser();
-        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
-        var geojson = toGeoJSON.kml(kmlDom);
+    // Procesa los datos GeoJSON
+    function procesarGeoJSON(geojson) {
+      var kmlLayer = L.geoJSON(geojson, {
+        onEachFeature: function(feature, layer) {
+          var props = feature.properties || {};
+          var nombre = props.name || "Productor sin nombre";
+          var descripcion = props.description || "";
 
-        var kmlLayer = L.geoJSON(geojson, {
-          onEachFeature: function(feature, layer) {
-            var props = feature.properties || {};
-            var nombre = props.name || "Productor sin nombre";
-            var descripcion = props.description || "";
+          var popupContent = "<h3>" + nombre + "</h3>";
 
-            var popupContent = "<h3>" + nombre + "</h3>";
-
-            if (descripcion) {
-              // Convertir enlaces de texto plano a vínculos activos clicables
-              popupContent += "<div>" + autolink(descripcion) + "</div>";
-            }
-
-            layer.bindPopup(popupContent);
-
-            layer.bindTooltip(nombre, {
-              permanent: false,
-              direction: 'top'
-            });
+          if (descripcion) {
+            popupContent += "<div>" + autolink(descripcion) + "</div>";
           }
-        }).addTo(map);
 
-        // Zoom automático
-        if (kmlLayer.getBounds().isValid()) {
-          map.fitBounds(kmlLayer.getBounds());
+          layer.bindPopup(popupContent, { maxWidth: 500 });
+          layer.bindTooltip(nombre, { permanent: false, direction: 'top' });
         }
-      })
-      .catch(function(error) {
-        console.error('Error al cargar el archivo KML:', error);
-      });
+      }).addTo(map);
+
+      if (kmlLayer.getBounds().isValid()) {
+        map.fitBounds(kmlLayer.getBounds());
+      }
+    }
+
+    // Método robusto para leer el KML desde el servidor sin fallos de lectura
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'honduras.kml', true);
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var parser = new DOMParser();
+        var kmlDom = parser.parseFromString(xhr.responseText, 'text/xml');
+        
+        // Importar conversor dinámicamente si es necesario
+        var script = document.createElement('script');
+        script.src = 'https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js';
+        script.onload = function() {
+          var geojson = toGeoJSON.kml(kmlDom);
+          procesarGeoJSON(geojson);
+        };
+        document.head.appendChild(script);
+      } else {
+        console.error('Error al cargar el archivo KML. Código de respuesta:', xhr.status);
+      }
+    };
+    xhr.send();
   </script>
 </body>
 </html>
