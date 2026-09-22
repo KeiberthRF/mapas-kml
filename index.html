@@ -5,32 +5,101 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
+  <!-- Estilos de Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body { margin: 0; padding: 0; }
     #map { height: 100vh; width: 100vw; }
+    /* Estilos para la ventana emergente al hacer clic */
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      padding: 5px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .leaflet-popup-content h3 {
+      margin: 0 0 5px 0;
+      color: #2e7d32;
+      font-size: 16px;
+    }
+    .leaflet-popup-content a {
+      color: #1565c0;
+      font-weight: bold;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
 
   <div id="map"></div>
 
+  <!-- Scripts de Leaflet y lector KML avanzado con Popups -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js"></script>
+  <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
+    // Inicializar el mapa centrado en Honduras
     var map = L.map('map').setView([14.6, -87.8], 8);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Capa base de satélite tipo Google Maps / Earth
+    var satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri'
+    });
+
+    // Capa base de calles (OpenStreetMap)
+    var calles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Carga tu archivo KML
-    var kmlLayer = omnivore.kml('honduras.kml.kml')
-      .on('ready', function() {
-        map.fitBounds(kmlLayer.getBounds());
+    // Control para cambiar entre vista Satélite y vista Calles
+    var baseMaps = {
+      "Mapa Calles": calles,
+      "Vista Satélite": satelite
+    };
+    L.control.layers(baseMaps).addTo(map);
+
+    // Cargar y procesar el archivo KML
+    fetch('honduras.kml.kml')
+      .then(function(response) {
+        return response.text();
       })
-      .addTo(map);
+      .then(function(kmlText) {
+        var parser = new DOMParser();
+        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
+        var geojson = toGeoJSON.kml(kmlDom);
+
+        var kmlLayer = L.geoJSON(geojson, {
+          onEachFeature: function(feature, layer) {
+            var props = feature.properties || {};
+            var nombre = props.name || "Productor sin nombre";
+            var descripcion = props.description || "";
+
+            // Crear el contenido de la ventana emergente al hacer clic
+            var popupContent = "<h3>" + nombre + "</h3>";
+            
+            if (descripcion) {
+              popupContent += "<div>" + descripcion + "</div>";
+            }
+
+            // Asignar ventana emergente al hacer clic en el punto
+            layer.bindPopup(popupContent);
+
+            // Muestra el nombre al pasar el cursor sobre el punto
+            layer.bindTooltip(nombre, {
+              permanent: false,
+              direction: 'top'
+            });
+          }
+        }).addTo(map);
+
+        // Ajustar el zoom automáticamente a todos los puntos cargados
+        if (kmlLayer.getBounds().isValid()) {
+          map.fitBounds(kmlLayer.getBounds());
+        }
+      })
+      .catch(function(error) {
+        console.error('Error al cargar el archivo KML:', error);
+      });
   </script>
 </body>
 </html>
