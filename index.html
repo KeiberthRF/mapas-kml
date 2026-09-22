@@ -11,7 +11,7 @@
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
     #map { height: 100vh; width: 100vw; }
 
-    /* Estilo del recuadro emergente tipo Google Earth */
+    /* Estilo del recuadro emergente informativo */
     .leaflet-popup-content-wrapper {
       border-radius: 6px;
       padding: 12px;
@@ -54,52 +54,39 @@
 
   <div id="map"></div>
 
-  <!-- Librerías de mapas de alta resolución y lector KML -->
+  <!-- Librerías Leaflet y Conversor KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    // Inicialización del mapa
+    // Inicialización del mapa centrada en Honduras
     var map = L.map('map', {
       maxZoom: 20
     }).setView([14.6, -87.8], 8);
 
-    // 1. Capa Satelital Google (Alta Nitidez)
-    var googleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      maxZoom: 20,
-      attribution: '© Google Earth'
-    });
-
-    // 2. Capa Satelital Google con Etiquetas (Nombres de lugares y carreteras)
-    var googleHibrido = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    // Única Capa Fija: Google Satélite + Etiquetas HD
+    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     }).addTo(map);
 
-    // 3. Capa Satelital Esri HD
-    var esriSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: '© Esri World Imagery'
-    });
-
-    // Selector de capas en la esquina superior derecha
-    var baseMaps = {
-      "Google Satélite + Etiquetas HD": googleHibrido,
-      "Google Satélite Solo HD": googleSatelite,
-      "Esri Satélite HD": esriSatelite
-    };
-    L.control.layers(baseMaps).addTo(map);
-
-    // Función para convertir URLs en enlaces clicables
+    // Función para activar enlaces de KoboToolbox en la descripción
     function autolink(text) {
       if (!text) return "";
       var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
       return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
     }
 
-    // Cargar y procesar el archivo KML
-    fetch('honduras.kml.kml')
-      .then(function(response) { return response.text(); })
+    // Ruta directa del archivo apuntando a la rama activa
+    var urlKML = 'https://raw.githubusercontent.com/KeiberthRF/mapas-kml/honduras.kml/honduras.kml';
+
+    fetch(urlKML)
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error('No se pudo descargar el KML desde el servidor');
+        }
+        return response.text();
+      })
       .then(function(kmlText) {
         var parser = new DOMParser();
         var kmlDom = parser.parseFromString(kmlText, 'text/xml');
@@ -114,7 +101,6 @@
             var popupContent = "<h3>" + nombre + "</h3>";
 
             if (descripcion) {
-              // Convertir enlaces de texto plano a vínculos activos clicables
               popupContent += "<div>" + autolink(descripcion) + "</div>";
             }
 
@@ -127,13 +113,13 @@
           }
         }).addTo(map);
 
-        // Zoom automático
+        // Ajustar zoom automático a la ubicación de todos los productores
         if (kmlLayer.getBounds().isValid()) {
           map.fitBounds(kmlLayer.getBounds());
         }
       })
       .catch(function(error) {
-        console.error('Error al cargar el archivo KML:', error);
+        console.error('Error al cargar KML:', error);
       });
   </script>
 </body>
