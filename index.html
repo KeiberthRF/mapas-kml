@@ -65,25 +65,23 @@
       maxZoom: 20
     }).setView([14.6, -87.8], 8);
 
-    // 1. Capa Satelital Google Solo HD
+    // Capas Satelitales
     var googleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     });
 
-    // 2. Capa Satelital Google con Etiquetas (Híbrido HD)
     var googleHibrido = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     }).addTo(map);
 
-    // 3. Capa Satelital Esri HD
     var esriSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
       attribution: '© Esri World Imagery'
     });
 
-    // Selector de capas en la esquina superior derecha
+    // Control de capas
     var baseMaps = {
       "Google Satélite + Etiquetas HD": googleHibrido,
       "Google Satélite Solo HD": googleSatelite,
@@ -91,18 +89,20 @@
     };
     L.control.layers(baseMaps).addTo(map);
 
-    // Función para convertir URLs en enlaces clicables
+    // Enlaces clicables para KoboToolbox
     function autolink(text) {
       if (!text) return "";
       var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
       return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
     }
 
-    // Cargar y procesar el archivo KML con el nombre exacto que está en GitHub
-    fetch('honduras.kml.kml')
+    // Ruta directa del archivo apuntando a la rama real
+    var rutaKML = 'https://raw.githubusercontent.com/KeiberthRF/mapas-kml/honduras.kml/honduras.kml';
+
+    fetch(rutaKML)
       .then(function(response) {
         if (!response.ok) {
-          throw new Error('No se pudo encontrar el archivo KML (Código ' + response.status + ')');
+          throw new Error('HTTP status ' + response.status);
         }
         return response.text();
       })
@@ -123,9 +123,7 @@
               popupContent += "<div>" + autolink(descripcion) + "</div>";
             }
 
-            layer.bindPopup(popupContent, {
-              maxWidth: 500
-            });
+            layer.bindPopup(popupContent, { maxWidth: 500 });
 
             layer.bindTooltip(nombre, {
               permanent: false,
@@ -134,14 +132,12 @@
           }
         }).addTo(map);
 
-        // Zoom automático a los puntos
         if (kmlLayer.getBounds().isValid()) {
           map.fitBounds(kmlLayer.getBounds());
         }
       })
       .catch(function(error) {
         console.error('Error al cargar el archivo KML:', error);
-        alert('Aviso técnico: ' + error.message);
       });
   </script>
 </body>
