@@ -65,23 +65,25 @@
       maxZoom: 20
     }).setView([14.6, -87.8], 8);
 
-    // Capas Satelitales
+    // 1. Capa Satelital Google Solo HD
     var googleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     });
 
+    // 2. Capa Satelital Google con Etiquetas HD
     var googleHibrido = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     }).addTo(map);
 
+    // 3. Capa Satelital Esri HD
     var esriSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
       attribution: '© Esri World Imagery'
     });
 
-    // Control de capas
+    // Selector de capas
     var baseMaps = {
       "Google Satélite + Etiquetas HD": googleHibrido,
       "Google Satélite Solo HD": googleSatelite,
@@ -89,20 +91,18 @@
     };
     L.control.layers(baseMaps).addTo(map);
 
-    // Enlaces clicables para KoboToolbox
+    // Función para convertir URLs en enlaces clicables
     function autolink(text) {
       if (!text) return "";
       var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
       return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
     }
 
-    // Ruta directa del archivo apuntando a la rama real
-    var rutaKML = 'https://raw.githubusercontent.com/KeiberthRF/mapas-kml/honduras.kml/honduras.kml';
-
-    fetch(rutaKML)
+    // Cargar y procesar el archivo honduras.kml
+    fetch('honduras.kml')
       .then(function(response) {
         if (!response.ok) {
-          throw new Error('HTTP status ' + response.status);
+          throw new Error('No se pudo encontrar el archivo honduras.kml');
         }
         return response.text();
       })
@@ -137,7 +137,7 @@
         }
       })
       .catch(function(error) {
-        console.error('Error al cargar el archivo KML:', error);
+        console.error('Error:', error);
       });
   </script>
 </body>
