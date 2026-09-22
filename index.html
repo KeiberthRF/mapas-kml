@@ -5,49 +5,40 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Estilos de Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
     #map { height: 100vh; width: 100vw; }
 
-    /* Ventana emergente AMPLIADA tipo Google Earth */
+    /* Ficha emergente blanca al hacer clic (Igual a Google Earth) */
     .leaflet-popup-content-wrapper {
-      border-radius: 8px;
-      padding: 15px;
-      max-height: 550px;
-      width: 480px;
-      max-width: 85vw;
+      border-radius: 4px;
+      padding: 10px;
+      max-height: 400px;
+      max-width: 380px;
       overflow-y: auto;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      box-shadow: 0 3px 14px rgba(0,0,0,0.4);
     }
     .leaflet-popup-content {
-      margin: 0;
+      margin: 5px;
       font-size: 13px;
-      line-height: 1.6;
-      color: #222;
+      line-height: 1.5;
+      color: #000;
     }
     .leaflet-popup-content h3 {
-      margin: 0 0 12px 0;
-      color: #1a237e;
-      font-size: 16px;
-      border-bottom: 2px solid #2e7d32;
-      padding-bottom: 6px;
+      margin: 0 0 8px 0;
+      color: #000;
+      font-size: 15px;
+      font-weight: bold;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 4px;
     }
+    /* Enlaces activos para KoboToolbox */
     .leaflet-popup-content a {
-      color: #0d47a1;
+      color: #1a73e8;
       font-weight: bold;
       word-break: break-all;
       text-decoration: underline;
-    }
-    .leaflet-popup-content table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 5px;
-    }
-    .leaflet-popup-content td {
-      padding: 4px;
-      border-bottom: 1px solid #eee;
     }
   </style>
 </head>
@@ -55,96 +46,62 @@
 
   <div id="map"></div>
 
-  <!-- Librerías de mapas y lector KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+  <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
 
   <script>
-    // Inicialización del mapa
+    // Inicializar mapa centrado en Honduras
     var map = L.map('map', {
-      maxZoom: 20
+      zoomControl: true
     }).setView([14.6, -87.8], 8);
 
-    // 1. Capa Satelital Google Solo HD
-    var googleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      maxZoom: 20,
-      attribution: '© Google Earth'
-    });
-
-    // 2. Capa Satelital Google con Etiquetas HD
-    var googleHibrido = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    // Única capa permitida: Google Satélite + Etiquetas HD
+    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     }).addTo(map);
 
-    // 3. Capa Satelital Esri HD
-    var esriSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: '© Esri World Imagery'
+    // Ícono amarillo con estrella oficial de Google Earth
+    var iconoEstrellaAmarilla = L.icon({
+      iconUrl: 'https://maps.google.com/mapfiles/kml/paddle/ylw-stars.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32]
     });
 
-    // Control de capas
-    var baseMaps = {
-      "Google Satélite + Etiquetas HD": googleHibrido,
-      "Google Satélite Solo HD": googleSatelite,
-      "Esri Satélite HD": esriSatelite
-    };
-    L.control.layers(baseMaps).addTo(map);
-
-    // Función para activar enlaces
-    function autolink(text) {
-      if (!text) return "";
-      var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-      return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
+    // Función para convertir URLs de KoboToolbox en enlaces clicables
+    function convertirEnlaces(texto) {
+      if (!texto) return "";
+      var regex = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+      return texto.replace(regex, "<a href='$1' target='_blank'>$1</a>");
     }
 
-    // Procesa el archivo KML desde la URL directa de GitHub
-    function cargarKML(url) {
-      fetch(url)
-        .then(function(response) {
-          if (!response.ok) {
-            throw new Error('No disponible en ' + url);
-          }
-          return response.text();
-        })
-        .then(function(kmlText) {
-          var parser = new DOMParser();
-          var kmlDom = parser.parseFromString(kmlText, 'text/xml');
-          var geojson = toGeoJSON.kml(kmlDom);
+    // Configurar el procesamiento del KML
+    var capaCustom = L.geoJson(null, {
+      pointToLayer: function (feature, latlng) {
+        return L.marker(latlng, { icon: iconoEstrellaAmarilla });
+      },
+      onEachFeature: function (feature, layer) {
+        var props = feature.properties || {};
+        var nombre = props.name || "Productor";
+        var descripcion = props.description || "";
 
-          var kmlLayer = L.geoJSON(geojson, {
-            onEachFeature: function(feature, layer) {
-              var props = feature.properties || {};
-              var nombre = props.name || "Productor sin nombre";
-              var descripcion = props.description || "";
+        var contenidoPopup = "<h3>" + nombre + "</h3>";
+        if (descripcion) {
+          contenidoPopup += "<div>" + convertirEnlaces(descripcion) + "</div>";
+        }
 
-              var popupContent = "<h3>" + nombre + "</h3>";
+        layer.bindPopup(contenidoPopup);
+        layer.bindTooltip(nombre, { permanent: false, direction: 'top' });
+      }
+    });
 
-              if (descripcion) {
-                popupContent += "<div>" + autolink(descripcion) + "</div>";
-              }
-
-              layer.bindPopup(popupContent, { maxWidth: 500 });
-              layer.bindTooltip(nombre, { permanent: false, direction: 'top' });
-            }
-          }).addTo(map);
-
-          if (kmlLayer.getBounds().isValid()) {
-            map.fitBounds(kmlLayer.getBounds());
-          }
-        })
-        .catch(function(error) {
-          // Intentar con la ruta relativa como respaldo
-          if (url !== 'honduras.kml') {
-            cargarKML('honduras.kml');
-          } else {
-            console.error(error);
-          }
-        });
-    }
-
-    // Iniciar carga usando la URL absoluta
-    cargarKML('https://raw.githubusercontent.com/KeiberthRF/mapas-kml/main/honduras.kml');
+    // Cargar el archivo KML desde tu repositorio de GitHub
+    var kmlLayer = omnivore.kml('honduras.kml.kml', null, capaCustom)
+      .on('ready', function() {
+        map.fitBounds(kmlLayer.getBounds());
+      })
+      .addTo(map);
   </script>
 </body>
 </html>
