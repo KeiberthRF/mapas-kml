@@ -10,30 +10,29 @@
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
     #map { height: 100vh; width: 100vw; }
 
-    /* Ficha emergente blanca al hacer clic (Igual a Google Earth) */
+    /* Estilo de la ventana informativa de Google Earth */
     .leaflet-popup-content-wrapper {
-      border-radius: 4px;
-      padding: 10px;
-      max-height: 400px;
-      max-width: 380px;
+      border-radius: 6px;
+      padding: 8px;
+      max-height: 380px;
+      max-width: 360px;
       overflow-y: auto;
-      box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
     }
     .leaflet-popup-content {
       margin: 5px;
       font-size: 13px;
       line-height: 1.5;
-      color: #000;
+      color: #111;
     }
     .leaflet-popup-content h3 {
       margin: 0 0 8px 0;
       color: #000;
       font-size: 15px;
       font-weight: bold;
-      border-bottom: 1px solid #ccc;
+      border-bottom: 2px solid #2e7d32;
       padding-bottom: 4px;
     }
-    /* Enlaces activos para KoboToolbox */
     .leaflet-popup-content a {
       color: #1a73e8;
       font-weight: bold;
@@ -47,39 +46,37 @@
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
+  <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js"></script>
 
   <script>
-    // Inicializar mapa centrado en Honduras
-    var map = L.map('map', {
-      zoomControl: true
-    }).setView([14.6, -87.8], 8);
+    // Inicialización del mapa
+    var map = L.map('map').setView([14.6, -87.8], 8);
 
-    // Única capa permitida: Google Satélite + Etiquetas HD
+    // Vista fija: Google Satélite + Etiquetas HD
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     }).addTo(map);
 
-    // Ícono amarillo con estrella oficial de Google Earth
-    var iconoEstrellaAmarilla = L.icon({
+    // Marcador oficial de Google Earth (Estrella Amarilla)
+    var iconoEstrella = L.icon({
       iconUrl: 'https://maps.google.com/mapfiles/kml/paddle/ylw-stars.png',
       iconSize: [32, 32],
       iconAnchor: [16, 32],
-      popupAnchor: [0, -32]
+      popupAnchor: [0, -28]
     });
 
-    // Función para convertir URLs de KoboToolbox en enlaces clicables
-    function convertirEnlaces(texto) {
+    // Convierte texto de enlaces KoboToolbox a links clicables
+    function activarLinks(texto) {
       if (!texto) return "";
-      var regex = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=_|!:,.;]*[-A-Z0-9+&@#\/%=_|])/ig;
-      return texto.replace(regex, "<a href='$1' target='_blank'>$1</a>");
+      var exp = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=_|!:,.;]*[-A-Z0-9+&@#\/%=_|])/ig;
+      return texto.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
     }
 
-    // Configurar el procesamiento del KML
-    var capaCustom = L.geoJson(null, {
+    // Capa para procesar los puntos
+    var capaPuntos = L.geoJson(null, {
       pointToLayer: function (feature, latlng) {
-        return L.marker(latlng, { icon: iconoEstrellaAmarilla });
+        return L.marker(latlng, { icon: iconoEstrella });
       },
       onEachFeature: function (feature, layer) {
         var props = feature.properties || {};
@@ -88,7 +85,7 @@
 
         var contenidoPopup = "<h3>" + nombre + "</h3>";
         if (descripcion) {
-          contenidoPopup += "<div>" + convertirEnlaces(descripcion) + "</div>";
+          contenidoPopup += "<div>" + activarLinks(descripcion) + "</div>";
         }
 
         layer.bindPopup(contenidoPopup);
@@ -96,8 +93,8 @@
       }
     });
 
-    // Cargar el archivo KML desde tu repositorio de GitHub
-    var kmlLayer = omnivore.kml('honduras.kml.kml', null, capaCustom)
+    // Carga directa del archivo KML
+    var kmlLayer = omnivore.kml('honduras.kml', null, capaPuntos)
       .on('ready', function() {
         map.fitBounds(kmlLayer.getBounds());
       })
