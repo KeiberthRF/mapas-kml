@@ -11,7 +11,7 @@
     body { 
       margin: 0; 
       padding: 0; 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; 
       background-color: #0f172a; 
     }
     #map { 
@@ -26,13 +26,14 @@
       top: 10px;
       left: 50px;
       z-index: 1000;
-      background: rgba(15, 23, 42, 0.9);
-      color: #fff;
+      background: #0f172a;
+      color: #38bdf8;
       padding: 8px 15px;
       border-radius: 6px;
       font-size: 12px;
       font-weight: bold;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      border: 1px solid #1e293b;
     }
 
     /* Panel Lateral Compacto Superior Derecho */
@@ -41,22 +42,21 @@
       top: 10px;
       right: 10px;
       z-index: 1000;
-      background: rgba(15, 23, 42, 0.92);
-      backdrop-filter: blur(8px);
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.12);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      background: #0f172a;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      width: 250px;
-      max-height: calc(100vh - 40px);
+      gap: 10px;
+      width: 270px;
+      max-height: calc(100vh - 30px);
       box-sizing: border-box;
     }
 
     #side-panel label {
-      font-size: 10px;
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-weight: 700;
@@ -64,63 +64,80 @@
     }
 
     #side-panel select, #search-input {
-      padding: 6px 10px;
+      padding: 8px 12px;
       border-radius: 6px;
       border: 1px solid #334155;
       background: #1e293b;
       color: #f8fafc;
-      font-size: 12px;
+      font-size: 13px;
       outline: none;
       width: 100%;
       box-sizing: border-box;
+    }
+
+    #side-panel select:focus, #search-input:focus {
+      border-color: #38bdf8;
     }
 
     #search-input::placeholder {
       color: #64748b;
     }
 
-    /* Título del listado de productores */
+    /* Encabezado de la lista de productores */
     .list-header {
       font-size: 11px;
       font-weight: bold;
       color: #38bdf8;
       border-bottom: 1px solid #334155;
-      padding-bottom: 4px;
+      padding-bottom: 6px;
       margin-top: 4px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
     }
 
-    /* Lista vertical desplazable */
+    /* Contenedor y Lista de Productores */
+    #producer-list-container {
+      overflow-y: auto;
+      max-height: 280px;
+    }
+
     #producer-list {
       list-style: none;
       margin: 0;
       padding: 0;
-      overflow-y: auto;
-      max-height: 300px;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
     }
 
     #producer-list li {
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      color: #cbd5e1;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #f1f5f9;
       cursor: pointer;
-      background: rgba(30, 41, 59, 0.5);
+      background: #1e293b;
+      border: 1px solid #334155;
       transition: all 0.2s ease;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      word-wrap: break-word;
     }
 
     #producer-list li:hover {
       background: #0284c7;
       color: #ffffff;
+      border-color: #38bdf8;
       font-weight: 600;
-      padding-left: 10px;
+      transform: translateX(2px);
+    }
+
+    .empty-prompt {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      padding: 10px 5px;
+      font-style: italic;
     }
 
     /* Estilo del recuadro emergente informativo */
@@ -164,7 +181,7 @@
 
   <div id="status-msg">Cargando datos del KML...</div>
 
-  <!-- Panel Unificado: Filtros, Buscador y Lista A-Z -->
+  <!-- Panel Unificado Lateral -->
   <div id="side-panel">
     <label for="select-depto">Departamento</label>
     <select id="select-depto">
@@ -184,9 +201,12 @@
       <span id="count-producers">0</span>
     </div>
 
-    <ul id="producer-list">
-      <!-- Nombres cargados dinámicamente en orden A-Z -->
-    </ul>
+    <div id="producer-list-container">
+      <ul id="producer-list">
+        <!-- Nombres cargados dinámicamente -->
+      </ul>
+      <div id="empty-prompt" class="empty-prompt">Selecciona un departamento, municipio o realiza una búsqueda para desplegar el listado.</div>
+    </div>
   </div>
 
   <div id="map"></div>
@@ -201,6 +221,7 @@
     var selectMuni = document.getElementById('select-muni');
     var searchInput = document.getElementById('search-input');
     var producerList = document.getElementById('producer-list');
+    var emptyPrompt = document.getElementById('empty-prompt');
     var countProducers = document.getElementById('count-producers');
 
     // Inicialización del Mapa
@@ -212,19 +233,22 @@
       attribution: '© Google Earth'
     }).addTo(map);
 
-    // Icono HD Fino (Pin Amarillo con Estrella Azul Marino)
+    // Marcador HD Estilizado (Pin Amarillo + Estrella Azul Marino Destacada)
     var fineStarIcon = L.divIcon({
       className: 'custom-pin-hd',
       html: `
-        <svg width="22" height="32" viewBox="0 0 24 34" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));">
-          <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#FACC15" stroke="#78350F" stroke-width="1"/>
-          <circle cx="12" cy="11.5" r="6" fill="#FFFFFF"/>
-          <path d="M12 7.5L13.1 10.1L15.9 10.3L13.8 12.1L14.4 14.8L12 13.3L9.6 14.8L10.2 12.1L8.1 10.3L10.9 10.1L12 7.5Z" fill="#1E3A8A"/>
+        <svg width="28" height="40" viewBox="0 0 28 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.6));">
+          <!-- Cuerpo del Pin con Degrado/Borde Estilizado -->
+          <path d="M14 0C6.26801 0 0 6.26801 0 14C0 24.5 14 40 14 40C14 40 28 24.5 28 14C28 6.26801 21.732 0 14 0Z" fill="#FACC15" stroke="#B45309" stroke-width="1.5"/>
+          <!-- Círculo Interno Blanco Ampliado -->
+          <circle cx="14" cy="13.5" r="8" fill="#FFFFFF" stroke="#F59E0B" stroke-width="1"/>
+          <!-- Estrella Azul Marino Más Grande y Clara -->
+          <path d="M14 7.5L15.6 11.2L19.5 11.5L16.5 14L17.4 17.8L14 15.7L10.6 17.8L11.5 14L8.5 11.5L12.4 11.2L14 7.5Z" fill="#0A2540"/>
         </svg>
       `,
-      iconSize: [22, 32],
-      iconAnchor: [11, 32],
-      popupAnchor: [0, -28]
+      iconSize: [28, 40],
+      iconAnchor: [14, 40],
+      popupAnchor: [0, -36]
     });
 
     function autolink(text) {
@@ -358,27 +382,37 @@
         return nameA.localeCompare(nameB);
       });
 
-      // Actualizar contador y lista vertical
       countProducers.innerText = visibleFeatures.length;
 
-      visibleFeatures.forEach(function(feat) {
-        var props = feat.properties || {};
-        var nombre = props.name || "Productor sin nombre";
+      // Mostrar lista solo si el usuario ha hecho un filtro activo o búsqueda
+      var hasActiveFilter = (selectedDepto !== 'todos' || selectedMuni !== 'todos' || searchText !== '');
 
-        var li = document.createElement('li');
-        li.textContent = nombre;
-        li.title = nombre;
+      if (hasActiveFilter) {
+        emptyPrompt.style.display = 'none';
+        producerList.style.display = 'flex';
 
-        li.addEventListener('click', function() {
-          var marker = featureMarkersMap.get(feat);
-          if (marker) {
-            map.flyTo(marker.getLatLng(), 16, { duration: 1.2 });
-            marker.openPopup();
-          }
+        visibleFeatures.forEach(function(feat) {
+          var props = feat.properties || {};
+          var nombre = props.name || "Productor sin nombre";
+
+          var li = document.createElement('li');
+          li.textContent = nombre;
+          li.title = nombre;
+
+          li.addEventListener('click', function() {
+            var marker = featureMarkersMap.get(feat);
+            if (marker) {
+              map.flyTo(marker.getLatLng(), 16, { duration: 1.2 });
+              marker.openPopup();
+            }
+          });
+
+          producerList.appendChild(li);
         });
-
-        producerList.appendChild(li);
-      });
+      } else {
+        emptyPrompt.style.display = 'block';
+        producerList.style.display = 'none';
+      }
 
       // Ajustar vista del mapa si hay puntos visibles
       if (kmlLayer.getBounds().isValid()) {
@@ -386,7 +420,7 @@
       }
     }
 
-    // Evento Selector Departamento
+    // Eventos de los controles
     selectDepto.addEventListener('change', function() {
       var depto = this.value;
       selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
@@ -403,10 +437,7 @@
       renderMapFeatures();
     });
 
-    // Evento Selector Municipio
     selectMuni.addEventListener('change', renderMapFeatures);
-
-    // Evento Campo de Búsqueda por Nombre
     searchInput.addEventListener('input', renderMapFeatures);
   </script>
 </body>
