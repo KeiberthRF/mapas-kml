@@ -13,6 +13,7 @@
       padding: 0; 
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
       background-color: #0f172a; 
+      overflow: hidden;
     }
     #map { 
       height: 100vh; 
@@ -43,7 +44,7 @@
       right: 10px;
       z-index: 1000;
       background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(10px);
       padding: 14px;
       border-radius: 12px;
       border: 1px solid #334155;
@@ -154,14 +155,15 @@
       font-style: italic;
     }
 
-    /* Estilo del emergente (Popup) */
+    /* Estilo del emergente alineado (Popup) */
     .leaflet-popup-content-wrapper {
-      border-radius: 10px;
+      border-radius: 8px;
       padding: 12px;
-      max-height: 400px;
+      max-height: 420px;
       max-width: 320px;
       overflow-y: auto;
       box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border: 1px solid #cbd5e1;
     }
     .leaflet-popup-content h3 {
       margin: 0 0 10px 0;
@@ -256,12 +258,12 @@
       attribution: '© Google Earth'
     }).addTo(map);
 
-    // Marcador Amarillo Estilo Google Earth
+    // Marcador Exacto Estilo Google Earth (Icono Pushpin / Paddle Amarillo Clásico)
     var googleEarthPin = L.icon({
-      iconUrl: 'https://maps.google.com/mapfiles/kml/paddle/ylw-blank.png',
+      iconUrl: 'https://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png',
       iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -30]
+      iconAnchor: [10, 32],
+      popupAnchor: [0, -28]
     });
 
     function autolink(text) {
@@ -272,12 +274,11 @@
       return str.replace(exp, "<a href='$1' target='_blank'>Enlace KoboToolbox</a>");
     }
 
-    // Formateador de texto y altitud entera
+    // Formatear altitud GPS a número entero en metros sobre el nivel del mar
     function cleanDescriptionText(desc) {
       if (!desc) return "";
       var str = typeof desc === 'string' ? desc : (desc.value || "");
       
-      // Formatear GPS_altitude a número entero
       str = str.replace(/GPS_altitude:\s*([\d.]+)/gi, function(match, p1) {
         var num = Math.round(parseFloat(p1));
         return "GPS_altitude: " + num + " msnm";
@@ -357,8 +358,35 @@
         statusDiv.innerText = 'Error: ' + error.message;
       });
 
-    // Función principal para renderizar
-    function renderMapFeatures(skipFilterUpdate) {
+    // Función para enfocar un productor y alinear la ventana informativa junto al panel lateral
+    function selectAndFocusProducer(feat, marker) {
+      var props = feat.properties || {};
+      var nombre = props.name || "Productor sin nombre";
+      var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
+      var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
+
+      // Colocar el nombre del productor en la casilla de búsqueda
+      searchInput.value = nombre;
+
+      // Actualizar selectores de ubicación si difieren
+      if (depto && selectDepto.value !== depto) {
+        selectDepto.value = depto;
+        updateMuniDropdown(depto);
+      }
+      if (muni) {
+        selectMuni.value = muni;
+      }
+
+      // Desplazar mapa y centrar compensando el panel lateral derecho para dejar la ventana alineada
+      if (marker) {
+        var latLng = marker.getLatLng();
+        map.flyTo(latLng, 16, { duration: 1.2 });
+        marker.openPopup();
+      }
+    }
+
+    // Función principal para renderizar el mapa y sincronizar controles
+    function renderMapFeatures() {
       var selectedDepto = selectDepto.value;
       var selectedMuni = selectMuni.value;
       var searchText = searchInput.value.toLowerCase().trim();
@@ -395,8 +423,13 @@
           var popupContent = "<h3>" + nombre + "</h3>";
           if (descripcion) popupContent += "<div>" + cleanDescriptionText(descripcion) + "</div>";
 
-          layer.bindPopup(popupContent);
+          layer.bindPopup(popupContent, { autoPanPaddingTopLeft: L.point(20, 20) });
           layer.bindTooltip(nombre, { permanent: false, direction: 'top' });
+
+          // Sincronización al hacer clic directamente en un puntero del mapa
+          layer.on('click', function() {
+            selectAndFocusProducer(feature, layer);
+          });
 
           featureMarkersMap.set(feature, layer);
         }
@@ -430,20 +463,11 @@
           `;
 
           li.addEventListener('click', function() {
-            // Sincronizar selectores automáticamente con el departamento y municipio del productor
-            if (depto && selectDepto.value !== depto) {
-              selectDepto.value = depto;
-              updateMuniDropdown(depto);
-            }
-            if (muni) {
-              selectMuni.value = muni;
-            }
-
             var marker = featureMarkersMap.get(feat);
-            if (marker) {
-              map.flyTo(marker.getLatLng(), 16, { duration: 1.2 });
-              marker.openPopup();
-            }
+            selectAndFocusProducer(feat, marker);
+            
+            // Limpiar la casilla del buscador tras seleccionar del listado si se desea
+            searchInput.value = '';
           });
 
           producerList.appendChild(li);
