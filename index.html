@@ -49,6 +49,7 @@
       border-bottom: 1px solid #eee;
     }
 
+    /* Indicador de estado */
     #status-msg {
       position: absolute;
       top: 10px;
@@ -60,11 +61,57 @@
       font-weight: bold;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
+
+    /* Panel de Filtros */
+    #filter-container {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 13px;
+      min-width: 200px;
+    }
+
+    #filter-container label {
+      font-weight: bold;
+      color: #1a237e;
+    }
+
+    #filter-container select {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      outline: none;
+      font-size: 13px;
+      background: #fff;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
   <div id="status-msg">Cargando datos del KML...</div>
+
+  <!-- Panel de Filtros por Departamento y Municipio -->
+  <div id="filter-container">
+    <label for="select-depto">Departamento:</label>
+    <select id="select-depto">
+      <option value="todos">Todos los Departamentos</option>
+    </select>
+
+    <label for="select-muni">Municipio:</label>
+    <select id="select-muni">
+      <option value="todos">Todos los Municipios</option>
+    </select>
+  </div>
+
   <div id="map"></div>
 
   <!-- Librerías Leaflet y Conversor KML -->
@@ -73,6 +120,8 @@
 
   <script>
     var statusDiv = document.getElementById('status-msg');
+    var selectDepto = document.getElementById('select-depto');
+    var selectMuni = document.getElementById('select-muni');
 
     // Inicialización del mapa centrada en Honduras
     var map = L.map('map', {
@@ -85,18 +134,65 @@
       attribution: '© Google Earth'
     }).addTo(map);
 
+    // Definición del icono personalizado: Pin Amarillo con Estrella Azul Marino
+    var yellowStarIcon = L.divIcon({
+      className: 'custom-pin-icon',
+      html: `
+        <svg width="30" height="42" viewBox="0 0 30 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Pin Amarillo -->
+          <path d="M15 0C6.71573 0 0 6.71573 0 15C0 26.25 15 42 15 42C15 42 30 26.25 30 15C30 6.71573 23.2843 0 15 0Z" fill="#FFD700" stroke="#B8860B" stroke-width="1.5"/>
+          <!-- Círculo Interno Blanco -->
+          <circle cx="15" cy="15" r="8" fill="#FFFFFF"/>
+          <!-- Estrella Azul Marino -->
+          <path d="M15 9.5L16.6 13.1L20.5 13.4L17.5 16L18.4 19.8L15 17.7L11.6 19.8L12.5 16L9.5 13.4L13.4 13.1L15 9.5Z" fill="#000080"/>
+        </svg>
+      `,
+      iconSize: [30, 42],
+      iconAnchor: [15, 42],
+      popupAnchor: [0, -38]
+    });
+
     // Función segura para activar enlaces de KoboToolbox en la descripción
     function autolink(text) {
       if (!text) return "";
-      
-      // Convertir a texto por si viene como objeto o HTML
       var str = typeof text === 'string' ? text : String(text);
       if (typeof text === 'object' && text.value) {
         str = String(text.value);
       }
-
       var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
       return str.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
+    }
+
+    var rawGeoJSON = null;
+    var kmlLayer = null;
+    var locationData = {}; // Estructura: { "Yoro": ["Yoro", "Victoria", "Yorito", ...], ... }
+
+    // Función para obtener propiedad sin importar mayúsculas o minúsculas
+    function getProp(props, key) {
+      if (!props) return "";
+      var foundKey = Object.keys(props).find(function(k) {
+        return k.toLowerCase() === key.toLowerCase();
+      });
+      return foundKey ? props[foundKey] : "";
+    }
+
+    // Extrae el valor de un campo desde las propiedades o desde la descripción HTML si aplica
+    function extractField(feature, fieldName) {
+      var props = feature.properties || {};
+      var val = getProp(props, fieldName);
+      if (val) return String(val).trim();
+
+      // Buscar dentro de description en caso de venir como tabla HTML
+      var desc = props.description || "";
+      var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
+      if (strDesc) {
+        var regex = new RegExp(fieldName + "[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
+        var match = strDesc.match(regex);
+        if (match && match[1]) {
+          return match[1].replace(/<[^>]+>/g, '').trim();
+        }
+      }
+      return "";
     }
 
     var urlKML = './honduras.kml';
@@ -117,56 +213,113 @@
           throw new Error('El archivo honduras.kml contiene errores de sintaxis XML.');
         }
 
-        var geojson = toGeoJSON.kml(kmlDom);
+        rawGeoJSON = toGeoJSON.kml(kmlDom);
 
-        if (!geojson.features || geojson.features.length === 0) {
+        if (!rawGeoJSON.features || rawGeoJSON.features.length === 0) {
           statusDiv.innerText = 'El archivo KML se cargó, pero no contiene elementos/puntos válidos.';
           return;
         }
 
-        var kmlLayer = L.geoJSON(geojson, {
-          pointToLayer: function (feature, latlng) {
-            // Dibuja puntos en color rojo brillante para asegurar visibilidad
-            return L.circleMarker(latlng, {
-              radius: 7,
-              fillColor: "#ff3300",
-              color: "#ffffff",
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.9
-            });
-          },
-          onEachFeature: function(feature, layer) {
-            var props = feature.properties || {};
-            var nombre = props.name || "Productor sin nombre";
-            var descripcion = props.description || "";
+        // Construir catálogo de Departamentos y Municipios desde las propiedades de las entidades
+        rawGeoJSON.features.forEach(function(feature) {
+          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
+          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
 
-            var popupContent = "<h3>" + nombre + "</h3>";
-
-            if (descripcion) {
-              popupContent += "<div>" + autolink(descripcion) + "</div>";
-            }
-
-            layer.bindPopup(popupContent);
-
-            layer.bindTooltip(nombre, {
-              permanent: false,
-              direction: 'top'
-            });
+          if (!locationData[depto]) {
+            locationData[depto] = new Set();
           }
-        }).addTo(map);
+          if (muni) {
+            locationData[depto].add(muni);
+          }
+        });
 
-        if (kmlLayer.getBounds().isValid()) {
-          map.fitBounds(kmlLayer.getBounds());
-          statusDiv.style.display = 'none';
-        } else {
-          statusDiv.innerText = 'Puntos cargados pero las coordenadas no son válidas.';
-        }
+        // Poblar Selector de Departamentos
+        Object.keys(locationData).sort().forEach(function(depto) {
+          var opt = document.createElement('option');
+          opt.value = depto;
+          opt.textContent = depto;
+          selectDepto.appendChild(opt);
+        });
+
+        // Renderizar todos los puntos inicialmente
+        renderMapFeatures('todos', 'todos');
+        statusDiv.style.display = 'none';
       })
       .catch(function(error) {
         console.error('Error al cargar KML:', error);
         statusDiv.innerText = 'Error al cargar KML: ' + error.message;
       });
+
+    // Función para renderizar y filtrar en el mapa
+    function renderMapFeatures(selectedDepto, selectedMuni) {
+      if (kmlLayer) {
+        map.removeLayer(kmlLayer);
+      }
+
+      kmlLayer = L.geoJSON(rawGeoJSON, {
+        filter: function(feature) {
+          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
+          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
+
+          var matchDepto = (selectedDepto === 'todos' || depto === selectedDepto);
+          var matchMuni = (selectedMuni === 'todos' || muni === selectedMuni);
+
+          return matchDepto && matchMuni;
+        },
+        pointToLayer: function (feature, latlng) {
+          return L.marker(latlng, { icon: yellowStarIcon });
+        },
+        onEachFeature: function(feature, layer) {
+          var props = feature.properties || {};
+          var nombre = props.name || "Productor sin nombre";
+          var descripcion = props.description || "";
+
+          var popupContent = "<h3>" + nombre + "</h3>";
+
+          if (descripcion) {
+            popupContent += "<div>" + autolink(descripcion) + "</div>";
+          }
+
+          layer.bindPopup(popupContent);
+
+          layer.bindTooltip(nombre, {
+            permanent: false,
+            direction: 'top'
+          });
+        }
+      }).addTo(map);
+
+      // Ajustar vista del mapa al filtro actual
+      if (kmlLayer.getBounds().isValid()) {
+        map.fitBounds(kmlLayer.getBounds(), { padding: [30, 30] });
+      }
+    }
+
+    // Evento al cambiar de Departamento
+    selectDepto.addEventListener('change', function() {
+      var depto = this.value;
+      
+      // Limpiar y actualizar el selector de municipios
+      selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
+
+      if (depto !== 'todos' && locationData[depto]) {
+        Array.from(locationData[depto]).sort().forEach(function(muni) {
+          var opt = document.createElement('option');
+          opt.value = muni;
+          opt.textContent = muni;
+          selectMuni.appendChild(opt);
+        });
+      }
+
+      renderMapFeatures(depto, 'todos');
+    });
+
+    // Evento al cambiar de Municipio
+    selectMuni.addEventListener('change', function() {
+      var depto = selectDepto.value;
+      var muni = this.value;
+      renderMapFeatures(depto, muni);
+    });
   </script>
 </body>
 </html>
