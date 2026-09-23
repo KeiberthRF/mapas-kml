@@ -8,10 +8,19 @@
   <!-- Estilos de Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; }
-    #map { height: 100vh; width: 100vw; z-index: 1; }
+    body { 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background-color: #0f172a; 
+    }
+    #map { 
+      height: 100vh; 
+      width: 100vw; 
+      z-index: 1; 
+    }
 
-    /* Indicador de estado */
+    /* Indicador de estado de carga */
     #status-msg {
       position: absolute;
       top: 10px;
@@ -21,49 +30,100 @@
       color: #fff;
       padding: 8px 15px;
       border-radius: 6px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: bold;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
 
-    /* Panel de Filtros Superior Derecho */
-    #filter-container {
+    /* Panel Lateral Compacto Superior Derecho */
+    #side-panel {
       position: absolute;
       top: 10px;
       right: 10px;
       z-index: 1000;
       background: rgba(15, 23, 42, 0.92);
       backdrop-filter: blur(8px);
-      padding: 12px 15px;
+      padding: 12px 14px;
       border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      min-width: 200px;
+      gap: 8px;
+      width: 250px;
+      max-height: calc(100vh - 40px);
+      box-sizing: border-box;
     }
 
-    #filter-container label {
-      font-size: 11px;
+    #side-panel label {
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-weight: 700;
       color: #94a3b8;
     }
 
-    #filter-container select {
+    #side-panel select, #search-input {
       padding: 6px 10px;
       border-radius: 6px;
       border: 1px solid #334155;
       background: #1e293b;
       color: #f8fafc;
-      font-size: 13px;
+      font-size: 12px;
       outline: none;
-      cursor: pointer;
+      width: 100%;
+      box-sizing: border-box;
     }
 
-    /* Estilo del emergente del marcador */
+    #search-input::placeholder {
+      color: #64748b;
+    }
+
+    /* Título del listado de productores */
+    .list-header {
+      font-size: 11px;
+      font-weight: bold;
+      color: #38bdf8;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 4px;
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Lista vertical desplazable */
+    #producer-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      max-height: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #producer-list li {
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #cbd5e1;
+      cursor: pointer;
+      background: rgba(30, 41, 59, 0.5);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #producer-list li:hover {
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 600;
+      padding-left: 10px;
+    }
+
+    /* Estilo del recuadro emergente informativo */
     .leaflet-popup-content-wrapper {
       border-radius: 8px;
       padding: 10px;
@@ -85,124 +145,16 @@
       text-decoration: underline;
     }
 
-    /* Panel Inferior Flotante con Tabla Dinámica */
-    #table-panel {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(255,255,255,0.15);
-      color: #f8fafc;
-      transition: all 0.3s ease;
-      max-height: 35vh;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
-    }
-
-    #table-panel.collapsed {
-      max-height: 36px;
-      overflow: hidden;
-    }
-
-    .table-header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 16px;
-      background: #1e293b;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .table-header-bar h4 {
-      margin: 0;
-      font-size: 13px;
-      color: #38bdf8;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .toggle-btn {
-      background: #334155;
-      color: #fff;
-      border: none;
-      padding: 3px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      cursor: pointer;
-    }
-
-    .table-responsive {
-      overflow-x: auto;
-      overflow-y: auto;
-      max-height: calc(35vh - 36px);
-      padding: 0;
-    }
-
-    table.producer-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    table.producer-table th {
-      position: sticky;
-      top: 0;
-      background: #0f172a;
-      color: #94a3b8;
-      font-weight: 600;
-      padding: 8px 12px;
-      border-bottom: 2px solid #334155;
-      text-transform: uppercase;
-      font-size: 10px;
-      letter-spacing: 0.5px;
-    }
-
-    table.producer-table td {
-      padding: 6px 12px;
-      border-bottom: 1px solid #1e293b;
-      color: #cbd5e1;
-    }
-
-    table.producer-table tr:hover {
-      background: rgba(56, 189, 248, 0.15);
-      cursor: pointer;
-    }
-
-    .thumb-img {
-      width: 32px;
-      height: 32px;
-      object-fit: cover;
-      border-radius: 4px;
-      border: 1px solid #475569;
-    }
-
-    .btn-link {
-      background: #0284c7;
-      color: #fff;
-      padding: 2px 6px;
-      border-radius: 3px;
-      text-decoration: none;
-      font-size: 10px;
-      font-weight: bold;
-    }
-
     @media (max-width: 600px) {
-      #filter-container {
+      #side-panel {
         top: 10px;
         right: 10px;
         left: 50px;
-        min-width: auto;
+        width: auto;
       }
       #status-msg {
-        top: 110px;
+        top: auto;
+        bottom: 15px;
         left: 10px;
       }
     }
@@ -212,8 +164,8 @@
 
   <div id="status-msg">Cargando datos del KML...</div>
 
-  <!-- Panel de Filtros -->
-  <div id="filter-container">
+  <!-- Panel Unificado: Filtros, Buscador y Lista A-Z -->
+  <div id="side-panel">
     <label for="select-depto">Departamento</label>
     <select id="select-depto">
       <option value="todos">Todos los Departamentos</option>
@@ -223,35 +175,21 @@
     <select id="select-muni">
       <option value="todos">Todos los Municipios</option>
     </select>
+
+    <label for="search-input">Buscar Productor</label>
+    <input type="text" id="search-input" placeholder="Escribe un nombre..." />
+
+    <div class="list-header">
+      <span>PRODUCTORES</span>
+      <span id="count-producers">0</span>
+    </div>
+
+    <ul id="producer-list">
+      <!-- Nombres cargados dinámicamente en orden A-Z -->
+    </ul>
   </div>
 
   <div id="map"></div>
-
-  <!-- Panel Inferior con Tabla Dinámica -->
-  <div id="table-panel">
-    <div class="table-header-bar" onclick="toggleTable()">
-      <h4>Listado de Productores Seleccionados (<span id="count-producers">0</span>)</h4>
-      <button class="toggle-btn" id="btn-toggle">Minimizar ▲</button>
-    </div>
-    <div class="table-responsive">
-      <table class="producer-table">
-        <thead>
-          <tr>
-            <th>Foto</th>
-            <th>Productor</th>
-            <th>DNI</th>
-            <th>Edad</th>
-            <th>Área (Mz)</th>
-            <th>Plantas Prod.</th>
-            <th>Variedad / Raza</th>
-          </tr>
-        </thead>
-        <tbody id="table-body">
-          <!-- Filas dinámicas -->
-        </tbody>
-      </table>
-    </div>
-  </div>
 
   <!-- Librerías Leaflet y Conversor KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -261,27 +199,20 @@
     var statusDiv = document.getElementById('status-msg');
     var selectDepto = document.getElementById('select-depto');
     var selectMuni = document.getElementById('select-muni');
-    var tableBody = document.getElementById('table-body');
+    var searchInput = document.getElementById('search-input');
+    var producerList = document.getElementById('producer-list');
     var countProducers = document.getElementById('count-producers');
-    var tablePanel = document.getElementById('table-panel');
-    var btnToggle = document.getElementById('btn-toggle');
 
-    // Toggle de desplegar/minimizar la tabla
-    function toggleTable() {
-      tablePanel.classList.toggle('collapsed');
-      btnToggle.innerText = tablePanel.classList.contains('collapsed') ? 'Desplegar ▼' : 'Minimizar ▲';
-    }
-
-    // Mapa centrado en Honduras
+    // Inicialización del Mapa
     var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 8);
 
-    // Capa de mapa satelital de Google
+    // Capa de Mapa Satelital de Google
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     }).addTo(map);
 
-    // Icono estilizado HD más fino (Pin Amarillo con Estrella Azul Marino)
+    // Icono HD Fino (Pin Amarillo con Estrella Azul Marino)
     var fineStarIcon = L.divIcon({
       className: 'custom-pin-hd',
       html: `
@@ -351,6 +282,7 @@
           return;
         }
 
+        // Construir catálogo de Departamentos y Municipios
         rawGeoJSON.features.forEach(function(feature) {
           var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
           var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
@@ -359,6 +291,7 @@
           if (muni) locationData[depto].add(muni);
         });
 
+        // Cargar Selector de Departamentos
         Object.keys(locationData).sort().forEach(function(depto) {
           var opt = document.createElement('option');
           opt.value = depto;
@@ -366,29 +299,37 @@
           selectDepto.appendChild(opt);
         });
 
-        renderMapFeatures('todos', 'todos');
+        renderMapFeatures();
         statusDiv.style.display = 'none';
       })
       .catch(function(error) {
         statusDiv.innerText = 'Error: ' + error.message;
       });
 
-    function renderMapFeatures(selectedDepto, selectedMuni) {
+    // Función principal para renderizar, filtrar y ordenar
+    function renderMapFeatures() {
+      var selectedDepto = selectDepto.value;
+      var selectedMuni = selectMuni.value;
+      var searchText = searchInput.value.toLowerCase().trim();
+
       if (kmlLayer) map.removeLayer(kmlLayer);
-      tableBody.innerHTML = '';
+      producerList.innerHTML = '';
       featureMarkersMap.clear();
 
       var visibleFeatures = [];
 
       kmlLayer = L.geoJSON(rawGeoJSON, {
         filter: function(feature) {
+          var props = feature.properties || {};
+          var nombre = (props.name || "Productor sin nombre").toLowerCase();
           var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
           var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
 
           var matchDepto = (selectedDepto === 'todos' || depto === selectedDepto);
           var matchMuni = (selectedMuni === 'todos' || muni === selectedMuni);
+          var matchSearch = (searchText === '' || nombre.includes(searchText));
 
-          var isMatch = matchDepto && matchMuni;
+          var isMatch = matchDepto && matchMuni && matchSearch;
           if (isMatch) visibleFeatures.push(feature);
           return isMatch;
         },
@@ -410,35 +351,25 @@
         }
       }).addTo(map);
 
-      // Actualizar Tabla de Productores
+      // Ordenar productores alfabéticamente A-Z
+      visibleFeatures.sort(function(a, b) {
+        var nameA = (a.properties.name || "").toUpperCase();
+        var nameB = (b.properties.name || "").toUpperCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      // Actualizar contador y lista vertical
       countProducers.innerText = visibleFeatures.length;
 
       visibleFeatures.forEach(function(feat) {
         var props = feat.properties || {};
         var nombre = props.name || "Productor sin nombre";
-        var dni = extractField(feat, "dni") || extractField(feat, "identidad") || "Ver";
-        var edad = extractField(feat, "edad") || "-";
-        var area = extractField(feat, "area") || extractField(feat, "manzanas") || "-";
-        var plantas = extractField(feat, "plantas") || extractField(feat, "produccion") || "-";
-        var variedad = extractField(feat, "variedad") || extractField(feat, "raza") || "Hass / Antillano";
-        var fotoUrl = extractField(feat, "foto") || extractField(feat, "imagen");
 
-        var tr = document.createElement('tr');
+        var li = document.createElement('li');
+        li.textContent = nombre;
+        li.title = nombre;
 
-        var imgHtml = fotoUrl ? `<img src="${fotoUrl}" class="thumb-img" alt="Foto">` : `<span style="color:#64748b;">N/A</span>`;
-        var dniHtml = dni.startsWith('http') ? `<a href="${dni}" target="_blank" class="btn-link">DNI</a>` : dni;
-
-        tr.innerHTML = `
-          <td>${imgHtml}</td>
-          <td style="font-weight:600; color:#f8fafc;">${nombre}</td>
-          <td>${dniHtml}</td>
-          <td>${edad}</td>
-          <td>${area}</td>
-          <td>${plantas}</td>
-          <td>${variedad}</td>
-        `;
-
-        tr.addEventListener('click', function() {
+        li.addEventListener('click', function() {
           var marker = featureMarkersMap.get(feat);
           if (marker) {
             map.flyTo(marker.getLatLng(), 16, { duration: 1.2 });
@@ -446,14 +377,16 @@
           }
         });
 
-        tableBody.appendChild(tr);
+        producerList.appendChild(li);
       });
 
+      // Ajustar vista del mapa si hay puntos visibles
       if (kmlLayer.getBounds().isValid()) {
         map.fitBounds(kmlLayer.getBounds(), { padding: [30, 30] });
       }
     }
 
+    // Evento Selector Departamento
     selectDepto.addEventListener('change', function() {
       var depto = this.value;
       selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
@@ -467,12 +400,14 @@
         });
       }
 
-      renderMapFeatures(depto, 'todos');
+      renderMapFeatures();
     });
 
-    selectMuni.addEventListener('change', function() {
-      renderMapFeatures(selectDepto.value, this.value);
-    });
+    // Evento Selector Municipio
+    selectMuni.addEventListener('change', renderMapFeatures);
+
+    // Evento Campo de Búsqueda por Nombre
+    searchInput.addEventListener('input', renderMapFeatures);
   </script>
 </body>
 </html>
