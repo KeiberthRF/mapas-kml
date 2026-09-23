@@ -21,7 +21,7 @@
       z-index: 1; 
     }
 
-    /* Indicador de estado */
+    /* Indicador de estado de carga */
     #status-msg {
       position: absolute;
       top: 10px;
@@ -249,21 +249,28 @@
     var emptyPrompt = document.getElementById('empty-prompt');
     var countProducers = document.getElementById('count-producers');
 
-    // Inicialización del Mapa
-    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 8);
+    // Inicialización del Mapa con vista espacial lejana para el efecto de entrada
+    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
 
-    // Capa de Mapa Satelital de Google
+    // Capa Satelital de Google
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
     }).addTo(map);
 
-    // Marcador Exacto Estilo Google Earth (Icono Pushpin / Paddle Amarillo Clásico)
-    var googleEarthPin = L.icon({
-      iconUrl: 'https://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png',
-      iconSize: [32, 32],
-      iconAnchor: [10, 32],
-      popupAnchor: [0, -28]
+    // Marcador Estilo Google Earth (Globo Amarillo con Punto Interno)
+    var googleEarthPin = L.divIcon({
+      className: 'google-earth-marker',
+      html: `
+        <svg width="26" height="38" viewBox="0 0 26 38" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.6));">
+          <path d="M13 0C5.8203 0 0 5.8203 0 13C0 22.75 13 38 13 38C13 38 26 22.75 26 13C26 5.8203 20.1797 0 13 0Z" fill="#FFCC00" stroke="#B38600" stroke-width="1.2"/>
+          <circle cx="13" cy="13" r="6" fill="#FFFFFF" stroke="#D6A100" stroke-width="1"/>
+          <circle cx="13" cy="13" r="3" fill="#1E3A8A"/>
+        </svg>
+      `,
+      iconSize: [26, 38],
+      iconAnchor: [13, 38],
+      popupAnchor: [0, -34]
     });
 
     function autolink(text) {
@@ -274,7 +281,7 @@
       return str.replace(exp, "<a href='$1' target='_blank'>Enlace KoboToolbox</a>");
     }
 
-    // Formatear altitud GPS a número entero en metros sobre el nivel del mar
+    // Formatear altitud a número entero sin decimales
     function cleanDescriptionText(desc) {
       if (!desc) return "";
       var str = typeof desc === 'string' ? desc : (desc.value || "");
@@ -353,22 +360,27 @@
 
         renderMapFeatures();
         statusDiv.style.display = 'none';
+
+        // Efecto Google Earth: descenso animado hacia Honduras al cargar
+        setTimeout(function() {
+          map.flyTo([14.6, -87.8], 8, { duration: 2.5 });
+        }, 500);
       })
       .catch(function(error) {
         statusDiv.innerText = 'Error: ' + error.message;
       });
 
-    // Función para enfocar un productor y alinear la ventana informativa junto al panel lateral
+    // Función para alinear la ventana emergente al lado del panel derecho
     function selectAndFocusProducer(feat, marker) {
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
       var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
       var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
 
-      // Colocar el nombre del productor en la casilla de búsqueda
+      // Asignar el nombre en la casilla de búsqueda
       searchInput.value = nombre;
 
-      // Actualizar selectores de ubicación si difieren
+      // Sincronizar selectores
       if (depto && selectDepto.value !== depto) {
         selectDepto.value = depto;
         updateMuniDropdown(depto);
@@ -377,15 +389,17 @@
         selectMuni.value = muni;
       }
 
-      // Desplazar mapa y centrar compensando el panel lateral derecho para dejar la ventana alineada
       if (marker) {
         var latLng = marker.getLatLng();
-        map.flyTo(latLng, 16, { duration: 1.2 });
+        // Offset para posicionar la ventana a la izquierda del panel lateral
+        var targetPoint = map.project(latLng, 16).subtract([120, 0]);
+        var targetLatLng = map.unproject(targetPoint, 16);
+
+        map.flyTo(targetLatLng, 16, { duration: 1.2 });
         marker.openPopup();
       }
     }
 
-    // Función principal para renderizar el mapa y sincronizar controles
     function renderMapFeatures() {
       var selectedDepto = selectDepto.value;
       var selectedMuni = selectMuni.value;
@@ -423,10 +437,9 @@
           var popupContent = "<h3>" + nombre + "</h3>";
           if (descripcion) popupContent += "<div>" + cleanDescriptionText(descripcion) + "</div>";
 
-          layer.bindPopup(popupContent, { autoPanPaddingTopLeft: L.point(20, 20) });
+          layer.bindPopup(popupContent, { autoPan: false });
           layer.bindTooltip(nombre, { permanent: false, direction: 'top' });
 
-          // Sincronización al hacer clic directamente en un puntero del mapa
           layer.on('click', function() {
             selectAndFocusProducer(feature, layer);
           });
@@ -435,7 +448,7 @@
         }
       }).addTo(map);
 
-      // Ordenar productores alfabéticamente A-Z
+      // Ordenar productores A-Z
       visibleFeatures.sort(function(a, b) {
         var nameA = (a.properties.name || "").toUpperCase();
         var nameB = (b.properties.name || "").toUpperCase();
@@ -465,9 +478,6 @@
           li.addEventListener('click', function() {
             var marker = featureMarkersMap.get(feat);
             selectAndFocusProducer(feat, marker);
-            
-            // Limpiar la casilla del buscador tras seleccionar del listado si se desea
-            searchInput.value = '';
           });
 
           producerList.appendChild(li);
@@ -477,7 +487,7 @@
         producerList.style.display = 'none';
       }
 
-      if (kmlLayer.getBounds().isValid()) {
+      if (kmlLayer.getBounds().isValid() && hasActiveFilter) {
         map.fitBounds(kmlLayer.getBounds(), { padding: [30, 30] });
       }
     }
@@ -503,7 +513,13 @@
       renderMapFeatures();
     });
 
+    // Control de reseteo automático al borrar la búsqueda
     searchInput.addEventListener('input', function() {
+      if (this.value.trim() === '') {
+        selectDepto.value = 'todos';
+        selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
+        map.flyTo([14.6, -87.8], 8, { duration: 1.5 });
+      }
       renderMapFeatures();
     });
   </script>
