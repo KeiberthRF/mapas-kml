@@ -15,13 +15,9 @@
       background-color: #0f172a; 
       overflow: hidden;
     }
-    #map { 
-      height: 100vh; 
-      width: 100vw; 
-      z-index: 1; 
-    }
+    #map { height: 100vh; width: 100vw; z-index: 1; }
 
-    /* Indicador de estado de carga */
+    /* Indicador de estado */
     #status-msg {
       position: absolute;
       top: 10px;
@@ -33,8 +29,25 @@
       border-radius: 6px;
       font-size: 12px;
       font-weight: bold;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
       border: 1px solid #1e293b;
+    }
+
+    /* Botón Flotante para Móviles */
+    #mobile-toggle-btn {
+      display: none;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1100;
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      cursor: pointer;
     }
 
     /* Panel Lateral Superior Derecho */
@@ -55,6 +68,7 @@
       width: 280px;
       max-height: calc(100vh - 30px);
       box-sizing: border-box;
+      transition: transform 0.3s ease;
     }
 
     #side-panel label {
@@ -77,15 +91,6 @@
       box-sizing: border-box;
     }
 
-    #side-panel select:focus, #search-input:focus {
-      border-color: #38bdf8;
-    }
-
-    #search-input::placeholder {
-      color: #64748b;
-    }
-
-    /* Encabezado del Listado */
     .list-header {
       font-size: 11px;
       font-weight: bold;
@@ -98,115 +103,83 @@
       align-items: center;
     }
 
-    /* Contenedor y Lista de Productores */
-    #producer-list-container {
-      overflow-y: auto;
-      max-height: 280px;
-    }
+    #producer-list-container { overflow-y: auto; max-height: 220px; }
 
     #producer-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
+      list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px;
     }
 
     #producer-list li {
-      padding: 8px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      background: #1e293b;
-      border: 1px solid #334155;
-      transition: all 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      padding: 8px 10px; border-radius: 6px; cursor: pointer; background: #1e293b; border: 1px solid #334155;
+      display: flex; flex-direction: column; gap: 2px;
     }
 
-    #producer-list li .p-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: #f1f5f9;
+    #producer-list li .p-name { font-size: 12px; font-weight: 600; color: #f1f5f9; }
+    #producer-list li .p-location { font-size: 10px; color: #38bdf8; }
+
+    #producer-list li:hover { background: #0284c7; border-color: #38bdf8; }
+
+    .empty-prompt { font-size: 11px; color: #64748b; text-align: center; padding: 12px 5px; font-style: italic; }
+
+    /* Botones de Control de Sesión y Admin */
+    .admin-bar {
+      display: flex; gap: 6px; margin-top: 6px; border-top: 1px solid #334155; padding-top: 8px;
     }
 
-    #producer-list li .p-location {
-      font-size: 10px;
-      color: #38bdf8;
+    .btn-admin {
+      flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; text-align: center;
     }
 
-    #producer-list li:hover {
-      background: #0284c7;
-      border-color: #38bdf8;
-      transform: translateX(2px);
+    .btn-users { background: #0ea5e9; color: #fff; }
+    .btn-logout { background: #ef4444; color: #fff; }
+
+    /* Modal / Ventana de Administración */
+    #admin-modal {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;
     }
 
-    #producer-list li:hover .p-name,
-    #producer-list li:hover .p-location {
-      color: #ffffff;
+    .modal-content {
+      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; color: #fff; max-height: 80vh; overflow-y: auto;
     }
 
-    .empty-prompt {
-      font-size: 11px;
-      color: #64748b;
-      text-align: center;
-      padding: 12px 5px;
-      font-style: italic;
-    }
+    .modal-content h3 { color: #38bdf8; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; }
 
-    /* Estilo del emergente alineado (Popup) */
-    .leaflet-popup-content-wrapper {
-      border-radius: 8px;
-      padding: 12px;
-      max-height: 420px;
-      max-width: 320px;
-      overflow-y: auto;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-      border: 1px solid #cbd5e1;
-    }
-    .leaflet-popup-content h3 {
-      margin: 0 0 10px 0;
-      color: #0f172a;
-      font-size: 15px;
-      border-bottom: 2px solid #16a34a;
-      padding-bottom: 4px;
-    }
-    .leaflet-popup-content table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-    .leaflet-popup-content td {
-      padding: 4px 0;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .leaflet-popup-content a {
-      color: #0284c7;
-      font-weight: bold;
-      text-decoration: underline;
-    }
+    .modal-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
+    .modal-table th, .modal-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
+    .modal-table th { color: #94a3b8; }
+
+    .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; float: right; }
+
+    /* Estilo Popup */
+    .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
+    .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
     @media (max-width: 600px) {
+      #mobile-toggle-btn { display: block; }
       #side-panel {
-        top: 10px;
-        right: 10px;
-        left: 50px;
-        width: auto;
+        top: 60px; right: 10px; left: 10px; width: auto; transform: translateY(-150%);
       }
-      #status-msg {
-        top: auto;
-        bottom: 15px;
-        left: 10px;
-      }
+      #side-panel.open { transform: translateY(0); }
     }
   </style>
 </head>
 <body>
 
+  <!-- Validación de Sesión -->
+  <script>
+    const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
+    if (!currentSession) {
+      window.location.href = 'login.html';
+    }
+  </script>
+
   <div id="status-msg">Cargando datos del KML...</div>
 
-  <!-- Panel Unificado Lateral -->
+  <!-- Botón Móvil -->
+  <button id="mobile-toggle-btn" onclick="toggleMobilePanel()">🔍 Buscar / Filtros</button>
+
+  <!-- Panel Lateral -->
   <div id="side-panel">
     <label for="select-depto">Departamento</label>
     <select id="select-depto">
@@ -227,20 +200,46 @@
     </div>
 
     <div id="producer-list-container">
-      <ul id="producer-list">
-        <!-- Nombres cargados dinámicamente -->
-      </ul>
-      <div id="empty-prompt" class="empty-prompt">Selecciona un departamento, municipio o realiza una búsqueda para desplegar el listado.</div>
+      <ul id="producer-list"></ul>
+      <div id="empty-prompt" class="empty-prompt">Selecciona un filtro para desplegar el listado.</div>
+    </div>
+
+    <div class="admin-bar">
+      <button id="btn-logs" class="btn-admin btn-users" onclick="openAdminModal()" style="display:none;">Bitácora / Usuarios</button>
+      <button class="btn-admin btn-logout" onclick="logout()">Cerrar Sesión</button>
     </div>
   </div>
 
   <div id="map"></div>
+
+  <!-- Modal Administración -->
+  <div id="admin-modal">
+    <div class="modal-content">
+      <button class="btn-close-modal" onclick="closeAdminModal()">Cerrar</button>
+      <h3>Bitácora de Sesiones (Ingresos y Tiempo)</h3>
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Ingreso</th>
+            <th>Duración</th>
+          </tr>
+        </thead>
+        <tbody id="logs-table-body"></tbody>
+      </table>
+    </div>
+  </div>
 
   <!-- Librerías Leaflet y Conversor KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
+    // Mostrar botón de administración solo a Administradores
+    if (currentSession && currentSession.role === 'admin') {
+      document.getElementById('btn-logs').style.display = 'block';
+    }
+
     var statusDiv = document.getElementById('status-msg');
     var selectDepto = document.getElementById('select-depto');
     var selectMuni = document.getElementById('select-muni');
@@ -248,17 +247,20 @@
     var producerList = document.getElementById('producer-list');
     var emptyPrompt = document.getElementById('empty-prompt');
     var countProducers = document.getElementById('count-producers');
+    var sidePanel = document.getElementById('side-panel');
 
-    // Inicialización del Mapa con vista espacial lejana para el efecto de entrada
+    function toggleMobilePanel() {
+      sidePanel.classList.toggle('open');
+    }
+
+    // Inicialización del Mapa
     var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
 
-    // Capa Satelital de Google
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-      maxZoom: 20,
-      attribution: '© Google Earth'
+      maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
 
-    // Marcador Estilo Google Earth (Globo Amarillo con Punto Interno)
+    // Marcador Estilo Google Earth
     var googleEarthPin = L.divIcon({
       className: 'google-earth-marker',
       html: `
@@ -268,9 +270,7 @@
           <circle cx="13" cy="13" r="3" fill="#1E3A8A"/>
         </svg>
       `,
-      iconSize: [26, 38],
-      iconAnchor: [13, 38],
-      popupAnchor: [0, -34]
+      iconSize: [26, 38], iconAnchor: [13, 38], popupAnchor: [0, -34]
     });
 
     function autolink(text) {
@@ -281,29 +281,20 @@
       return str.replace(exp, "<a href='$1' target='_blank'>Enlace KoboToolbox</a>");
     }
 
-    // Formatear altitud a número entero sin decimales
     function cleanDescriptionText(desc) {
       if (!desc) return "";
       var str = typeof desc === 'string' ? desc : (desc.value || "");
-      
       str = str.replace(/GPS_altitude:\s*([\d.]+)/gi, function(match, p1) {
-        var num = Math.round(parseFloat(p1));
-        return "GPS_altitude: " + num + " msnm";
+        return "GPS_altitude: " + Math.round(parseFloat(p1)) + " msnm";
       });
-
       return autolink(str);
     }
 
-    var rawGeoJSON = null;
-    var kmlLayer = null;
-    var locationData = {};
-    var featureMarkersMap = new Map();
+    var rawGeoJSON = null, kmlLayer = null, locationData = {}, featureMarkersMap = new Map();
 
     function getProp(props, key) {
       if (!props) return "";
-      var foundKey = Object.keys(props).find(function(k) {
-        return k.toLowerCase() === key.toLowerCase();
-      });
+      var foundKey = Object.keys(props).find(k => k.toLowerCase() === key.toLowerCase());
       return foundKey ? props[foundKey] : "";
     }
 
@@ -311,110 +302,76 @@
       var props = feature.properties || {};
       var val = getProp(props, fieldName);
       if (val) return String(val).trim();
-
       var desc = props.description || "";
       var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
       if (strDesc) {
         var regex = new RegExp(fieldName + "[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
         var match = strDesc.match(regex);
-        if (match && match[1]) {
-          return match[1].replace(/<[^>]+>/g, '').trim();
-        }
+        if (match && match[1]) return match[1].replace(/<[^>]+>/g, '').trim();
       }
       return "";
     }
 
-    var urlKML = './honduras.kml';
-
-    fetch(urlKML, { cache: 'no-cache' })
-      .then(function(response) {
-        if (!response.ok) throw new Error('No se encontró el archivo honduras.kml');
-        return response.text();
-      })
-      .then(function(kmlText) {
+    fetch('./honduras.kml', { cache: 'no-cache' })
+      .then(r => r.text())
+      .then(kmlText => {
         var parser = new DOMParser();
-        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
-        rawGeoJSON = toGeoJSON.kml(kmlDom);
+        rawGeoJSON = toGeoJSON.kml(parser.parseFromString(kmlText, 'text/xml'));
 
-        if (!rawGeoJSON.features || rawGeoJSON.features.length === 0) {
-          statusDiv.innerText = 'Sin elementos válidos en el KML.';
-          return;
-        }
-
-        // Catálogo de Departamentos y Municipios
-        rawGeoJSON.features.forEach(function(feature) {
+        rawGeoJSON.features.forEach(feature => {
           var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
           var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
-
           if (!locationData[depto]) locationData[depto] = new Set();
           if (muni) locationData[depto].add(muni);
         });
 
-        // Cargar Selector de Departamentos
-        Object.keys(locationData).sort().forEach(function(depto) {
+        Object.keys(locationData).sort().forEach(depto => {
           var opt = document.createElement('option');
-          opt.value = depto;
-          opt.textContent = depto;
+          opt.value = depto; opt.textContent = depto;
           selectDepto.appendChild(opt);
         });
 
         renderMapFeatures();
         statusDiv.style.display = 'none';
 
-        // Efecto Google Earth: descenso animado hacia Honduras al cargar
-        setTimeout(function() {
-          map.flyTo([14.6, -87.8], 8, { duration: 2.5 });
-        }, 500);
-      })
-      .catch(function(error) {
-        statusDiv.innerText = 'Error: ' + error.message;
+        setTimeout(() => map.flyTo([14.6, -87.8], 8, { duration: 2.2 }), 400);
       });
 
-    // Función para alinear la ventana emergente al lado del panel derecho
     function selectAndFocusProducer(feat, marker) {
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
       var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
       var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
 
-      // Asignar el nombre en la casilla de búsqueda
       searchInput.value = nombre;
-
-      // Sincronizar selectores
       if (depto && selectDepto.value !== depto) {
         selectDepto.value = depto;
         updateMuniDropdown(depto);
       }
-      if (muni) {
-        selectMuni.value = muni;
-      }
+      if (muni) selectMuni.value = muni;
+
+      if (window.innerWidth <= 600) sidePanel.classList.remove('open');
 
       if (marker) {
         var latLng = marker.getLatLng();
-        // Offset para posicionar la ventana a la izquierda del panel lateral
-        var targetPoint = map.project(latLng, 16).subtract([120, 0]);
-        var targetLatLng = map.unproject(targetPoint, 16);
-
-        map.flyTo(targetLatLng, 16, { duration: 1.2 });
+        var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
+        var targetPoint = map.project(latLng, 16).subtract(offset);
+        map.flyTo(map.unproject(targetPoint, 16), 16, { duration: 1.2 });
         marker.openPopup();
       }
     }
 
     function renderMapFeatures() {
-      var selectedDepto = selectDepto.value;
-      var selectedMuni = selectMuni.value;
-      var searchText = searchInput.value.toLowerCase().trim();
+      var selectedDepto = selectDepto.value, selectedMuni = selectMuni.value, searchText = searchInput.value.toLowerCase().trim();
 
       if (kmlLayer) map.removeLayer(kmlLayer);
-      producerList.innerHTML = '';
-      featureMarkersMap.clear();
+      producerList.innerHTML = ''; featureMarkersMap.clear();
 
       var visibleFeatures = [];
 
       kmlLayer = L.geoJSON(rawGeoJSON, {
         filter: function(feature) {
-          var props = feature.properties || {};
-          var nombre = (props.name || "Productor sin nombre").toLowerCase();
+          var nombre = (feature.properties.name || "").toLowerCase();
           var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
           var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
 
@@ -426,102 +383,91 @@
           if (isMatch) visibleFeatures.push(feature);
           return isMatch;
         },
-        pointToLayer: function (feature, latlng) {
-          return L.marker(latlng, { icon: googleEarthPin });
-        },
+        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: googleEarthPin }),
         onEachFeature: function(feature, layer) {
-          var props = feature.properties || {};
-          var nombre = props.name || "Productor sin nombre";
-          var descripcion = props.description || "";
-
-          var popupContent = "<h3>" + nombre + "</h3>";
-          if (descripcion) popupContent += "<div>" + cleanDescriptionText(descripcion) + "</div>";
-
+          var nombre = feature.properties.name || "Productor sin nombre";
+          var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
           layer.bindPopup(popupContent, { autoPan: false });
-          layer.bindTooltip(nombre, { permanent: false, direction: 'top' });
-
-          layer.on('click', function() {
-            selectAndFocusProducer(feature, layer);
-          });
-
+          layer.on('click', () => selectAndFocusProducer(feature, layer));
           featureMarkersMap.set(feature, layer);
         }
       }).addTo(map);
 
-      // Ordenar productores A-Z
-      visibleFeatures.sort(function(a, b) {
-        var nameA = (a.properties.name || "").toUpperCase();
-        var nameB = (b.properties.name || "").toUpperCase();
-        return nameA.localeCompare(nameB);
-      });
-
+      visibleFeatures.sort((a, b) => (a.properties.name || "").localeCompare(b.properties.name || ""));
       countProducers.innerText = visibleFeatures.length;
 
       var hasActiveFilter = (selectedDepto !== 'todos' || selectedMuni !== 'todos' || searchText !== '');
 
       if (hasActiveFilter) {
-        emptyPrompt.style.display = 'none';
-        producerList.style.display = 'flex';
-
-        visibleFeatures.forEach(function(feat) {
-          var props = feat.properties || {};
-          var nombre = props.name || "Productor sin nombre";
+        emptyPrompt.style.display = 'none'; producerList.style.display = 'flex';
+        visibleFeatures.forEach(feat => {
+          var nombre = feat.properties.name || "Productor sin nombre";
           var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
           var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
 
           var li = document.createElement('li');
-          li.innerHTML = `
-            <span class="p-name">${nombre}</span>
-            <span class="p-location">${depto}${muni ? ' • ' + muni : ''}</span>
-          `;
-
-          li.addEventListener('click', function() {
-            var marker = featureMarkersMap.get(feat);
-            selectAndFocusProducer(feat, marker);
-          });
-
+          li.innerHTML = `<span class="p-name">${nombre}</span><span class="p-location">${depto}${muni ? ' • ' + muni : ''}</span>`;
+          li.addEventListener('click', () => selectAndFocusProducer(feat, featureMarkersMap.get(feat)));
           producerList.appendChild(li);
         });
       } else {
-        emptyPrompt.style.display = 'block';
-        producerList.style.display = 'none';
-      }
-
-      if (kmlLayer.getBounds().isValid() && hasActiveFilter) {
-        map.fitBounds(kmlLayer.getBounds(), { padding: [30, 30] });
+        emptyPrompt.style.display = 'block'; producerList.style.display = 'none';
       }
     }
 
     function updateMuniDropdown(depto) {
       selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
       if (depto !== 'todos' && locationData[depto]) {
-        Array.from(locationData[depto]).sort().forEach(function(muni) {
+        Array.from(locationData[depto]).sort().forEach(muni => {
           var opt = document.createElement('option');
-          opt.value = muni;
-          opt.textContent = muni;
-          selectMuni.appendChild(opt);
+          opt.value = muni; opt.textContent = muni; selectMuni.appendChild(opt);
         });
       }
     }
 
-    selectDepto.addEventListener('change', function() {
-      updateMuniDropdown(this.value);
-      renderMapFeatures();
-    });
-
-    selectMuni.addEventListener('change', function() {
-      renderMapFeatures();
-    });
-
-    // Control de reseteo automático al borrar la búsqueda
+    selectDepto.addEventListener('change', function() { updateMuniDropdown(this.value); renderMapFeatures(); });
+    selectMuni.addEventListener('change', renderMapFeatures);
     searchInput.addEventListener('input', function() {
       if (this.value.trim() === '') {
-        selectDepto.value = 'todos';
-        selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
-        map.flyTo([14.6, -87.8], 8, { duration: 1.5 });
+        selectDepto.value = 'todos'; updateMuniDropdown('todos');
       }
       renderMapFeatures();
     });
+
+    // Gestión de Cierre de Sesión y Bitácora
+    function logout() {
+      if (currentSession) {
+        const loginTime = new Date(currentSession.loginTime);
+        const now = new Date();
+        const durationMinutes = Math.round((now - loginTime) / 60000);
+
+        const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+        logs.push({
+          user: currentSession.user,
+          login: currentSession.loginFormatted,
+          duration: durationMinutes + ' min'
+        });
+        localStorage.setItem('sig_logs', JSON.stringify(logs));
+      }
+      sessionStorage.removeItem('current_session');
+      window.location.href = 'login.html';
+    }
+
+    function openAdminModal() {
+      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      const tbody = document.getElementById('logs-table-body');
+      tbody.innerHTML = '';
+      logs.reverse().forEach(log => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${log.user}</td><td>${log.login}</td><td>${log.duration}</td>`;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('admin-modal').style.display = 'flex';
+    }
+
+    function closeAdminModal() {
+      document.getElementById('admin-modal').style.display = 'none';
+    }
   </script>
 </body>
 </html>
