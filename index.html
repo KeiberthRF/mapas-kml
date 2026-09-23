@@ -85,11 +85,18 @@
       attribution: '© Google Earth'
     }).addTo(map);
 
-    // Función para activar enlaces de KoboToolbox en la descripción
+    // Función segura para activar enlaces de KoboToolbox en la descripción
     function autolink(text) {
       if (!text) return "";
+      
+      // Convertir a texto por si viene como objeto o HTML
+      var str = typeof text === 'string' ? text : String(text);
+      if (typeof text === 'object' && text.value) {
+        str = String(text.value);
+      }
+
       var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-      return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
+      return str.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
     }
 
     var urlKML = './honduras.kml';
@@ -105,7 +112,6 @@
         var parser = new DOMParser();
         var kmlDom = parser.parseFromString(kmlText, 'text/xml');
         
-        // Verificar si la lectura XML arrojó algún error de formato
         var parserError = kmlDom.querySelector('parsererror');
         if (parserError) {
           throw new Error('El archivo honduras.kml contiene errores de sintaxis XML.');
@@ -120,7 +126,7 @@
 
         var kmlLayer = L.geoJSON(geojson, {
           pointToLayer: function (feature, latlng) {
-            // Dibuja puntos en color rojo brillante para asegurar visibilidad sobre el satélite
+            // Dibuja puntos en color rojo brillante para asegurar visibilidad
             return L.circleMarker(latlng, {
               radius: 7,
               fillColor: "#ff3300",
@@ -152,14 +158,14 @@
 
         if (kmlLayer.getBounds().isValid()) {
           map.fitBounds(kmlLayer.getBounds());
-          statusDiv.style.display = 'none'; // Ocultar mensaje de carga
+          statusDiv.style.display = 'none';
         } else {
-          statusDiv.innerText = 'Puntos cargados pero las coordenadas no son válidas para ajustar la vista.';
+          statusDiv.innerText = 'Puntos cargados pero las coordenadas no son válidas.';
         }
       })
       .catch(function(error) {
-        console.error('Error:', error);
-        statusDiv.innerText = 'Error: ' + error.message;
+        console.error('Error al cargar KML:', error);
+        statusDiv.innerText = 'Error al cargar KML: ' + error.message;
       });
   </script>
 </body>
