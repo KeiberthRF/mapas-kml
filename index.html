@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <title>Mapa Productores de Aguacate de Honduras</title>
   <meta charset="utf-8" />
@@ -48,10 +48,23 @@
       padding: 4px;
       border-bottom: 1px solid #eee;
     }
+
+    #status-msg {
+      position: absolute;
+      top: 10px;
+      left: 50px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 8px 15px;
+      border-radius: 5px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body>
 
+  <div id="status-msg">Cargando datos del KML...</div>
   <div id="map"></div>
 
   <!-- Librerías Leaflet y Conversor KML -->
@@ -59,12 +72,14 @@
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
+    var statusDiv = document.getElementById('status-msg');
+
     // Inicialización del mapa centrada en Honduras
     var map = L.map('map', {
       maxZoom: 20
     }).setView([14.6, -87.8], 8);
 
-    // Única Capa Fija: Google Satélite + Etiquetas HD
+    // Capa de mapa satelital de Google
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       attribution: '© Google Earth'
@@ -77,22 +92,44 @@
       return text.replace(exp, "<a href='$1' target='_blank'>Abrir Enlace KoboToolbox</a>");
     }
 
-    // Ruta relativa limpia apuntando al archivo del repositorio
-    var urlKML = 'honduras.kml';
+    var urlKML = './honduras.kml';
 
-    fetch(urlKML)
+    fetch(urlKML, { cache: 'no-cache' })
       .then(function(response) {
         if (!response.ok) {
-          throw new Error('No se pudo descargar el archivo honduras.kml');
+          throw new Error('No se encontró el archivo honduras.kml (Estado HTTP: ' + response.status + ')');
         }
         return response.text();
       })
       .then(function(kmlText) {
         var parser = new DOMParser();
         var kmlDom = parser.parseFromString(kmlText, 'text/xml');
+        
+        // Verificar si la lectura XML arrojó algún error de formato
+        var parserError = kmlDom.querySelector('parsererror');
+        if (parserError) {
+          throw new Error('El archivo honduras.kml contiene errores de sintaxis XML.');
+        }
+
         var geojson = toGeoJSON.kml(kmlDom);
 
+        if (!geojson.features || geojson.features.length === 0) {
+          statusDiv.innerText = 'El archivo KML se cargó, pero no contiene elementos/puntos válidos.';
+          return;
+        }
+
         var kmlLayer = L.geoJSON(geojson, {
+          pointToLayer: function (feature, latlng) {
+            // Dibuja puntos en color rojo brillante para asegurar visibilidad sobre el satélite
+            return L.circleMarker(latlng, {
+              radius: 7,
+              fillColor: "#ff3300",
+              color: "#ffffff",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.9
+            });
+          },
           onEachFeature: function(feature, layer) {
             var props = feature.properties || {};
             var nombre = props.name || "Productor sin nombre";
@@ -113,13 +150,16 @@
           }
         }).addTo(map);
 
-        // Ajustar zoom automático a la ubicación de todos los productores
         if (kmlLayer.getBounds().isValid()) {
           map.fitBounds(kmlLayer.getBounds());
+          statusDiv.style.display = 'none'; // Ocultar mensaje de carga
+        } else {
+          statusDiv.innerText = 'Puntos cargados pero las coordenadas no son válidas para ajustar la vista.';
         }
       })
       .catch(function(error) {
-        console.error('Error al cargar KML:', error);
+        console.error('Error:', error);
+        statusDiv.innerText = 'Error: ' + error.message;
       });
   </script>
 </body>
