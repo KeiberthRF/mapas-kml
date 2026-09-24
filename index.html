@@ -32,31 +32,35 @@
       border: 1px solid #1e293b;
     }
 
-    /* Botón Flotante para Móviles */
-    #mobile-toggle-btn {
-      display: none;
+    /* Botón Flotante Lupa */
+    #floating-search-btn {
       position: absolute;
       top: 10px;
       right: 10px;
-      z-index: 1100;
+      z-index: 1090;
       background: #0284c7;
       color: #fff;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 30px;
-      font-size: 13px;
+      border: 1px solid #38bdf8;
+      padding: 10px 14px;
+      border-radius: 50px;
+      font-size: 14px;
       font-weight: bold;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
     }
+    #floating-search-btn:hover { background: #0369a1; transform: scale(1.05); }
 
     /* Panel Lateral Superior Derecho */
     #side-panel {
       position: absolute;
       top: 10px;
       right: 10px;
-      z-index: 1000;
-      background: rgba(15, 23, 42, 0.95);
+      z-index: 1100;
+      background: rgba(15, 23, 42, 0.96);
       backdrop-filter: blur(10px);
       padding: 14px;
       border-radius: 12px;
@@ -65,11 +69,48 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      width: 280px;
+      width: 290px;
       max-height: calc(100vh - 30px);
       box-sizing: border-box;
-      transition: transform 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    #side-panel.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(120%);
+    }
+
+    .panel-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 6px;
+    }
+
+    .panel-header-bar span {
+      font-size: 11px;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-close-panel {
+      background: #334155;
+      color: #94a3b8;
+      border: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-close-panel:hover { background: #ef4444; color: #fff; }
 
     #side-panel label {
       font-size: 10px;
@@ -79,7 +120,7 @@
       color: #94a3b8;
     }
 
-    #side-panel select, #search-input {
+    #side-panel select {
       padding: 8px 12px;
       border-radius: 6px;
       border: 1px solid #334155;
@@ -91,19 +132,49 @@
       box-sizing: border-box;
     }
 
+    .search-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    #search-input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #f8fafc;
+      font-size: 13px;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .btn-clear-search {
+      background: #334155;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .btn-clear-search:hover { background: #0284c7; border-color: #38bdf8; }
+
     .list-header {
       font-size: 11px;
       font-weight: bold;
       color: #38bdf8;
       border-bottom: 1px solid #334155;
       padding-bottom: 6px;
-      margin-top: 4px;
+      margin-top: 2px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
-    #producer-list-container { overflow-y: auto; max-height: 220px; }
+    #producer-list-container { overflow-y: auto; max-height: 200px; }
 
     #producer-list {
       list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px;
@@ -111,23 +182,22 @@
 
     #producer-list li {
       padding: 8px 10px; border-radius: 6px; cursor: pointer; background: #1e293b; border: 1px solid #334155;
-      display: flex; flex-direction: column; gap: 2px;
+      display: flex; flex-direction: column; gap: 2px; transition: all 0.2s;
     }
 
     #producer-list li .p-name { font-size: 12px; font-weight: 600; color: #f1f5f9; }
     #producer-list li .p-location { font-size: 10px; color: #38bdf8; }
-
     #producer-list li:hover { background: #0284c7; border-color: #38bdf8; }
 
     .empty-prompt { font-size: 11px; color: #64748b; text-align: center; padding: 12px 5px; font-style: italic; }
 
     /* Botones de Control de Sesión y Admin */
     .admin-bar {
-      display: flex; gap: 6px; margin-top: 6px; border-top: 1px solid #334155; padding-top: 8px;
+      display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 8px;
     }
 
     .btn-admin {
-      flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; text-align: center;
+      flex: 1; padding: 7px; border-radius: 6px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; text-align: center;
     }
 
     .btn-users { background: #0ea5e9; color: #fff; }
@@ -136,31 +206,42 @@
     /* Modal / Ventana de Administración */
     #admin-modal {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;
+      background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center;
     }
 
     .modal-content {
-      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; color: #fff; max-height: 80vh; overflow-y: auto;
+      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 92%; max-width: 520px; color: #fff; max-height: 85vh; overflow-y: auto;
     }
 
-    .modal-content h3 { color: #38bdf8; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; }
+    .modal-content h3 { color: #38bdf8; margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; font-size: 15px; }
+
+    .form-create-user {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;
+    }
+
+    .form-create-user input, .form-create-user select {
+      padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #fff; font-size: 12px;
+    }
+
+    .btn-add-user {
+      grid-column: span 2; background: #16a34a; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;
+    }
 
     .modal-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
     .modal-table th, .modal-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
     .modal-table th { color: #94a3b8; }
 
-    .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; float: right; }
+    .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
     /* Estilo Popup */
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
     .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
     @media (max-width: 600px) {
-      #mobile-toggle-btn { display: block; }
       #side-panel {
-        top: 60px; right: 10px; left: 10px; width: auto; transform: translateY(-150%);
+        top: 10px; right: 10px; left: 10px; width: auto;
       }
-      #side-panel.open { transform: translateY(0); }
+      #status-msg { top: auto; bottom: 15px; left: 10px; }
     }
   </style>
 </head>
@@ -176,11 +257,16 @@
 
   <div id="status-msg">Cargando datos del KML...</div>
 
-  <!-- Botón Móvil -->
-  <button id="mobile-toggle-btn" onclick="toggleMobilePanel()">🔍 Buscar / Filtros</button>
+  <!-- Botón Flotante Lupa -->
+  <button id="floating-search-btn" onclick="openPanel()">🔍 Buscar</button>
 
   <!-- Panel Lateral -->
   <div id="side-panel">
+    <div class="panel-header-bar">
+      <span>FILTROS Y BÚSQUEDA</span>
+      <button class="btn-close-panel" onclick="closePanel()">✖</button>
+    </div>
+
     <label for="select-depto">Departamento</label>
     <select id="select-depto">
       <option value="todos">Todos los Departamentos</option>
@@ -192,7 +278,10 @@
     </select>
 
     <label for="search-input">Buscar Productor</label>
-    <input type="text" id="search-input" placeholder="Escribe un nombre..." />
+    <div class="search-row">
+      <input type="text" id="search-input" placeholder="Escribe un nombre..." />
+      <button class="btn-clear-search" onclick="clearSearchOnly()" title="Limpiar Búsqueda">🧹</button>
+    </div>
 
     <div class="list-header">
       <span>PRODUCTORES</span>
@@ -205,7 +294,7 @@
     </div>
 
     <div class="admin-bar">
-      <button id="btn-logs" class="btn-admin btn-users" onclick="openAdminModal()" style="display:none;">Bitácora / Usuarios</button>
+      <button id="btn-logs" class="btn-admin btn-users" onclick="openAdminModal()" style="display:none;">Usuarios / Bitácora</button>
       <button class="btn-admin btn-logout" onclick="logout()">Cerrar Sesión</button>
     </div>
   </div>
@@ -216,7 +305,32 @@
   <div id="admin-modal">
     <div class="modal-content">
       <button class="btn-close-modal" onclick="closeAdminModal()">Cerrar</button>
-      <h3>Bitácora de Sesiones (Ingresos y Tiempo)</h3>
+      
+      <h3>Crear Nuevo Usuario</h3>
+      <form class="form-create-user" onsubmit="addUser(event)">
+        <input type="text" id="new-name" placeholder="Nombre (ej: Carlos)" required>
+        <input type="text" id="new-user" placeholder="Usuario (ej: carlos123)" required>
+        <input type="password" id="new-pass" placeholder="Contraseña" required>
+        <select id="new-role">
+          <option value="invitado">Invitado</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <button type="submit" class="btn-add-user">+ Registrar Usuario</button>
+      </form>
+
+      <h3>Usuarios Registrados</h3>
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+          </tr>
+        </thead>
+        <tbody id="users-table-body"></tbody>
+      </table>
+
+      <h3>Bitácora de Sesiones (Ingresos)</h3>
       <table class="modal-table">
         <thead>
           <tr>
@@ -235,7 +349,6 @@
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    // Mostrar botón de administración solo a Administradores
     if (currentSession && currentSession.role === 'admin') {
       document.getElementById('btn-logs').style.display = 'block';
     }
@@ -249,8 +362,15 @@
     var countProducers = document.getElementById('count-producers');
     var sidePanel = document.getElementById('side-panel');
 
-    function toggleMobilePanel() {
-      sidePanel.classList.toggle('open');
+    function closePanel() { sidePanel.classList.add('hidden'); }
+    function openPanel() { sidePanel.classList.remove('hidden'); }
+
+    // Limpiar solo el cuadro de búsqueda manteniendo emergente si está activo
+    function clearSearchOnly() {
+      searchInput.value = '';
+      selectDepto.value = 'todos';
+      updateMuniDropdown('todos');
+      renderMapFeatures();
     }
 
     // Inicialización del Mapa
@@ -350,7 +470,7 @@
       }
       if (muni) selectMuni.value = muni;
 
-      if (window.innerWidth <= 600) sidePanel.classList.remove('open');
+      if (window.innerWidth <= 600) closePanel();
 
       if (marker) {
         var latLng = marker.getLatLng();
@@ -386,8 +506,19 @@
         pointToLayer: (feature, latlng) => L.marker(latlng, { icon: googleEarthPin }),
         onEachFeature: function(feature, layer) {
           var nombre = feature.properties.name || "Productor sin nombre";
+          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "";
+          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "";
+
           var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
           layer.bindPopup(popupContent, { autoPan: false });
+
+          // Tooltip Flotante al pasar el cursor (Hover)
+          var tooltipText = nombre;
+          if (depto || muni) {
+            tooltipText += " (" + depto + (muni ? " • " + muni : "") + ")";
+          }
+          layer.bindTooltip(tooltipText, { permanent: false, direction: 'top' });
+
           layer.on('click', () => selectAndFocusProducer(feature, layer));
           featureMarkersMap.set(feature, layer);
         }
@@ -454,19 +585,60 @@
     }
 
     function openAdminModal() {
-      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-      const tbody = document.getElementById('logs-table-body');
-      tbody.innerHTML = '';
-      logs.reverse().forEach(log => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${log.user}</td><td>${log.login}</td><td>${log.duration}</td>`;
-        tbody.appendChild(tr);
-      });
+      loadUsersTable();
+      loadLogsTable();
       document.getElementById('admin-modal').style.display = 'flex';
     }
 
     function closeAdminModal() {
       document.getElementById('admin-modal').style.display = 'none';
+    }
+
+    function loadUsersTable() {
+      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = '';
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${u.name}</td><td>${u.user}</td><td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function loadLogsTable() {
+      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      const tbody = document.getElementById('logs-table-body');
+      tbody.innerHTML = '';
+      logs.slice().reverse().forEach(log => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${log.user}</td><td>${log.login}</td><td>${log.duration}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addUser(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-name').value.trim();
+      const user = document.getElementById('new-user').value.trim();
+      const pass = document.getElementById('new-pass').value.trim();
+      const role = document.getElementById('new-role').value;
+
+      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      
+      if (users.some(u => u.user === user)) {
+        alert('El usuario ya existe. Por favor elige otro.');
+        return;
+      }
+
+      users.push({ name, user, pass, role });
+      localStorage.setItem('sig_users', JSON.stringify(users));
+
+      document.getElementById('new-name').value = '';
+      document.getElementById('new-user').value = '';
+      document.getElementById('new-pass').value = '';
+
+      loadUsersTable();
+      alert('Usuario creado exitosamente');
     }
   </script>
 </body>
