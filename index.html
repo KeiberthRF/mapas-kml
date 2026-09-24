@@ -199,7 +199,7 @@
     .btn-users { background: #0ea5e9; color: #fff; }
     .btn-logout { background: #ef4444; color: #fff; }
 
-    /* Modal Administración */
+    /* Estilos Modal de Usuarios */
     #admin-modal {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center;
@@ -234,7 +234,7 @@
 
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
-    /* Estilo Popup Emergente */
+    /* Popup Emergente */
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
     .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
@@ -288,7 +288,7 @@
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">🧹</button>
+      <button class="btn-clear-search" onclick="clearSearchOnly()" title="Limpiar Búsqueda">🧹</button>
     </div>
 
     <div class="list-header">
@@ -375,24 +375,20 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Limpieza completa (Escobita) y retorno a la vista panorama
-    function fullReset() {
+    function clearSearchOnly() {
       searchInput.value = '';
       selectDepto.value = 'todos';
       updateMuniDropdown('todos');
-      map.closePopup();
       renderMapFeatures();
-      map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
     }
 
-    // Inicialización del Mapa
     var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
 
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
 
-    // Marcador Globo Amarillo con Estrella Negra
+    // Vector SVG de Marcador HD Fino idéntico para PC y Celulares
     var googleEarthPin = L.divIcon({
       className: 'google-earth-marker',
       html: `
@@ -487,10 +483,9 @@
       if (marker) {
         var latLng = marker.getLatLng();
         var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
-        var targetPoint = map.project(latLng, 15).subtract(offset);
-        map.flyTo(map.unproject(targetPoint, 15), 15, { duration: 1.2 });
+        var targetPoint = map.project(latLng, 16).subtract(offset);
+        map.flyTo(map.unproject(targetPoint, 16), 16, { duration: 1.2 });
         marker.openPopup();
-        marker.openTooltip();
       }
     }
 
@@ -553,14 +548,6 @@
           li.addEventListener('click', () => selectAndFocusProducer(feat, featureMarkersMap.get(feat)));
           producerList.appendChild(li);
         });
-
-        // Auto-Zoom Equilibrado al territorio seleccionado
-        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
-          map.fitBounds(kmlLayer.getBounds(), {
-            padding: [60, 60],
-            maxZoom: 13
-          });
-        }
       } else {
         emptyPrompt.style.display = 'block'; producerList.style.display = 'none';
       }
