@@ -156,7 +156,7 @@
     <form id="login-form">
       <div class="form-group">
         <label for="username">Usuario o Nombre</label>
-        <input type="text" id="username" placeholder="Ej: admin, invitado o tu nombre" required autocomplete="off">
+        <input type="text" id="username" placeholder="Ej: admin, invitado, carlos o fvt" required autocomplete="off">
       </div>
       <div class="form-group">
         <label for="password">Contraseña</label>
@@ -171,16 +171,23 @@
   </div>
 
   <script>
-    // Inicialización de Usuarios Predeterminados
-    if (!localStorage.getItem('sig_users')) {
-      const defaultUsers = [
-        { user: 'admin', pass: 'Honduras2026*', role: 'admin', name: 'Administrador Principal' },
-        { user: 'invitado', pass: 'Aguacate2026*', role: 'invitado', name: 'Usuario Invitado' },
-        { user: 'carlos', pass: 'Carlos2026*', role: 'invitado', name: 'Carlos Robleto' },
-        { user: 'gamer', pass: 'Gamer2026*', role: 'admin', name: 'Gamer' }
-      ];
-      localStorage.setItem('sig_users', JSON.stringify(defaultUsers));
-    }
+    // Catálogo Global de Usuarios por Defecto (Sincronizado para todo celular y PC)
+    const defaultUsers = [
+      { user: 'admin', pass: 'admin123', role: 'admin', name: 'Administrador Principal' },
+      { user: 'invitado', pass: 'invitado123', role: 'invitado', name: 'Usuario Invitado' },
+      { user: 'carlos', pass: 'aspah2026', role: 'invitado', name: 'Carlos Robleto' },
+      { user: 'fvt', pass: 'fvt2026', role: 'invitado', name: 'FVT' },
+      { user: 'gamer', pass: 'gamer123', role: 'admin', name: 'Gamer' }
+    ];
+
+    // Siempre asegurar que el catálogo base esté presente
+    let existingUsers = JSON.parse(localStorage.getItem('sig_users') || '[]');
+    defaultUsers.forEach(defUser => {
+      if (!existingUsers.some(u => u.user.toLowerCase() === defUser.user.toLowerCase())) {
+        existingUsers.push(defUser);
+      }
+    });
+    localStorage.setItem('sig_users', JSON.stringify(existingUsers));
 
     function togglePassVisibility() {
       const p = document.getElementById('password');
@@ -193,7 +200,7 @@
       const inputPass = document.getElementById('password').value.trim();
       const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
 
-      // Buscar por coincidencia exacta en usuario O en nombre completo
+      // Coincidencia por Usuario O por Nombre Completo
       const foundUser = users.find(x => 
         (x.user && x.user.toLowerCase() === inputUser) || 
         (x.name && x.name.toLowerCase() === inputUser)
