@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Estadístico - Productores de Aguacate de Honduras</title>
+  <title>Dashboard Estadístico - Productores de Aguacate</title>
   
-  <!-- Chart.js para Renderizado de Gráficos HD -->
+  <!-- Librería Chart.js para gráficos -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Conversor de KML a GeoJSON -->
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
@@ -20,6 +20,7 @@
       min-height: 100vh;
     }
 
+    /* Encabezado */
     .header-bar {
       display: flex;
       justify-content: space-between;
@@ -108,6 +109,7 @@
       font-weight: bold;
       align-self: flex-end;
       height: 38px;
+      transition: background 0.2s;
     }
     .btn-reset:hover { background: #0284c7; border-color: #38bdf8; }
 
@@ -193,7 +195,7 @@
 </head>
 <body>
 
-  <!-- Sesión -->
+  <!-- Validación de Sesión -->
   <script>
     const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
     if (!currentSession) { window.location.href = 'login.html'; }
@@ -207,17 +209,17 @@
     <a href="index.html" class="btn-nav">🗺️ Regresar al Mapa SIG</a>
   </div>
 
-  <div id="loading-msg">⏳ Procesando base de datos KML...</div>
+  <div id="loading-msg">⏳ Procesando datos estadísticos del KML...</div>
 
   <div id="dashboard-content" style="display:none;">
     <!-- Filtros Dinámicos Interactivos -->
     <div class="filter-card">
       <div class="filter-group">
-        <label for="filter-depto">Filtrar por Departamento</label>
+        <label for="filter-depto">Departamento</label>
         <select id="filter-depto"><option value="todos">Todos los Departamentos</option></select>
       </div>
       <div class="filter-group">
-        <label for="filter-muni">Filtrar por Municipio</label>
+        <label for="filter-muni">Municipio</label>
         <select id="filter-muni"><option value="todos">Todos los Municipios</option></select>
       </div>
       <button class="btn-reset" onclick="resetDashboardFilters()" title="Restablecer filtros">🧹 Limpiar Filtros</button>
@@ -228,12 +230,12 @@
       <div class="kpi-card">
         <div class="lbl">Fincas Registradas</div>
         <div class="val" id="kpi-fincas">0</div>
-        <div class="sub" id="kpi-fincas-sub">100% del territorio</div>
+        <div class="sub" id="kpi-fincas-sub">100% del territorio seleccionado</div>
       </div>
       <div class="kpi-card">
         <div class="lbl">Área Cultivada Total</div>
         <div class="val" id="kpi-manzanas">0 Mz</div>
-        <div class="sub">Manzanas productivas</div>
+        <div class="sub">Manzanas de superficie</div>
       </div>
       <div class="kpi-card">
         <div class="lbl">Total Plantas Sembradas</div>
@@ -243,18 +245,18 @@
       <div class="kpi-card">
         <div class="lbl">Promedio de Altitud</div>
         <div class="val" id="kpi-altitud">0 msnm</div>
-        <div class="sub">Elevación óptima</div>
+        <div class="sub">Elevación media</div>
       </div>
     </div>
 
     <!-- Gráficos Estadísticos -->
     <div class="charts-grid">
       <div class="chart-box">
-        <h3>Fincas por Municipio / Departamento</h3>
+        <h3>Cantidad de Fincas por Ubicación</h3>
         <canvas id="chartFincas"></canvas>
       </div>
       <div class="chart-box">
-        <h3>Distribución Porcentual de Variedades de Aguacate</h3>
+        <h3>Distribución de Variedades de Aguacate</h3>
         <canvas id="chartVariedades"></canvas>
       </div>
       <div class="chart-box">
@@ -262,7 +264,7 @@
         <canvas id="chartSuperficie"></canvas>
       </div>
       <div class="chart-box">
-        <h3>Nivel de Tecnificación (Fertilización, Análisis Suelo, Fitosanitario)</h3>
+        <h3>Manejo y Tecnificación de Fincas</h3>
         <canvas id="chartTecnificacion"></canvas>
       </div>
     </div>
@@ -300,7 +302,6 @@
         var parser = new DOMParser();
         rawGeoJSON = toGeoJSON.kml(parser.parseFromString(kmlText, 'text/xml'));
 
-        // Poblar Opciones de Filtros
         var selectDepto = document.getElementById('filter-depto');
         
         rawGeoJSON.features.forEach(feature => {
@@ -350,7 +351,7 @@
       updateDashboard();
     }
 
-    // Cálculo y Renderizado del Dashboard
+    // Cálculo y Renderizado
     function updateDashboard() {
       var selDepto = filterDepto.value;
       var selMuni = filterMuni.value;
@@ -423,7 +424,7 @@
       renderChart('chartFincas', 'bar', Object.keys(geoCounts), Object.values(geoCounts), 'Cantidad de Fincas', '#38bdf8');
       renderChart('chartVariedades', 'doughnut', Object.keys(variedadCounts), Object.values(variedadCounts), 'Variedad', ['#38bdf8', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']);
       renderChart('chartSuperficie', 'bar', Object.keys(mzCounts), Object.values(mzCounts), 'Manzanas (Mz)', '#10b981');
-      renderChart('chartTecnificacion', 'bar', ['Aplica Fertilización', 'Análisis de Suelo', 'Control Fitosanitario'], [tecData.fertiliza, tecData.suelo, tecData.fitosanitario], 'Fincas con Tecnología', '#f59e0b');
+      renderChart('chartTecnificacion', 'bar', ['Fertiliza', 'Análisis de Suelo', 'Control Fitosanitario'], [tecData.fertiliza, tecData.suelo, tecData.fitosanitario], 'Fincas con Tecnología', '#f59e0b');
     }
 
     function renderChart(canvasId, type, labels, data, datasetLabel, bgColors) {
