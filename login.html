@@ -18,14 +18,13 @@
       overflow: hidden;
     }
 
-    /* Fondo con silueta vectorial de líneas estilizadas */
     .bg-shield {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 550px;
-      height: 550px;
+      width: 520px;
+      height: 520px;
       opacity: 0.12;
       pointer-events: none;
       z-index: 0;
@@ -34,14 +33,14 @@
     .login-card {
       position: relative;
       z-index: 10;
-      background: rgba(15, 23, 42, 0.88);
+      background: rgba(15, 23, 42, 0.92);
       backdrop-filter: blur(16px);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      padding: 35px 30px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 35px 28px;
       border-radius: 20px;
       box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
       width: 100%;
-      max-width: 400px;
+      max-width: 390px;
       text-align: center;
     }
 
@@ -55,7 +54,7 @@
     }
 
     .login-card h2 {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       color: #cbd5e1;
       margin-bottom: 22px;
@@ -78,7 +77,14 @@
       color: #94a3b8;
     }
 
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
     .form-group input {
+      width: 100%;
       padding: 11px 14px;
       border-radius: 8px;
       border: 1px solid #334155;
@@ -92,6 +98,16 @@
     .form-group input:focus {
       border-color: #38bdf8;
       box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+    }
+
+    .toggle-pass-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 14px;
     }
 
     .btn-submit {
@@ -125,7 +141,7 @@
 </head>
 <body>
 
-  <!-- Escudo Nacional en líneas estilizadas -->
+  <!-- Escudo Nacional de Honduras -->
   <svg class="bg-shield" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M100 15 C50 15 20 50 20 100 C20 150 50 185 100 185 C150 185 180 150 180 100 C180 50 150 15 100 15 Z" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4 2"/>
     <path d="M100 30 L110 50 L132 50 L114 62 L121 82 L100 70 L79 82 L86 62 L68 50 L90 50 Z" stroke="#38bdf8" stroke-width="1.8"/>
@@ -139,12 +155,15 @@
 
     <form id="login-form">
       <div class="form-group">
-        <label for="username">Usuario / Correo</label>
-        <input type="text" id="username" placeholder="Ingrese su usuario" required autocomplete="off">
+        <label for="username">Usuario o Nombre</label>
+        <input type="text" id="username" placeholder="Ej: admin, invitado o tu nombre" required autocomplete="off">
       </div>
       <div class="form-group">
         <label for="password">Contraseña</label>
-        <input type="password" id="password" placeholder="••••••••" required>
+        <div class="input-wrapper">
+          <input type="password" id="password" placeholder="••••••••" required>
+          <button type="button" class="toggle-pass-btn" onclick="togglePassVisibility()">👁️</button>
+        </div>
       </div>
       <button type="submit" class="btn-submit">Iniciar Sesión</button>
       <div id="error-msg" class="error-msg">Usuario o contraseña incorrectos</div>
@@ -152,23 +171,35 @@
   </div>
 
   <script>
+    // Inicialización de Usuarios Predeterminados
     if (!localStorage.getItem('sig_users')) {
       const defaultUsers = [
-        { user: 'admin', pass: 'admin123', role: 'admin', name: 'Administrador Principal' },
-        { user: 'invitado', pass: 'invitado123', role: 'invitado', name: 'Usuario Invitado' }
+        { user: 'admin', pass: 'Honduras2026*', role: 'admin', name: 'Administrador Principal' },
+        { user: 'invitado', pass: 'Aguacate2026*', role: 'invitado', name: 'Usuario Invitado' },
+        { user: 'carlos', pass: 'Carlos2026*', role: 'invitado', name: 'Carlos Robleto' },
+        { user: 'gamer', pass: 'Gamer2026*', role: 'admin', name: 'Gamer' }
       ];
       localStorage.setItem('sig_users', JSON.stringify(defaultUsers));
     }
 
+    function togglePassVisibility() {
+      const p = document.getElementById('password');
+      p.type = p.type === 'password' ? 'text' : 'password';
+    }
+
     document.getElementById('login-form').addEventListener('submit', function(e) {
       e.preventDefault();
-      const u = document.getElementById('username').value.trim();
-      const p = document.getElementById('password').value.trim();
+      const inputUser = document.getElementById('username').value.trim().toLowerCase();
+      const inputPass = document.getElementById('password').value.trim();
       const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
 
-      const foundUser = users.find(x => x.user.toLowerCase() === u.toLowerCase() && x.pass === p);
+      // Buscar por coincidencia exacta en usuario O en nombre completo
+      const foundUser = users.find(x => 
+        (x.user && x.user.toLowerCase() === inputUser) || 
+        (x.name && x.name.toLowerCase() === inputUser)
+      );
 
-      if (foundUser) {
+      if (foundUser && foundUser.pass === inputPass) {
         const sessionData = {
           user: foundUser.user,
           name: foundUser.name,
