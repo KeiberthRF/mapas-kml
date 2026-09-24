@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <title>Mapa Productores de Aguacate de Honduras</title>
+  <title>Mapa & Dashboard - Productores de Aguacate de Honduras</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Estilos de Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Librería de Gráficos Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
-      margin: 0; 
-      padding: 0; 
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
       background-color: #0f172a; 
       overflow: hidden;
@@ -68,201 +70,131 @@
       gap: 10px;
       width: 290px;
       max-height: calc(100vh - 30px);
-      box-sizing: border-box;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s ease;
     }
 
-    #side-panel.hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(120%);
-    }
+    #side-panel.hidden { opacity: 0; pointer-events: none; transform: translateX(120%); }
 
     .panel-header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #334155; padding-bottom: 6px;
     }
-
-    .panel-header-bar span {
-      font-size: 11px;
-      font-weight: 700;
-      color: #38bdf8;
-      letter-spacing: 0.5px;
-    }
+    .panel-header-bar span { font-size: 11px; font-weight: 700; color: #38bdf8; }
 
     .btn-close-panel {
-      background: #334155;
-      color: #94a3b8;
-      border: none;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: #334155; color: #94a3b8; border: none; width: 22px; height: 22px;
+      border-radius: 50%; font-size: 12px; font-weight: bold; cursor: pointer;
     }
     .btn-close-panel:hover { background: #ef4444; color: #fff; }
 
-    #side-panel label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 700;
-      color: #94a3b8;
+    #side-panel label { font-size: 10px; text-transform: uppercase; font-weight: 700; color: #94a3b8; }
+    #side-panel select, #search-input {
+      padding: 8px 12px; border-radius: 6px; border: 1px solid #334155;
+      background: #1e293b; color: #f8fafc; font-size: 13px; outline: none; width: 100%;
     }
 
-    #side-panel select {
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      background: #1e293b;
-      color: #f8fafc;
-      font-size: 13px;
-      outline: none;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .search-row {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    #search-input {
-      flex: 1;
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      background: #1e293b;
-      color: #f8fafc;
-      font-size: 13px;
-      outline: none;
-      box-sizing: border-box;
-    }
-
+    .search-row { display: flex; gap: 6px; align-items: center; }
     .btn-clear-search {
-      background: #334155;
-      border: 1px solid #475569;
-      color: #f8fafc;
-      padding: 8px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      transition: background 0.2s;
+      background: #334155; border: 1px solid #475569; color: #f8fafc;
+      padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px;
     }
     .btn-clear-search:hover { background: #0284c7; border-color: #38bdf8; }
 
     .list-header {
-      font-size: 11px;
-      font-weight: bold;
-      color: #38bdf8;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 6px;
-      margin-top: 2px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      font-size: 11px; font-weight: bold; color: #38bdf8; border-bottom: 1px solid #334155;
+      padding-bottom: 6px; display: flex; justify-content: space-between;
     }
 
-    #producer-list-container { overflow-y: auto; max-height: 200px; }
-
-    #producer-list {
-      list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px;
-    }
-
+    #producer-list-container { overflow-y: auto; max-height: 180px; }
+    #producer-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
     #producer-list li {
       padding: 8px 10px; border-radius: 6px; cursor: pointer; background: #1e293b; border: 1px solid #334155;
-      display: flex; flex-direction: column; gap: 2px; transition: all 0.2s;
+      display: flex; flex-direction: column; gap: 2px;
     }
-
-    #producer-list li .p-name { font-size: 12px; font-weight: 600; color: #f1f5f9; }
-    #producer-list li .p-location { font-size: 10px; color: #38bdf8; }
     #producer-list li:hover { background: #0284c7; border-color: #38bdf8; }
+    .p-name { font-size: 12px; font-weight: 600; color: #f1f5f9; }
+    .p-location { font-size: 10px; color: #38bdf8; }
 
     .empty-prompt { font-size: 11px; color: #64748b; text-align: center; padding: 12px 5px; font-style: italic; }
 
-    .admin-bar {
-      display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 8px;
+    .btn-dashboard-trigger {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 800;
+      font-size: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      display: flex; align-items: center; justify-content: center; gap: 6px; transition: transform 0.2s;
     }
+    .btn-dashboard-trigger:hover { transform: translateY(-1px); background: #059669; }
 
-    .btn-admin {
-      flex: 1; padding: 7px; border-radius: 6px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; text-align: center;
-    }
-
+    .admin-bar { display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 8px; }
+    .btn-admin { flex: 1; padding: 7px; border-radius: 6px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; }
     .btn-users { background: #0ea5e9; color: #fff; }
     .btn-logout { background: #ef4444; color: #fff; }
 
-    /* Modal Administración */
-    #admin-modal {
+    /* Estilos del Dashboard Modal */
+    #dashboard-modal {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center;
+      background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(8px); z-index: 3000;
+      justify-content: center; align-items: center; padding: 20px;
     }
 
-    .modal-content {
-      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 580px; color: #fff; max-height: 85vh; overflow-y: auto;
+    .dash-container {
+      background: #0f172a; border: 1px solid #38bdf8; border-radius: 16px; width: 100%;
+      max-width: 1000px; max-height: 90vh; overflow-y: auto; padding: 24px; color: #f8fafc;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 20px;
     }
 
-    .modal-content h3 { color: #38bdf8; margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; font-size: 14px; }
-
-    .form-create-user {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;
+    .dash-header {
+      display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px;
     }
+    .dash-header h2 { font-size: 20px; color: #38bdf8; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .btn-close-dash { background: #334155; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .btn-close-dash:hover { background: #ef4444; }
 
-    .form-create-user input, .form-create-user select {
-      padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #fff; font-size: 12px;
+    .dash-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+    .kpi-card {
+      background: #1e293b; border: 1px solid #334155; padding: 16px; border-radius: 12px; text-align: center;
     }
+    .kpi-card .val { font-size: 24px; font-weight: 800; color: #38bdf8; margin-top: 4px; }
+    .kpi-card .lbl { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
 
-    .btn-add-user {
-      grid-column: span 2; background: #16a34a; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;
+    .dash-charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 18px; }
+    .chart-box {
+      background: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px;
     }
+    .chart-box h4 { font-size: 13px; color: #cbd5e1; border-bottom: 1px solid #334155; padding-bottom: 6px; }
 
-    .modal-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
-    .modal-table th, .modal-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
-    .modal-table th { color: #94a3b8; }
-
-    .btn-delete-user {
-      background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
+    /* Popup Alineado */
+    .leaflet-popup {
+      position: fixed !important; top: 10px !important; right: 315px !important; left: auto !important;
+      bottom: auto !important; transform: none !important; z-index: 1050 !important;
     }
-    .btn-delete-user:hover { background: #dc2626; }
-
-    .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
-
-    /* Estilo Popup Emergente */
-    .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
-    .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
+    .leaflet-popup-tip-container { display: none !important; }
+    .leaflet-popup-content-wrapper {
+      background: rgba(15, 23, 42, 0.95) !important; border: 1px solid #38bdf8 !important; color: #f8fafc !important;
+      border-radius: 12px !important; padding: 14px !important; max-height: calc(100vh - 40px) !important; width: 310px !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7) !important; backdrop-filter: blur(12px) !important;
+    }
+    .leaflet-popup-content h3 { margin: 0 0 8px 0 !important; color: #38bdf8 !important; font-size: 13px !important; border-bottom: 1px solid #334155 !important; }
 
     .custom-tooltip {
-      background: rgba(15, 23, 42, 0.92) !important;
-      border: 1px solid #38bdf8 !important;
-      color: #ffffff !important;
-      border-radius: 6px !important;
-      padding: 6px 10px !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+      background: rgba(15, 23, 42, 0.92) !important; border: 1px solid #38bdf8 !important; color: #ffffff !important;
+      border-radius: 6px !important; padding: 6px 10px !important;
     }
     .custom-tooltip-title { font-weight: bold; font-size: 12px; color: #ffffff; }
     .custom-tooltip-sub { font-size: 10px; color: #38bdf8; }
 
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
+      .dash-charts-grid { grid-template-columns: 1fr; }
+      .leaflet-popup { right: 10px !important; left: 10px !important; top: 60px !important; width: auto !important; }
       #side-panel { top: 10px; right: 10px; left: 10px; width: auto; }
-      #status-msg { top: auto; bottom: 15px; left: 10px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Validación de Sesión -->
   <script>
     const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
-    if (!currentSession) {
-      window.location.href = 'login.html';
-    }
+    if (!currentSession) { window.location.href = 'login.html'; }
   </script>
 
   <div id="status-msg">Cargando datos del KML...</div>
@@ -276,19 +208,15 @@
     </div>
 
     <label for="select-depto">Departamento</label>
-    <select id="select-depto">
-      <option value="todos">Todos los Departamentos</option>
-    </select>
+    <select id="select-depto"><option value="todos">Todos los Departamentos</option></select>
 
     <label for="select-muni">Municipio</label>
-    <select id="select-muni">
-      <option value="todos">Todos los Municipios</option>
-    </select>
+    <select id="select-muni"><option value="todos">Todos los Municipios</option></select>
 
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">🧹</button>
+      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar Búsqueda">🧹</button>
     </div>
 
     <div class="list-header">
@@ -301,6 +229,9 @@
       <div id="empty-prompt" class="empty-prompt">Selecciona un filtro para desplegar el listado.</div>
     </div>
 
+    <!-- BOTÓN DE ACCESO AL DASHBOARD ESTADÍSTICO -->
+    <button class="btn-dashboard-trigger" onclick="openDashboard()">📊 Abrir Dashboard Estadístico</button>
+
     <div class="admin-bar">
       <button id="btn-logs" class="btn-admin btn-users" onclick="openAdminModal()" style="display:none;">Usuarios / Bitácora</button>
       <button class="btn-admin btn-logout" onclick="logout()">Cerrar Sesión</button>
@@ -309,60 +240,60 @@
 
   <div id="map"></div>
 
-  <!-- Modal Administración -->
-  <div id="admin-modal">
-    <div class="modal-content">
-      <button class="btn-close-modal" onclick="closeAdminModal()">Cerrar</button>
-      
-      <h3>Crear Nuevo Usuario</h3>
-      <form class="form-create-user" onsubmit="addUser(event)">
-        <input type="text" id="new-name" placeholder="Nombre completo" required>
-        <input type="text" id="new-user" placeholder="Usuario" required>
-        <input type="text" id="new-pass" placeholder="Contraseña" required>
-        <select id="new-role">
-          <option value="invitado">Invitado</option>
-          <option value="admin">Administrador</option>
-        </select>
-        <button type="submit" class="btn-add-user">+ Registrar Usuario</button>
-      </form>
+  <!-- MODAL DEL DASHBOARD ESTADÍSTICO -->
+  <div id="dashboard-modal">
+    <div class="dash-container">
+      <div class="dash-header">
+        <h2>📊 DASHBOARD ESTADÍSTICO DE PRODUCTORES</h2>
+        <button class="btn-close-dash" onclick="closeDashboard()">Cerrar Dashboard ✖</button>
+      </div>
 
-      <h3>Usuarios Registrados</h3>
-      <table class="modal-table">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Usuario</th>
-            <th>Contraseña</th>
-            <th>Rol</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody id="users-table-body"></tbody>
-      </table>
+      <!-- Tarjetas de KPIs -->
+      <div class="dash-kpi-grid">
+        <div class="kpi-card">
+          <div class="lbl">Total Fincas</div>
+          <div class="val" id="kpi-total-fincas">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="lbl">Manzanas Cultivadas</div>
+          <div class="val" id="kpi-total-mz">0 Mz</div>
+        </div>
+        <div class="kpi-card">
+          <div class="lbl">Plantas Totales</div>
+          <div class="val" id="kpi-total-plantas">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="lbl">Plantas en Producción</div>
+          <div class="val" id="kpi-prod-plantas">0</div>
+        </div>
+      </div>
 
-      <h3>Bitácora de Sesiones (Ingresos)</h3>
-      <table class="modal-table">
-        <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>Ingreso</th>
-            <th>Duración</th>
-          </tr>
-        </thead>
-        <tbody id="logs-table-body"></tbody>
-      </table>
+      <!-- Gráficos Estadísticos -->
+      <div class="dash-charts-grid">
+        <div class="chart-box">
+          <h4>Fincas por Departamento</h4>
+          <canvas id="chartDeptos"></canvas>
+        </div>
+        <div class="chart-box">
+          <h4>Distribución Porcentual de Variedades de Aguacate</h4>
+          <canvas id="chartVariedades"></canvas>
+        </div>
+        <div class="chart-box">
+          <h4>Manzanas Cultivadas por Departamento</h4>
+          <canvas id="chartManzanas"></canvas>
+        </div>
+        <div class="chart-box">
+          <h4>Plantas Totales vs. Plantas en Producción</h4>
+          <canvas id="chartProduccion"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Librerías Leaflet y Conversor KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    if (currentSession && currentSession.role === 'admin') {
-      document.getElementById('btn-logs').style.display = 'block';
-    }
-
     var statusDiv = document.getElementById('status-msg');
     var selectDepto = document.getElementById('select-depto');
     var selectMuni = document.getElementById('select-muni');
@@ -375,24 +306,12 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Limpieza completa (Escobita) y retorno a la vista panorama
-    function fullReset() {
-      searchInput.value = '';
-      selectDepto.value = 'todos';
-      updateMuniDropdown('todos');
-      map.closePopup();
-      renderMapFeatures();
-      map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
-    }
-
-    // Inicialización del Mapa
-    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
+    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 8);
 
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
 
-    // Marcador Globo Amarillo con Estrella Negra
     var googleEarthPin = L.divIcon({
       className: 'google-earth-marker',
       html: `
@@ -408,7 +327,6 @@
     function autolink(text) {
       if (!text) return "";
       var str = typeof text === 'string' ? text : String(text);
-      if (typeof text === 'object' && text.value) str = String(text.value);
       var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
       return str.replace(exp, "<a href='$1' target='_blank'>Enlace KoboToolbox</a>");
     }
@@ -465,8 +383,6 @@
 
         renderMapFeatures();
         statusDiv.style.display = 'none';
-
-        setTimeout(() => map.flyTo([14.6, -87.8], 8, { duration: 2.2 }), 400);
       });
 
     function selectAndFocusProducer(feat, marker) {
@@ -486,11 +402,8 @@
 
       if (marker) {
         var latLng = marker.getLatLng();
-        var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
-        var targetPoint = map.project(latLng, 15).subtract(offset);
-        map.flyTo(map.unproject(targetPoint, 15), 15, { duration: 1.2 });
+        map.flyTo(latLng, 15, { duration: 1.2 });
         marker.openPopup();
-        marker.openTooltip();
       }
     }
 
@@ -525,10 +438,7 @@
           var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
           layer.bindPopup(popupContent, { autoPan: false });
 
-          var tooltipContent = `
-            <div class="custom-tooltip-title">${nombre}</div>
-            <div class="custom-tooltip-sub">${depto}${muni ? ' • ' + muni : ''}</div>
-          `;
+          var tooltipContent = `<div class="custom-tooltip-title">${nombre}</div><div class="custom-tooltip-sub">${depto}${muni ? ' • ' + muni : ''}</div>`;
           layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
 
           layer.on('click', () => selectAndFocusProducer(feature, layer));
@@ -554,16 +464,17 @@
           producerList.appendChild(li);
         });
 
-        // Auto-Zoom Equilibrado al territorio seleccionado
-        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
-          map.fitBounds(kmlLayer.getBounds(), {
-            padding: [60, 60],
-            maxZoom: 13
-          });
+        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos') && searchText === '') {
+          map.fitBounds(kmlLayer.getBounds(), { padding: [60, 60], maxZoom: 13 });
         }
       } else {
         emptyPrompt.style.display = 'block'; producerList.style.display = 'none';
       }
+    }
+
+    function fullReset() {
+      searchInput.value = ''; selectDepto.value = 'todos'; updateMuniDropdown('todos');
+      map.closePopup(); renderMapFeatures(); map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
     }
 
     function updateMuniDropdown(depto) {
@@ -579,102 +490,95 @@
     selectDepto.addEventListener('change', function() { updateMuniDropdown(this.value); renderMapFeatures(); });
     selectMuni.addEventListener('change', renderMapFeatures);
     searchInput.addEventListener('input', function() {
-      if (this.value.trim() === '') {
-        selectDepto.value = 'todos'; updateMuniDropdown('todos');
-      }
+      if (this.value.trim() === '') { selectDepto.value = 'todos'; updateMuniDropdown('todos'); }
       renderMapFeatures();
     });
 
-    function logout() {
-      if (currentSession) {
-        const loginTime = new Date(currentSession.loginTime);
-        const now = new Date();
-        const durationMinutes = Math.round((now - loginTime) / 60000);
+    // --- LÓGICA DEL DASHBOARD ESTADÍSTICO ---
+    var chartInstances = {};
 
-        const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-        logs.push({
-          user: currentSession.user,
-          login: currentSession.loginFormatted,
-          duration: durationMinutes + ' min'
-        });
-        localStorage.setItem('sig_logs', JSON.stringify(logs));
-      }
+    function openDashboard() {
+      if (!rawGeoJSON) return;
+      document.getElementById('dashboard-modal').style.display = 'flex';
+      calculateAndRenderStats();
+    }
+
+    function closeDashboard() {
+      document.getElementById('dashboard-modal').style.display = 'none';
+    }
+
+    function calculateAndRenderStats() {
+      var totalFincas = 0;
+      var totalMz = 0;
+      var totalPlantas = 0;
+      var totalProd = 0;
+
+      var deptosCount = {};
+      var deptosMz = {};
+      var variedadCount = {};
+
+      rawGeoJSON.features.forEach(feat => {
+        totalFincas++;
+        var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "Otros";
+        var mz = parseFloat(extractField(feat, "AREA EN MZ CULTIVADA") || extractField(feat, "area_cultivada")) || 0;
+        var plantas = parseInt(extractField(feat, "CANTIDAD DE PLANTAS") || extractField(feat, "plantas")) || 0;
+        var prod = parseInt(extractField(feat, "PLANTAS EN PRODUCCION") || extractField(feat, "produccion")) || 0;
+        var variedad = extractField(feat, "VARIEDAD") || "No Especificada";
+
+        totalMz += mz;
+        totalPlantas += plantas;
+        totalProd += prod;
+
+        deptosCount[depto] = (deptosCount[depto] || 0) + 1;
+        deptosMz[depto] = (deptosMz[depto] || 0) + mz;
+        variedadCount[variedad] = (variedadCount[variedad] || 0) + 1;
+      });
+
+      // Actualizar KPIs
+      document.getElementById('kpi-total-fincas').innerText = totalFincas;
+      document.getElementById('kpi-total-mz').innerText = totalMz.toFixed(2) + ' Mz';
+      document.getElementById('kpi-total-plantas').innerText = totalPlantas.toLocaleString();
+      document.getElementById('kpi-prod-plantas').innerText = totalProd.toLocaleString();
+
+      // Renderizar Gráficos
+      renderChart('chartDeptos', 'bar', Object.keys(deptosCount), Object.values(deptosCount), 'Fincas', '#38bdf8');
+      renderChart('chartVariedades', 'doughnut', Object.keys(variedadCount), Object.values(variedadCount), 'Variedades', ['#38bdf8', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']);
+      renderChart('chartManzanas', 'bar', Object.keys(deptosMz), Object.values(deptosMz), 'Manzanas (Mz)', '#10b981');
+      renderChart('chartProduccion', 'bar', ['Plantas Totales', 'En Producción'], [totalPlantas, totalProd], 'Plantas', ['#0284c7', '#10b981']);
+    }
+
+    function renderChart(canvasId, type, labels, data, labelName, bgColors) {
+      if (chartInstances[canvasId]) { chartInstances[canvasId].destroy(); }
+
+      var ctx = document.getElementById(canvasId).getContext('2d');
+      chartInstances[canvasId] = new Chart(ctx, {
+        type: type,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: labelName,
+            data: data,
+            backgroundColor: bgColors,
+            borderColor: '#1e293b',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: '#f8fafc', font: { size: 11 } } }
+          },
+          scales: type === 'bar' ? {
+            x: { ticks: { color: '#cbd5e1' }, grid: { color: '#334155' } },
+            y: { ticks: { color: '#cbd5e1' }, grid: { color: '#334155' } }
+          } : {}
+        }
+      });
+    }
+
+    function logout() {
       sessionStorage.removeItem('current_session');
       window.location.href = 'login.html';
-    }
-
-    function openAdminModal() {
-      loadUsersTable();
-      loadLogsTable();
-      document.getElementById('admin-modal').style.display = 'flex';
-    }
-
-    function closeAdminModal() {
-      document.getElementById('admin-modal').style.display = 'none';
-    }
-
-    function loadUsersTable() {
-      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-      const tbody = document.getElementById('users-table-body');
-      tbody.innerHTML = '';
-      users.forEach(u => {
-        const tr = document.createElement('tr');
-        const isMainAdmin = u.user.toLowerCase() === 'admin';
-        tr.innerHTML = `
-          <td>${u.name}</td>
-          <td>${u.user}</td>
-          <td><code style="color:#38bdf8;">${u.pass || '***'}</code></td>
-          <td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>
-          <td>
-            ${isMainAdmin ? '<span style="color:#64748b; font-size:10px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function loadLogsTable() {
-      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-      const tbody = document.getElementById('logs-table-body');
-      tbody.innerHTML = '';
-      logs.slice().reverse().forEach(log => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${log.user}</td><td>${log.login}</td><td>${log.duration}</td>`;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function addUser(e) {
-      e.preventDefault();
-      const name = document.getElementById('new-name').value.trim();
-      const user = document.getElementById('new-user').value.trim();
-      const pass = document.getElementById('new-pass').value.trim();
-      const role = document.getElementById('new-role').value;
-
-      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-      if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
-        alert('El usuario ya existe. Por favor elige otro.');
-        return;
-      }
-
-      users.push({ name, user, pass, role });
-      localStorage.setItem('sig_users', JSON.stringify(users));
-
-      document.getElementById('new-name').value = '';
-      document.getElementById('new-user').value = '';
-      document.getElementById('new-pass').value = '';
-
-      loadUsersTable();
-      alert('Usuario registrado exitosamente');
-    }
-
-    function deleteUser(username) {
-      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
-        let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
-        localStorage.setItem('sig_users', JSON.stringify(users));
-        loadUsersTable();
-      }
     }
   </script>
 </body>
