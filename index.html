@@ -206,7 +206,7 @@
     }
 
     .modal-content {
-      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 92%; max-width: 520px; color: #fff; max-height: 85vh; overflow-y: auto;
+      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 580px; color: #fff; max-height: 85vh; overflow-y: auto;
     }
 
     .modal-content h3 { color: #38bdf8; margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; font-size: 14px; }
@@ -238,7 +238,6 @@
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
     .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
-    /* Estilo Personalizado para los Tooltips (Hover) */
     .custom-tooltip {
       background: rgba(15, 23, 42, 0.92) !important;
       border: 1px solid #38bdf8 !important;
@@ -312,16 +311,16 @@
 
   <div id="map"></div>
 
-  <!-- Modal Administración de Usuarios y Bitácora -->
+  <!-- Modal Administración de Usuarios con Visualización de Contraseñas -->
   <div id="admin-modal">
     <div class="modal-content">
       <button class="btn-close-modal" onclick="closeAdminModal()">Cerrar</button>
       
       <h3>Crear Nuevo Usuario</h3>
       <form class="form-create-user" onsubmit="addUser(event)">
-        <input type="text" id="new-name" placeholder="Nombre completo" required>
-        <input type="text" id="new-user" placeholder="Usuario de acceso" required>
-        <input type="password" id="new-pass" placeholder="Contraseña" required>
+        <input type="text" id="new-name" placeholder="Nombre completo (ej: Carlos Robleto)" required>
+        <input type="text" id="new-user" placeholder="Usuario (ej: carlos)" required>
+        <input type="text" id="new-pass" placeholder="Contraseña (ej: Carlos2026*)" required>
         <select id="new-role">
           <option value="invitado">Invitado</option>
           <option value="admin">Administrador</option>
@@ -335,6 +334,7 @@
           <tr>
             <th>Nombre</th>
             <th>Usuario</th>
+            <th>Contraseña</th>
             <th>Rol</th>
             <th>Acción</th>
           </tr>
@@ -391,7 +391,7 @@
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
 
-    // Marcador Globo Amarillo Pastel con Estrella Negra (Estilo Exacto Google Earth)
+    // Marcador Globo Amarillo Pastel con Estrella Negra
     var googleEarthPin = L.divIcon({
       className: 'google-earth-marker',
       html: `
@@ -523,7 +523,6 @@
           var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
           layer.bindPopup(popupContent, { autoPan: false });
 
-          // Tooltip Flotante Estilizado
           var tooltipContent = `
             <div class="custom-tooltip-title">${nombre}</div>
             <div class="custom-tooltip-sub">${depto}${muni ? ' • ' + muni : ''}</div>
@@ -614,6 +613,7 @@
         tr.innerHTML = `
           <td>${u.name}</td>
           <td>${u.user}</td>
+          <td><code style="color:#38bdf8;">${u.pass || '***'}</code></td>
           <td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>
           <td>
             ${isMainAdmin ? '<span style="color:#64748b; font-size:10px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}
