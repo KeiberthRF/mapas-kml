@@ -17,7 +17,6 @@
     }
     #map { height: 100vh; width: 100vw; z-index: 1; }
 
-    /* Indicador de estado */
     #status-msg {
       position: absolute;
       top: 10px;
@@ -32,7 +31,6 @@
       border: 1px solid #1e293b;
     }
 
-    /* Botón Flotante Lupa */
     #floating-search-btn {
       position: absolute;
       top: 10px;
@@ -54,7 +52,6 @@
     }
     #floating-search-btn:hover { background: #0369a1; transform: scale(1.05); }
 
-    /* Panel Lateral Superior Derecho */
     #side-panel {
       position: absolute;
       top: 10px;
@@ -191,7 +188,6 @@
 
     .empty-prompt { font-size: 11px; color: #64748b; text-align: center; padding: 12px 5px; font-style: italic; }
 
-    /* Botones de Control de Sesión y Admin */
     .admin-bar {
       display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 8px;
     }
@@ -203,7 +199,7 @@
     .btn-users { background: #0ea5e9; color: #fff; }
     .btn-logout { background: #ef4444; color: #fff; }
 
-    /* Modal / Ventana de Administración */
+    /* Estilos Modal de Usuarios */
     #admin-modal {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center;
@@ -213,7 +209,7 @@
       background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 92%; max-width: 520px; color: #fff; max-height: 85vh; overflow-y: auto;
     }
 
-    .modal-content h3 { color: #38bdf8; margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; font-size: 15px; }
+    .modal-content h3 { color: #38bdf8; margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; font-size: 14px; }
 
     .form-create-user {
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;
@@ -231,16 +227,31 @@
     .modal-table th, .modal-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
     .modal-table th { color: #94a3b8; }
 
+    .btn-delete-user {
+      background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
+    }
+    .btn-delete-user:hover { background: #dc2626; }
+
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
-    /* Estilo Popup */
+    /* Estilo Popup Emergente */
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
     .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
+    /* Estilo Personalizado para los Tooltips (Hover) */
+    .custom-tooltip {
+      background: rgba(15, 23, 42, 0.92) !important;
+      border: 1px solid #38bdf8 !important;
+      color: #ffffff !important;
+      border-radius: 6px !important;
+      padding: 6px 10px !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+    }
+    .custom-tooltip-title { font-weight: bold; font-size: 12px; color: #ffffff; }
+    .custom-tooltip-sub { font-size: 10px; color: #38bdf8; }
+
     @media (max-width: 600px) {
-      #side-panel {
-        top: 10px; right: 10px; left: 10px; width: auto;
-      }
+      #side-panel { top: 10px; right: 10px; left: 10px; width: auto; }
       #status-msg { top: auto; bottom: 15px; left: 10px; }
     }
   </style>
@@ -301,15 +312,15 @@
 
   <div id="map"></div>
 
-  <!-- Modal Administración -->
+  <!-- Modal Administración de Usuarios y Bitácora -->
   <div id="admin-modal">
     <div class="modal-content">
       <button class="btn-close-modal" onclick="closeAdminModal()">Cerrar</button>
       
       <h3>Crear Nuevo Usuario</h3>
       <form class="form-create-user" onsubmit="addUser(event)">
-        <input type="text" id="new-name" placeholder="Nombre (ej: Carlos)" required>
-        <input type="text" id="new-user" placeholder="Usuario (ej: carlos123)" required>
+        <input type="text" id="new-name" placeholder="Nombre completo" required>
+        <input type="text" id="new-user" placeholder="Usuario de acceso" required>
         <input type="password" id="new-pass" placeholder="Contraseña" required>
         <select id="new-role">
           <option value="invitado">Invitado</option>
@@ -325,6 +336,7 @@
             <th>Nombre</th>
             <th>Usuario</th>
             <th>Rol</th>
+            <th>Acción</th>
           </tr>
         </thead>
         <tbody id="users-table-body"></tbody>
@@ -365,7 +377,6 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Limpiar solo el cuadro de búsqueda manteniendo emergente si está activo
     function clearSearchOnly() {
       searchInput.value = '';
       selectDepto.value = 'todos';
@@ -380,17 +391,17 @@
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
 
-    // Marcador Estilo Google Earth
+    // Marcador Globo Amarillo Pastel con Estrella Negra (Estilo Exacto Google Earth)
     var googleEarthPin = L.divIcon({
       className: 'google-earth-marker',
       html: `
-        <svg width="26" height="38" viewBox="0 0 26 38" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.6));">
-          <path d="M13 0C5.8203 0 0 5.8203 0 13C0 22.75 13 38 13 38C13 38 26 22.75 26 13C26 5.8203 20.1797 0 13 0Z" fill="#FFCC00" stroke="#B38600" stroke-width="1.2"/>
-          <circle cx="13" cy="13" r="6" fill="#FFFFFF" stroke="#D6A100" stroke-width="1"/>
-          <circle cx="13" cy="13" r="3" fill="#1E3A8A"/>
+        <svg width="28" height="40" viewBox="0 0 28 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.6));">
+          <path d="M14 0C6.26801 0 0 6.26801 0 14C0 24.5 14 40 14 40C14 40 28 24.5 28 14C28 6.26801 21.732 0 14 0Z" fill="#FDE047" stroke="#A16207" stroke-width="1.2"/>
+          <circle cx="14" cy="13.5" r="7" fill="#FFFFFF" stroke="#CA8A04" stroke-width="0.8"/>
+          <path d="M14 8L15.3 11.2 L18.8 11.4 L16.1 13.6 L17 17 L14 15.1 L11 17 L11.9 13.6 L9.2 11.4 L12.7 11.2 Z" fill="#000000"/>
         </svg>
       `,
-      iconSize: [26, 38], iconAnchor: [13, 38], popupAnchor: [0, -34]
+      iconSize: [28, 40], iconAnchor: [14, 40], popupAnchor: [0, -36]
     });
 
     function autolink(text) {
@@ -512,12 +523,12 @@
           var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
           layer.bindPopup(popupContent, { autoPan: false });
 
-          // Tooltip Flotante al pasar el cursor (Hover)
-          var tooltipText = nombre;
-          if (depto || muni) {
-            tooltipText += " (" + depto + (muni ? " • " + muni : "") + ")";
-          }
-          layer.bindTooltip(tooltipText, { permanent: false, direction: 'top' });
+          // Tooltip Flotante Estilizado
+          var tooltipContent = `
+            <div class="custom-tooltip-title">${nombre}</div>
+            <div class="custom-tooltip-sub">${depto}${muni ? ' • ' + muni : ''}</div>
+          `;
+          layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
 
           layer.on('click', () => selectAndFocusProducer(feature, layer));
           featureMarkersMap.set(feature, layer);
@@ -565,7 +576,6 @@
       renderMapFeatures();
     });
 
-    // Gestión de Cierre de Sesión y Bitácora
     function logout() {
       if (currentSession) {
         const loginTime = new Date(currentSession.loginTime);
@@ -600,7 +610,15 @@
       tbody.innerHTML = '';
       users.forEach(u => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${u.name}</td><td>${u.user}</td><td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>`;
+        const isMainAdmin = u.user.toLowerCase() === 'admin';
+        tr.innerHTML = `
+          <td>${u.name}</td>
+          <td>${u.user}</td>
+          <td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>
+          <td>
+            ${isMainAdmin ? '<span style="color:#64748b; font-size:10px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}
+          </td>
+        `;
         tbody.appendChild(tr);
       });
     }
@@ -624,8 +642,7 @@
       const role = document.getElementById('new-role').value;
 
       const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-      
-      if (users.some(u => u.user === user)) {
+      if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
         alert('El usuario ya existe. Por favor elige otro.');
         return;
       }
@@ -638,7 +655,16 @@
       document.getElementById('new-pass').value = '';
 
       loadUsersTable();
-      alert('Usuario creado exitosamente');
+      alert('Usuario registrado exitosamente');
+    }
+
+    function deleteUser(username) {
+      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
+        let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
+        localStorage.setItem('sig_users', JSON.stringify(users));
+        loadUsersTable();
+      }
     }
   </script>
 </body>
