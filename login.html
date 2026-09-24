@@ -156,7 +156,7 @@
     <form id="login-form">
       <div class="form-group">
         <label for="username">Usuario o Nombre</label>
-        <input type="text" id="username" placeholder="Ej: admin, invitado, carlos o fvt" required autocomplete="off">
+        <input type="text" id="username" placeholder="Ej: carlos, fvt, admin o invitado" required autocomplete="off">
       </div>
       <div class="form-group">
         <label for="password">Contraseña</label>
@@ -171,23 +171,32 @@
   </div>
 
   <script>
-    // Catálogo Global de Usuarios por Defecto (Sincronizado para todo celular y PC)
-    const defaultUsers = [
-      { user: 'admin', pass: 'admin123', role: 'admin', name: 'Administrador Principal' },
-      { user: 'invitado', pass: 'invitado123', role: 'invitado', name: 'Usuario Invitado' },
+    // Catálogo Maestro Directo (Garantiza acceso global sin importar caché previo)
+    const MASTER_USERS = [
       { user: 'carlos', pass: 'aspah2026', role: 'invitado', name: 'Carlos Robleto' },
       { user: 'fvt', pass: 'fvt2026', role: 'invitado', name: 'FVT' },
+      { user: 'admin', pass: 'admin123', role: 'admin', name: 'Administrador Principal' },
+      { user: 'invitado', pass: 'invitado123', role: 'invitado', name: 'Usuario Invitado' },
       { user: 'gamer', pass: 'gamer123', role: 'admin', name: 'Gamer' }
     ];
 
-    // Siempre asegurar que el catálogo base esté presente
-    let existingUsers = JSON.parse(localStorage.getItem('sig_users') || '[]');
-    defaultUsers.forEach(defUser => {
-      if (!existingUsers.some(u => u.user.toLowerCase() === defUser.user.toLowerCase())) {
-        existingUsers.push(defUser);
+    // Sincronización e integración de usuarios almacenados localmente
+    function getCombinedUsers() {
+      let storedUsers = [];
+      try {
+        storedUsers = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      } catch (e) {
+        storedUsers = [];
       }
-    });
-    localStorage.setItem('sig_users', JSON.stringify(existingUsers));
+
+      const merged = [...MASTER_USERS];
+      storedUsers.forEach(su => {
+        if (!merged.some(mu => mu.user.toLowerCase() === su.user.toLowerCase())) {
+          merged.push(su);
+        }
+      });
+      return merged;
+    }
 
     function togglePassVisibility() {
       const p = document.getElementById('password');
@@ -198,12 +207,14 @@
       e.preventDefault();
       const inputUser = document.getElementById('username').value.trim().toLowerCase();
       const inputPass = document.getElementById('password').value.trim();
-      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      
+      const allUsers = getCombinedUsers();
 
-      // Coincidencia por Usuario O por Nombre Completo
-      const foundUser = users.find(x => 
+      // Validación flexible: Usuario exacto O Nombre que contenga la palabra ingresada
+      const foundUser = allUsers.find(x => 
         (x.user && x.user.toLowerCase() === inputUser) || 
-        (x.name && x.name.toLowerCase() === inputUser)
+        (x.name && x.name.toLowerCase() === inputUser) ||
+        (x.name && x.name.toLowerCase().includes(inputUser) && inputUser.length > 2)
       );
 
       if (foundUser && foundUser.pass === inputPass) {
