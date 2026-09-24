@@ -234,81 +234,22 @@
 
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
-    /* Estilo del Cuadro Informativo (Popup) Alineado a la izquierda del Panel */
-    .leaflet-popup {
-      position: fixed !important;
-      top: 10px !important;
-      right: 315px !important;
-      left: auto !important;
-      bottom: auto !important;
-      transform: none !important;
-      z-index: 1050 !important;
-    }
+    /* Estilo Popup Emergente */
+    .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
+    .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
-    .leaflet-popup-tip-container {
-      display: none !important;
-    }
-
-    .leaflet-popup-content-wrapper {
-      background: rgba(15, 23, 42, 0.95) !important;
-      border: 1px solid #38bdf8 !important;
-      color: #f8fafc !important;
-      border-radius: 12px !important;
-      padding: 14px !important;
-      max-height: calc(100vh - 40px) !important;
-      width: 310px !important;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.7) !important;
-      backdrop-filter: blur(12px) !important;
-    }
-
-    .leaflet-popup-content {
-      margin: 0 !important;
-      line-height: 1.5 !important;
-      font-size: 11px !important;
-    }
-
-    .leaflet-popup-content h3 {
-      margin: 0 0 8px 0 !important;
-      color: #38bdf8 !important;
-      font-size: 13px !important;
-      font-weight: 800 !important;
-      border-bottom: 1px solid #334155 !important;
-      padding-bottom: 6px !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.5px !important;
-    }
-
-    .leaflet-container a.leaflet-popup-close-button {
-      color: #94a3b8 !important;
-      padding: 6px !important;
-      font-size: 16px !important;
-    }
-    .leaflet-container a.leaflet-popup-close-button:hover {
-      color: #ef4444 !important;
-    }
-
-    /* Tooltip Flotante sobre el Marcador */
     .custom-tooltip {
       background: rgba(15, 23, 42, 0.92) !important;
       border: 1px solid #38bdf8 !important;
       color: #ffffff !important;
       border-radius: 6px !important;
       padding: 6px 10px !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
     }
     .custom-tooltip-title { font-weight: bold; font-size: 12px; color: #ffffff; }
     .custom-tooltip-sub { font-size: 10px; color: #38bdf8; }
 
-    @media (max-width: 768px) {
-      .leaflet-popup {
-        right: 10px !important;
-        left: 10px !important;
-        top: 60px !important;
-        width: auto !important;
-      }
-      .leaflet-popup-content-wrapper {
-        width: 100% !important;
-      }
+    @media (max-width: 600px) {
       #side-panel { top: 10px; right: 10px; left: 10px; width: auto; }
       #status-msg { top: auto; bottom: 15px; left: 10px; }
     }
@@ -347,7 +288,7 @@
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar Búsqueda">🧹</button>
+      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">🧹</button>
     </div>
 
     <div class="list-header">
@@ -434,6 +375,7 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
+    // Limpieza completa (Escobita) y retorno a la vista panorama
     function fullReset() {
       searchInput.value = '';
       selectDepto.value = 'todos';
@@ -443,12 +385,14 @@
       map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
     }
 
+    // Inicialización del Mapa
     var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
 
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
 
+    // Marcador Globo Amarillo con Estrella Negra
     var googleEarthPin = L.divIcon({
       className: 'google-earth-marker',
       html: `
@@ -525,7 +469,6 @@
         setTimeout(() => map.flyTo([14.6, -87.8], 8, { duration: 2.2 }), 400);
       });
 
-    // Enfoque exclusivo con Tooltip al hacer clic en el listado de búsqueda
     function selectAndFocusProducer(feat, marker) {
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
@@ -542,10 +485,12 @@
       if (window.innerWidth <= 600) closePanel();
 
       if (marker) {
-        map.closePopup(); // Asegura cerrar cualquier cuadro grande previo
         var latLng = marker.getLatLng();
-        map.flyTo(latLng, 15, { duration: 1.2 });
-        marker.openTooltip(); // Abre ÚNICAMENTE la etiqueta azul flotante
+        var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
+        var targetPoint = map.project(latLng, 15).subtract(offset);
+        map.flyTo(map.unproject(targetPoint, 15), 15, { duration: 1.2 });
+        marker.openPopup();
+        marker.openTooltip();
       }
     }
 
@@ -586,12 +531,7 @@
           `;
           layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
 
-          // Clic directo en el marcador del mapa abre el cuadro informativo alineado a la izquierda
-          layer.on('click', () => {
-            selectAndFocusProducer(feature, layer);
-            layer.openPopup();
-          });
-
+          layer.on('click', () => selectAndFocusProducer(feature, layer));
           featureMarkersMap.set(feature, layer);
         }
       }).addTo(map);
@@ -614,8 +554,12 @@
           producerList.appendChild(li);
         });
 
-        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos') && searchText === '') {
-          map.fitBounds(kmlLayer.getBounds(), { padding: [60, 60], maxZoom: 13 });
+        // Auto-Zoom Equilibrado al territorio seleccionado
+        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
+          map.fitBounds(kmlLayer.getBounds(), {
+            padding: [60, 60],
+            maxZoom: 13
+          });
         }
       } else {
         emptyPrompt.style.display = 'block'; producerList.style.display = 'none';
