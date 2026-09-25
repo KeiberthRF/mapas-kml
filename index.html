@@ -5,10 +5,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
+  <!-- Estilos de Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
+      margin: 0; 
+      padding: 0; 
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
       background-color: #0f172a; 
       overflow: hidden;
@@ -16,78 +18,255 @@
     #map { height: 100vh; width: 100vw; z-index: 1; }
 
     #status-msg {
-      position: absolute; top: 10px; left: 50px; z-index: 1000;
-      background: #0f172a; color: #38bdf8; padding: 8px 15px;
-      border-radius: 6px; font-size: 12px; font-weight: bold; border: 1px solid #1e293b;
+      position: absolute;
+      top: 10px;
+      left: 50px;
+      z-index: 1000;
+      background: #0f172a;
+      color: #38bdf8;
+      padding: 8px 15px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      border: 1px solid #1e293b;
     }
 
     #floating-search-btn {
-      position: absolute; top: 10px; right: 10px; z-index: 1090;
-      background: #0284c7; color: #fff; border: 1px solid #38bdf8;
-      padding: 10px 14px; border-radius: 50px; font-size: 14px; font-weight: bold;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.6); cursor: pointer; display: flex; align-items: center; gap: 6px;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1090;
+      background: #0284c7;
+      color: #fff;
+      border: 1px solid #38bdf8;
+      padding: 10px 14px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
     }
+    #floating-search-btn:hover { background: #0369a1; transform: scale(1.05); }
 
     #side-panel {
-      position: absolute; top: 10px; right: 10px; z-index: 1100;
-      background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(10px);
-      padding: 14px; border-radius: 12px; border: 1px solid #334155;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.6); display: flex; flex-direction: column;
-      gap: 10px; width: 290px; max-height: calc(100vh - 30px); transition: all 0.3s ease;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1100;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(10px);
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 290px;
+      max-height: calc(100vh - 30px);
+      box-sizing: border-box;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    #side-panel.hidden { opacity: 0; pointer-events: none; transform: translateX(120%); }
-
-    .panel-header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 6px; }
-    .panel-header-bar span { font-size: 11px; font-weight: 700; color: #38bdf8; }
-
-    .btn-close-panel { background: #334155; color: #94a3b8; border: none; width: 22px; height: 22px; border-radius: 50%; font-size: 12px; cursor: pointer; }
-
-    #side-panel label { font-size: 10px; text-transform: uppercase; font-weight: 700; color: #94a3b8; }
-    #side-panel select, #search-input {
-      padding: 8px 12px; border-radius: 6px; border: 1px solid #334155;
-      background: #1e293b; color: #f8fafc; font-size: 13px; outline: none; width: 100%;
+    #side-panel.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(120%);
     }
 
-    .search-row { display: flex; gap: 6px; align-items: center; }
-    .btn-clear-search { background: #334155; border: 1px solid #475569; color: #f8fafc; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
-
-    .list-header { font-size: 11px; font-weight: bold; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 6px; display: flex; justify-content: space-between; }
-    #producer-list-container { overflow-y: auto; max-height: 160px; }
-    #producer-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
-    #producer-list li { padding: 8px 10px; border-radius: 6px; cursor: pointer; background: #1e293b; border: 1px solid #334155; }
-
-    .empty-prompt { font-size: 11px; color: #64748b; text-align: center; padding: 10px; font-style: italic; }
-
-    /* ESTILO DEL BOTÓN DEL DASHBOARD DENTRO DEL PANEL */
-    .btn-goto-dashboard {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: #ffffff; border: 1px solid #34d399; padding: 10px;
-      border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;
-      text-align: center; text-decoration: none; display: flex; align-items: center;
-      justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-      transition: all 0.2s ease; margin-top: 4px;
+    .panel-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 6px;
     }
-    .btn-goto-dashboard:hover { background: #059669; transform: translateY(-1px); }
 
-    .btn-logout { background: #ef4444; color: #fff; border: none; padding: 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+    .panel-header-bar span {
+      font-size: 11px;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
+    }
 
-    .leaflet-popup { position: fixed !important; top: 10px !important; right: 315px !important; left: auto !important; bottom: auto !important; transform: none !important; z-index: 1050 !important; }
-    .leaflet-popup-tip-container { display: none !important; }
-    .leaflet-popup-content-wrapper { background: rgba(15, 23, 42, 0.95) !important; border: 1px solid #38bdf8 !important; color: #f8fafc !important; border-radius: 12px !important; padding: 14px !important; width: 310px !important; }
-    .leaflet-popup-content h3 { margin: 0 0 8px 0 !important; color: #38bdf8 !important; font-size: 13px !important; border-bottom: 1px solid #334155 !important; }
+    .btn-close-panel {
+      background: #334155;
+      color: #94a3b8;
+      border: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-close-panel:hover { background: #ef4444; color: #fff; }
 
-    .custom-tooltip { background: rgba(15, 23, 42, 0.92) !important; border: 1px solid #38bdf8 !important; color: #ffffff !important; border-radius: 6px !important; padding: 6px 10px !important; }
+    #side-panel label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    #side-panel select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #f8fafc;
+      font-size: 13px;
+      outline: none;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    #search-input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #f8fafc;
+      font-size: 13px;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .btn-clear-search {
+      background: #334155;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .btn-clear-search:hover { background: #0284c7; border-color: #38bdf8; }
+
+    .list-header {
+      font-size: 11px;
+      font-weight: bold;
+      color: #38bdf8;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 6px;
+      margin-top: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #producer-list-container { overflow-y: auto; max-height: 200px; }
+
+    #producer-list {
+      list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px;
+    }
+
+    #producer-list li {
+      padding: 8px 10px; border-radius: 6px; cursor: pointer; background: #1e293b; border: 1px solid #334155;
+      display: flex; flex-direction: column; gap: 2px; transition: all 0.2s;
+    }
+
+    #producer-list li .p-name { font-size: 12px; font-weight: 600; color: #f1f5f9; }
+    #producer-list li .p-location { font-size: 10px; color: #38bdf8; }
+    #producer-list li:hover { background: #0284c7; border-color: #38bdf8; }
+
+    .empty-prompt { font-size: 11px; color: #64748b; text-align: center; padding: 12px 5px; font-style: italic; }
+
+    .admin-bar {
+      display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 8px;
+    }
+
+    .btn-admin {
+      flex: 1; padding: 7px; border-radius: 6px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; text-align: center;
+    }
+
+    .btn-users { background: #0ea5e9; color: #fff; }
+    .btn-logout { background: #ef4444; color: #fff; }
+
+    /* Modal Administración */
+    #admin-modal {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center;
+    }
+
+    .modal-content {
+      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 580px; color: #fff; max-height: 85vh; overflow-y: auto;
+    }
+
+    .modal-content h3 { color: #38bdf8; margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; font-size: 14px; }
+
+    .form-create-user {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;
+    }
+
+    .form-create-user input, .form-create-user select {
+      padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #fff; font-size: 12px;
+    }
+
+    .btn-add-user {
+      grid-column: span 2; background: #16a34a; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;
+    }
+
+    .modal-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
+    .modal-table th, .modal-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
+    .modal-table th { color: #94a3b8; }
+
+    .btn-delete-user {
+      background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
+    }
+    .btn-delete-user:hover { background: #dc2626; }
+
+    .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
+
+    /* Estilo Popup Emergente */
+    .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
+    .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
+
+    .custom-tooltip {
+      background: rgba(15, 23, 42, 0.92) !important;
+      border: 1px solid #38bdf8 !important;
+      color: #ffffff !important;
+      border-radius: 6px !important;
+      padding: 6px 10px !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+    }
+    .custom-tooltip-title { font-weight: bold; font-size: 12px; color: #ffffff; }
+    .custom-tooltip-sub { font-size: 10px; color: #38bdf8; }
+
+    @media (max-width: 600px) {
+      #side-panel { top: 10px; right: 10px; left: 10px; width: auto; }
+      #status-msg { top: auto; bottom: 15px; left: 10px; }
+    }
   </style>
 </head>
 <body>
 
+  <!-- Validación de Sesión -->
   <script>
     const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
-    if (!currentSession) { window.location.href = 'login.html'; }
+    if (!currentSession) {
+      window.location.href = 'login.html';
+    }
   </script>
 
-  <div id="status-msg">Cargando mapa...</div>
+  <div id="status-msg">Cargando datos del KML...</div>
+
   <button id="floating-search-btn" onclick="openPanel()">🔍 Buscar</button>
 
   <div id="side-panel">
@@ -97,15 +276,19 @@
     </div>
 
     <label for="select-depto">Departamento</label>
-    <select id="select-depto"><option value="todos">Todos los Departamentos</option></select>
+    <select id="select-depto">
+      <option value="todos">Todos los Departamentos</option>
+    </select>
 
     <label for="select-muni">Municipio</label>
-    <select id="select-muni"><option value="todos">Todos los Municipios</option></select>
+    <select id="select-muni">
+      <option value="todos">Todos los Municipios</option>
+    </select>
 
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <button class="btn-clear-search" onclick="fullReset()">🧹</button>
+      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">🧹</button>
     </div>
 
     <div class="list-header">
@@ -115,23 +298,71 @@
 
     <div id="producer-list-container">
       <ul id="producer-list"></ul>
-      <div id="empty-prompt" class="empty-prompt">Selecciona un filtro para listar.</div>
+      <div id="empty-prompt" class="empty-prompt">Selecciona un filtro para desplegar el listado.</div>
     </div>
 
-    <!-- BOTÓN PARA ABRIR EL DASHBOARD -->
-    <a href="dashboard.html" target="_blank" class="btn-goto-dashboard">
-      📊 Ir a Dashboard Estadístico
-    </a>
-
-    <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+    <div class="admin-bar">
+      <button id="btn-logs" class="btn-admin btn-users" onclick="openAdminModal()" style="display:none;">Usuarios / Bitácora</button>
+      <button class="btn-admin btn-logout" onclick="logout()">Cerrar Sesión</button>
+    </div>
   </div>
 
   <div id="map"></div>
 
+  <!-- Modal Administración -->
+  <div id="admin-modal">
+    <div class="modal-content">
+      <button class="btn-close-modal" onclick="closeAdminModal()">Cerrar</button>
+      
+      <h3>Crear Nuevo Usuario</h3>
+      <form class="form-create-user" onsubmit="addUser(event)">
+        <input type="text" id="new-name" placeholder="Nombre completo" required>
+        <input type="text" id="new-user" placeholder="Usuario" required>
+        <input type="text" id="new-pass" placeholder="Contraseña" required>
+        <select id="new-role">
+          <option value="invitado">Invitado</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <button type="submit" class="btn-add-user">+ Registrar Usuario</button>
+      </form>
+
+      <h3>Usuarios Registrados</h3>
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Contraseña</th>
+            <th>Rol</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="users-table-body"></tbody>
+      </table>
+
+      <h3>Bitácora de Sesiones (Ingresos)</h3>
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Ingreso</th>
+            <th>Duración</th>
+          </tr>
+        </thead>
+        <tbody id="logs-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Librerías Leaflet y Conversor KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
+    if (currentSession && currentSession.role === 'admin') {
+      document.getElementById('btn-logs').style.display = 'block';
+    }
+
     var statusDiv = document.getElementById('status-msg');
     var selectDepto = document.getElementById('select-depto');
     var selectMuni = document.getElementById('select-muni');
@@ -144,17 +375,54 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 8);
+    // Limpieza completa (Escobita) y retorno a la vista panorama
+    function fullReset() {
+      searchInput.value = '';
+      selectDepto.value = 'todos';
+      updateMuniDropdown('todos');
+      map.closePopup();
+      renderMapFeatures();
+      map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
+    }
 
-    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
+    // Inicialización del Mapa
+    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
 
+    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20, attribution: '© Google Earth'
+    }).addTo(map);
+
+    // Marcador Globo Amarillo con Estrella Negra
     var googleEarthPin = L.divIcon({
       className: 'google-earth-marker',
-      html: `<svg width="28" height="40" viewBox="0 0 28 40"><path d="M14 0C6.26801 0 0 6.26801 0 14C0 24.5 14 40 14 40C14 40 28 24.5 28 14C28 6.26801 21.732 0 14 0Z" fill="#FDE047"/><circle cx="14" cy="13.5" r="7" fill="#FFFFFF"/></svg>`,
+      html: `
+        <svg width="28" height="40" viewBox="0 0 28 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.6));">
+          <path d="M14 0C6.26801 0 0 6.26801 0 14C0 24.5 14 40 14 40C14 40 28 24.5 28 14C28 6.26801 21.732 0 14 0Z" fill="#FDE047" stroke="#A16207" stroke-width="1.2"/>
+          <circle cx="14" cy="13.5" r="7" fill="#FFFFFF" stroke="#CA8A04" stroke-width="0.8"/>
+          <path d="M14 8L15.3 11.2 L18.8 11.4 L16.1 13.6 L17 17 L14 15.1 L11 17 L11.9 13.6 L9.2 11.4 L12.7 11.2 Z" fill="#000000"/>
+        </svg>
+      `,
       iconSize: [28, 40], iconAnchor: [14, 40], popupAnchor: [0, -36]
     });
 
-    var rawGeoJSON = null, kmlLayer = null, locationData = {};
+    function autolink(text) {
+      if (!text) return "";
+      var str = typeof text === 'string' ? text : String(text);
+      if (typeof text === 'object' && text.value) str = String(text.value);
+      var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+      return str.replace(exp, "<a href='$1' target='_blank'>Enlace KoboToolbox</a>");
+    }
+
+    function cleanDescriptionText(desc) {
+      if (!desc) return "";
+      var str = typeof desc === 'string' ? desc : (desc.value || "");
+      str = str.replace(/GPS_altitude:\s*([\d.]+)/gi, function(match, p1) {
+        return "GPS_altitude: " + Math.round(parseFloat(p1)) + " msnm";
+      });
+      return autolink(str);
+    }
+
+    var rawGeoJSON = null, kmlLayer = null, locationData = {}, featureMarkersMap = new Map();
 
     function getProp(props, key) {
       if (!props) return "";
@@ -197,12 +465,41 @@
 
         renderMapFeatures();
         statusDiv.style.display = 'none';
+
+        setTimeout(() => map.flyTo([14.6, -87.8], 8, { duration: 2.2 }), 400);
       });
+
+    function selectAndFocusProducer(feat, marker) {
+      var props = feat.properties || {};
+      var nombre = props.name || "Productor sin nombre";
+      var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
+      var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
+
+      searchInput.value = nombre;
+      if (depto && selectDepto.value !== depto) {
+        selectDepto.value = depto;
+        updateMuniDropdown(depto);
+      }
+      if (muni) selectMuni.value = muni;
+
+      if (window.innerWidth <= 600) closePanel();
+
+      if (marker) {
+        var latLng = marker.getLatLng();
+        var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
+        var targetPoint = map.project(latLng, 15).subtract(offset);
+        map.flyTo(map.unproject(targetPoint, 15), 15, { duration: 1.2 });
+        marker.openPopup();
+        marker.openTooltip();
+      }
+    }
 
     function renderMapFeatures() {
       var selectedDepto = selectDepto.value, selectedMuni = selectMuni.value, searchText = searchInput.value.toLowerCase().trim();
+
       if (kmlLayer) map.removeLayer(kmlLayer);
-      producerList.innerHTML = '';
+      producerList.innerHTML = ''; featureMarkersMap.clear();
+
       var visibleFeatures = [];
 
       kmlLayer = L.geoJSON(rawGeoJSON, {
@@ -210,47 +507,175 @@
           var nombre = (feature.properties.name || "").toLowerCase();
           var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
           var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
-          var isMatch = (selectedDepto === 'todos' || depto === selectedDepto) && (selectedMuni === 'todos' || muni === selectedMuni) && (searchText === '' || nombre.includes(searchText));
+
+          var matchDepto = (selectedDepto === 'todos' || depto === selectedDepto);
+          var matchMuni = (selectedMuni === 'todos' || muni === selectedMuni);
+          var matchSearch = (searchText === '' || nombre.includes(searchText));
+
+          var isMatch = matchDepto && matchMuni && matchSearch;
           if (isMatch) visibleFeatures.push(feature);
           return isMatch;
         },
         pointToLayer: (feature, latlng) => L.marker(latlng, { icon: googleEarthPin }),
         onEachFeature: function(feature, layer) {
-          var nombre = feature.properties.name || "Productor";
-          layer.bindPopup(`<h3>${nombre}</h3><div>${feature.properties.description || ''}</div>`, { autoPan: false });
-          layer.bindTooltip(nombre, { className: 'custom-tooltip' });
+          var nombre = feature.properties.name || "Productor sin nombre";
+          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "";
+          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "";
+
+          var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
+          layer.bindPopup(popupContent, { autoPan: false });
+
+          var tooltipContent = `
+            <div class="custom-tooltip-title">${nombre}</div>
+            <div class="custom-tooltip-sub">${depto}${muni ? ' • ' + muni : ''}</div>
+          `;
+          layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
+
+          layer.on('click', () => selectAndFocusProducer(feature, layer));
+          featureMarkersMap.set(feature, layer);
         }
       }).addTo(map);
 
+      visibleFeatures.sort((a, b) => (a.properties.name || "").localeCompare(b.properties.name || ""));
       countProducers.innerText = visibleFeatures.length;
-      if (selectedDepto !== 'todos' || selectedMuni !== 'todos' || searchText !== '') {
+
+      var hasActiveFilter = (selectedDepto !== 'todos' || selectedMuni !== 'todos' || searchText !== '');
+
+      if (hasActiveFilter) {
         emptyPrompt.style.display = 'none'; producerList.style.display = 'flex';
         visibleFeatures.forEach(feat => {
+          var nombre = feat.properties.name || "Productor sin nombre";
+          var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
+          var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
+
           var li = document.createElement('li');
-          li.innerHTML = `<span>${feat.properties.name}</span>`;
-          li.onclick = () => map.flyTo([feat.geometry.coordinates[1], feat.geometry.coordinates[0]], 15);
+          li.innerHTML = `<span class="p-name">${nombre}</span><span class="p-location">${depto}${muni ? ' • ' + muni : ''}</span>`;
+          li.addEventListener('click', () => selectAndFocusProducer(feat, featureMarkersMap.get(feat)));
           producerList.appendChild(li);
         });
+
+        // Auto-Zoom Equilibrado al territorio seleccionado
+        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
+          map.fitBounds(kmlLayer.getBounds(), {
+            padding: [60, 60],
+            maxZoom: 13
+          });
+        }
       } else {
         emptyPrompt.style.display = 'block'; producerList.style.display = 'none';
       }
     }
 
-    function fullReset() { searchInput.value = ''; selectDepto.value = 'todos'; updateMuniDropdown('todos'); renderMapFeatures(); map.flyTo([14.6, -87.8], 8); }
     function updateMuniDropdown(depto) {
       selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
       if (depto !== 'todos' && locationData[depto]) {
         Array.from(locationData[depto]).sort().forEach(muni => {
-          var opt = document.createElement('option'); opt.value = muni; opt.textContent = muni; selectMuni.appendChild(opt);
+          var opt = document.createElement('option');
+          opt.value = muni; opt.textContent = muni; selectMuni.appendChild(opt);
         });
       }
     }
 
     selectDepto.addEventListener('change', function() { updateMuniDropdown(this.value); renderMapFeatures(); });
     selectMuni.addEventListener('change', renderMapFeatures);
-    searchInput.addEventListener('input', renderMapFeatures);
+    searchInput.addEventListener('input', function() {
+      if (this.value.trim() === '') {
+        selectDepto.value = 'todos'; updateMuniDropdown('todos');
+      }
+      renderMapFeatures();
+    });
 
-    function logout() { sessionStorage.removeItem('current_session'); window.location.href = 'login.html'; }
+    function logout() {
+      if (currentSession) {
+        const loginTime = new Date(currentSession.loginTime);
+        const now = new Date();
+        const durationMinutes = Math.round((now - loginTime) / 60000);
+
+        const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+        logs.push({
+          user: currentSession.user,
+          login: currentSession.loginFormatted,
+          duration: durationMinutes + ' min'
+        });
+        localStorage.setItem('sig_logs', JSON.stringify(logs));
+      }
+      sessionStorage.removeItem('current_session');
+      window.location.href = 'login.html';
+    }
+
+    function openAdminModal() {
+      loadUsersTable();
+      loadLogsTable();
+      document.getElementById('admin-modal').style.display = 'flex';
+    }
+
+    function closeAdminModal() {
+      document.getElementById('admin-modal').style.display = 'none';
+    }
+
+    function loadUsersTable() {
+      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = '';
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        const isMainAdmin = u.user.toLowerCase() === 'admin';
+        tr.innerHTML = `
+          <td>${u.name}</td>
+          <td>${u.user}</td>
+          <td><code style="color:#38bdf8;">${u.pass || '***'}</code></td>
+          <td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>
+          <td>
+            ${isMainAdmin ? '<span style="color:#64748b; font-size:10px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function loadLogsTable() {
+      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      const tbody = document.getElementById('logs-table-body');
+      tbody.innerHTML = '';
+      logs.slice().reverse().forEach(log => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${log.user}</td><td>${log.login}</td><td>${log.duration}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addUser(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-name').value.trim();
+      const user = document.getElementById('new-user').value.trim();
+      const pass = document.getElementById('new-pass').value.trim();
+      const role = document.getElementById('new-role').value;
+
+      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
+        alert('El usuario ya existe. Por favor elige otro.');
+        return;
+      }
+
+      users.push({ name, user, pass, role });
+      localStorage.setItem('sig_users', JSON.stringify(users));
+
+      document.getElementById('new-name').value = '';
+      document.getElementById('new-user').value = '';
+      document.getElementById('new-pass').value = '';
+
+      loadUsersTable();
+      alert('Usuario registrado exitosamente');
+    }
+
+    function deleteUser(username) {
+      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
+        let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
+        localStorage.setItem('sig_users', JSON.stringify(users));
+        loadUsersTable();
+      }
+    }
   </script>
 </body>
 </html>
