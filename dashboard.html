@@ -5,187 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Estadístico - Productores de Aguacate</title>
   
-  <!-- Librería Chart.js para gráficos -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Conversor de KML a GeoJSON -->
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background-color: #0f172a;
-      color: #f8fafc;
-      padding: 20px;
-      min-height: 100vh;
+      background-color: #0f172a; color: #f8fafc; padding: 20px; min-height: 100vh;
     }
 
-    /* Encabezado */
     .header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #1e293b;
-      padding: 16px 24px;
-      border-radius: 12px;
-      border: 1px solid #334155;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      display: flex; justify-content: space-between; align-items: center;
+      background: #1e293b; padding: 16px 24px; border-radius: 12px;
+      border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
 
-    .header-title h1 {
-      font-size: 20px;
-      color: #38bdf8;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
-
-    .header-title p {
-      font-size: 12px;
-      color: #94a3b8;
-    }
+    .header-title h1 { font-size: 20px; color: #38bdf8; font-weight: 800; }
+    .header-title p { font-size: 12px; color: #94a3b8; }
 
     .btn-nav {
-      background: #0284c7;
-      color: #fff;
-      border: 1px solid #38bdf8;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.2s;
+      background: #0284c7; color: #fff; border: 1px solid #38bdf8;
+      padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none; transition: all 0.2s;
     }
-    .btn-nav:hover { background: #0369a1; transform: translateY(-1px); }
+    .btn-nav:hover { background: #0369a1; }
 
-    /* Barra de Filtros Interactivas */
     .filter-card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      padding: 16px 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      align-items: center;
+      background: #1e293b; border: 1px solid #334155; padding: 16px 20px;
+      border-radius: 12px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
     }
 
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .filter-group label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #94a3b8;
-      letter-spacing: 0.5px;
-    }
-
-    .filter-group select {
-      padding: 9px 12px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: #fff;
-      font-size: 13px;
-      outline: none;
-    }
+    .filter-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
+    .filter-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; }
+    .filter-group select { padding: 9px 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px; outline: none; }
 
     .btn-reset {
-      background: #334155;
-      color: #fff;
-      border: 1px solid #475569;
-      padding: 9px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: bold;
-      align-self: flex-end;
-      height: 38px;
-      transition: background 0.2s;
+      background: #334155; color: #fff; border: 1px solid #475569;
+      padding: 9px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; align-self: flex-end; height: 38px;
     }
     .btn-reset:hover { background: #0284c7; border-color: #38bdf8; }
 
-    /* Tarjetas KPI */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 20px;
-    }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .kpi-card { background: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 12px; text-align: center; }
+    .kpi-card .val { font-size: 26px; font-weight: 800; color: #38bdf8; margin-top: 6px; }
+    .kpi-card .lbl { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
+    .kpi-card .sub { font-size: 11px; color: #10b981; margin-top: 4px; font-weight: 600; }
 
-    .kpi-card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      padding: 18px;
-      border-radius: 12px;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; }
+    .chart-box { background: #1e293b; border: 1px solid #334155; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; }
+    .chart-box h3 { font-size: 13px; color: #38bdf8; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid #334155; padding-bottom: 8px; }
 
-    .kpi-card .val {
-      font-size: 26px;
-      font-weight: 800;
-      color: #38bdf8;
-      margin-top: 6px;
-    }
-
-    .kpi-card .lbl {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: #94a3b8;
-      font-weight: 700;
-    }
-
-    .kpi-card .sub {
-      font-size: 11px;
-      color: #10b981;
-      margin-top: 4px;
-      font-weight: 600;
-    }
-
-    /* Gráficos Grid */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-      gap: 20px;
-    }
-
-    .chart-box {
-      background: #1e293b;
-      border: 1px solid #334155;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .chart-box h3 {
-      font-size: 13px;
-      color: #38bdf8;
-      font-weight: 700;
-      text-transform: uppercase;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 8px;
-      letter-spacing: 0.5px;
-    }
-
-    #loading-msg {
-      text-align: center;
-      padding: 40px;
-      font-size: 16px;
-      color: #38bdf8;
-      font-weight: bold;
-    }
+    #loading-msg { text-align: center; padding: 40px; font-size: 16px; color: #38bdf8; font-weight: bold; }
 
     @media (max-width: 768px) {
       .charts-grid { grid-template-columns: 1fr; }
@@ -195,7 +66,6 @@
 </head>
 <body>
 
-  <!-- Validación de Sesión -->
   <script>
     const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
     if (!currentSession) { window.location.href = 'login.html'; }
@@ -212,7 +82,6 @@
   <div id="loading-msg">⏳ Procesando datos estadísticos del KML...</div>
 
   <div id="dashboard-content" style="display:none;">
-    <!-- Filtros Dinámicos Interactivos -->
     <div class="filter-card">
       <div class="filter-group">
         <label for="filter-depto">Departamento</label>
@@ -222,15 +91,14 @@
         <label for="filter-muni">Municipio</label>
         <select id="filter-muni"><option value="todos">Todos los Municipios</option></select>
       </div>
-      <button class="btn-reset" onclick="resetDashboardFilters()" title="Restablecer filtros">🧹 Limpiar Filtros</button>
+      <button class="btn-reset" onclick="resetDashboardFilters()">🧹 Limpiar Filtros</button>
     </div>
 
-    <!-- Indicadores Principales (KPIs) -->
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="lbl">Fincas Registradas</div>
         <div class="val" id="kpi-fincas">0</div>
-        <div class="sub" id="kpi-fincas-sub">100% del territorio seleccionado</div>
+        <div class="sub">100% del territorio seleccionado</div>
       </div>
       <div class="kpi-card">
         <div class="lbl">Área Cultivada Total</div>
@@ -249,7 +117,6 @@
       </div>
     </div>
 
-    <!-- Gráficos Estadísticos -->
     <div class="charts-grid">
       <div class="chart-box">
         <h3>Cantidad de Fincas por Ubicación</h3>
@@ -295,7 +162,6 @@
       return "";
     }
 
-    // Cargar KML
     fetch('./honduras.kml', { cache: 'no-cache' })
       .then(r => r.text())
       .then(kmlText => {
@@ -321,9 +187,11 @@
         document.getElementById('dashboard-content').style.display = 'block';
 
         updateDashboard();
+      })
+      .catch(err => {
+        document.getElementById('loading-msg').innerText = "❌ Error al cargar el archivo honduras.kml";
       });
 
-    // Filtros
     var filterDepto = document.getElementById('filter-depto');
     var filterMuni = document.getElementById('filter-muni');
 
@@ -351,52 +219,33 @@
       updateDashboard();
     }
 
-    // Cálculo y Renderizado
     function updateDashboard() {
       var selDepto = filterDepto.value;
       var selMuni = filterMuni.value;
 
-      var totalFincas = 0;
-      var totalMz = 0;
-      var totalPlantas = 0;
-      var totalProd = 0;
-      var totalAltitud = 0;
-      var countAltitud = 0;
-
-      var geoCounts = {};
-      var mzCounts = {};
-      var variedadCounts = {};
+      var totalFincas = 0, totalMz = 0, totalPlantas = 0, totalProd = 0, totalAltitud = 0, countAltitud = 0;
+      var geoCounts = {}, mzCounts = {}, variedadCounts = {};
       var tecData = { fertiliza: 0, suelo: 0, fitosanitario: 0 };
 
       rawGeoJSON.features.forEach(feat => {
         var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "Sin Departamento";
         var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "Sin Municipio";
 
-        var matchDepto = (selDepto === 'todos' || depto === selDepto);
-        var matchMuni = (selMuni === 'todos' || muni === selMuni);
-
-        if (matchDepto && matchMuni) {
+        if ((selDepto === 'todos' || depto === selDepto) && (selMuni === 'todos' || muni === selMuni)) {
           totalFincas++;
 
           var mz = parseFloat(extractField(feat, "AREA EN MZ CULTIVADA") || extractField(feat, "area_cultivada")) || 0;
           var plantas = parseInt(extractField(feat, "CANTIDAD DE PLANTAS") || extractField(feat, "plantas")) || 0;
           var prod = parseInt(extractField(feat, "PLANTAS EN PRODUCCION") || extractField(feat, "produccion")) || 0;
           var variedad = extractField(feat, "VARIEDAD") || "Sin Especificar";
-          var altStr = extractField(feat, "GPS_altitude") || "0";
-          var alt = parseFloat(altStr) || 0;
+          var alt = parseFloat(extractField(feat, "GPS_altitude") || "0") || 0;
 
           var fertiliza = extractField(feat, "FERTILIZA") || "";
           var suelo = extractField(feat, "ANALISIS DE SUELO") || "";
           var plagas = extractField(feat, "CONTROLA PLAGAS Y ENFERMEDADES") || "";
 
-          totalMz += mz;
-          totalPlantas += plantas;
-          totalProd += prod;
-
-          if (alt > 0) {
-            totalAltitud += alt;
-            countAltitud++;
-          }
+          totalMz += mz; totalPlantas += plantas; totalProd += prod;
+          if (alt > 0) { totalAltitud += alt; countAltitud++; }
 
           var labelKey = selDepto === 'todos' ? depto : muni;
           geoCounts[labelKey] = (geoCounts[labelKey] || 0) + 1;
@@ -409,7 +258,6 @@
         }
       });
 
-      // Actualizar KPIs
       document.getElementById('kpi-fincas').innerText = totalFincas;
       document.getElementById('kpi-manzanas').innerText = totalMz.toFixed(2) + ' Mz';
       document.getElementById('kpi-plantas').innerText = totalPlantas.toLocaleString();
@@ -420,7 +268,6 @@
       var avgAlt = countAltitud > 0 ? Math.round(totalAltitud / countAltitud) : 0;
       document.getElementById('kpi-altitud').innerText = avgAlt > 0 ? `${avgAlt} msnm` : 'N/D';
 
-      // Actualizar Gráficos
       renderChart('chartFincas', 'bar', Object.keys(geoCounts), Object.values(geoCounts), 'Cantidad de Fincas', '#38bdf8');
       renderChart('chartVariedades', 'doughnut', Object.keys(variedadCounts), Object.values(variedadCounts), 'Variedad', ['#38bdf8', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']);
       renderChart('chartSuperficie', 'bar', Object.keys(mzCounts), Object.values(mzCounts), 'Manzanas (Mz)', '#10b981');
@@ -436,18 +283,12 @@
         data: {
           labels: labels,
           datasets: [{
-            label: datasetLabel,
-            data: data,
-            backgroundColor: bgColors,
-            borderColor: '#1e293b',
-            borderWidth: 2
+            label: datasetLabel, data: data, backgroundColor: bgColors, borderColor: '#1e293b', borderWidth: 2
           }]
         },
         options: {
           responsive: true,
-          plugins: {
-            legend: { labels: { color: '#f8fafc', font: { size: 11 } } }
-          },
+          plugins: { legend: { labels: { color: '#f8fafc', font: { size: 11 } } } },
           scales: type === 'bar' ? {
             x: { ticks: { color: '#cbd5e1' }, grid: { color: '#334155' } },
             y: { ticks: { color: '#cbd5e1' }, grid: { color: '#334155' } }
