@@ -1,549 +1,148 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <title>Sistema SIG - Módulo de Efectos y Movimientos Cinemáticos</title>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geoportal SIG - Efectos Territoriales y Capas</title>
   
-  <!-- Estilos de Leaflet -->
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
-      background-color: #0f172a; 
-      overflow: hidden;
-    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; overflow: hidden; }
     #map { height: 100vh; width: 100vw; z-index: 1; }
 
-    #status-msg {
-      position: absolute;
-      top: 15px;
-      left: 20px;
-      z-index: 1000;
-      background: rgba(15, 23, 42, 0.9);
-      color: #38bdf8;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      border: 1px solid #334155;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-      backdrop-filter: blur(8px);
+    #floating-panel {
+      position: absolute; top: 15px; right: 15px; z-index: 1100;
+      background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(10px);
+      padding: 16px; border-radius: 12px; border: 1px solid #334155;
+      width: 300px; color: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      display: flex; flex-direction: column; gap: 10px;
     }
 
-    #floating-search-btn {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      z-index: 1090;
-      background: #0284c7;
-      color: #fff;
-      border: 1px solid #38bdf8;
-      padding: 10px 16px;
-      border-radius: 50px;
-      font-size: 13px;
-      font-weight: bold;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-    #floating-search-btn:hover { background: #0369a1; transform: scale(1.05); }
+    .panel-header { font-size: 12px; font-weight: 800; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 6px; }
+    label { font-size: 10px; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
+    select, input { padding: 8px 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #fff; font-size: 12px; outline: none; width: 100%; }
 
-    #side-panel {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      z-index: 1100;
-      background: rgba(15, 23, 42, 0.94);
-      backdrop-filter: blur(12px);
-      padding: 16px;
-      border-radius: 14px;
-      border: 1px solid #334155;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      width: 300px;
-      max-height: calc(100vh - 30px);
-      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
+    .btn-reset { background: #334155; color: #fff; border: 1px solid #475569; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .btn-reset:hover { background: #0284c7; }
 
-    #side-panel.hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(120%);
-    }
-
-    .panel-header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 8px;
-    }
-
-    .panel-header-bar span {
-      font-size: 11px;
-      font-weight: 800;
-      color: #38bdf8;
-      letter-spacing: 0.8px;
-    }
-
-    .btn-close-panel {
-      background: #334155;
-      color: #94a3b8;
-      border: none;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .btn-close-panel:hover { background: #ef4444; color: #fff; }
-
-    #side-panel label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      font-weight: 700;
-      color: #94a3b8;
-    }
-
-    #side-panel select, #search-input {
-      padding: 9px 12px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: #1e293b;
-      color: #f8fafc;
-      font-size: 13px;
-      outline: none;
-      width: 100%;
-    }
-
-    .search-row { display: flex; gap: 6px; align-items: center; }
-
-    .btn-clear-search {
-      background: #334155;
-      border: 1px solid #475569;
-      color: #f8fafc;
-      padding: 9px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
-    .btn-clear-search:hover { background: #0284c7; border-color: #38bdf8; }
-
-    .list-header {
-      font-size: 11px;
-      font-weight: bold;
-      color: #38bdf8;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    #producer-list-container { overflow-y: auto; max-height: 220px; }
-
-    #producer-list {
-      list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px;
-    }
-
-    #producer-list li {
-      padding: 9px 11px; border-radius: 8px; cursor: pointer; background: #1e293b; border: 1px solid #334155;
-      display: flex; flex-direction: column; gap: 2px; transition: all 0.2s;
-    }
-    #producer-list li:hover { background: #0284c7; border-color: #38bdf8; }
-
-    .p-name { font-size: 12px; font-weight: 700; color: #f1f5f9; }
-    .p-location { font-size: 10px; color: #38bdf8; }
-
-    .empty-prompt { font-size: 11px; color: #64748b; text-align: center; padding: 15px; font-style: italic; }
-
-    .btn-logout {
-      width: 100%; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: bold;
-      background: #ef4444; color: #fff; border: none; cursor: pointer; margin-top: 4px;
-    }
-
-    /* Popup Extendido Alineado Horizontalmente a la izquierda del Panel */
-    .leaflet-popup {
-      position: fixed !important;
-      top: 15px !important;
-      right: 330px !important;
-      left: auto !important;
-      bottom: auto !important;
-      transform: none !important;
-      z-index: 1050 !important;
-    }
-
-    .leaflet-popup-tip-container { display: none !important; }
-
-    .leaflet-popup-content-wrapper {
+    /* Estilo Tooltip estilo Geoportal */
+    .geo-tooltip {
       background: rgba(15, 23, 42, 0.95) !important;
       border: 1px solid #38bdf8 !important;
-      color: #f8fafc !important;
-      border-radius: 14px !important;
-      padding: 16px !important;
-      max-height: calc(100vh - 40px) !important;
-      width: 310px !important;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
-      backdrop-filter: blur(12px) !important;
+      color: #fff !important;
+      border-radius: 8px !important;
+      padding: 8px 12px !important;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
     }
-
-    .leaflet-popup-content { margin: 0 !important; line-height: 1.5 !important; font-size: 11px !important; }
-    .leaflet-popup-content h3 {
-      margin: 0 0 10px 0 !important; color: #38bdf8 !important; font-size: 13px !important;
-      font-weight: 800 !important; border-bottom: 1px solid #334155 !important; padding-bottom: 6px !important;
-      text-transform: uppercase !important;
-    }
-
-    .leaflet-container a.leaflet-popup-close-button { color: #94a3b8 !important; padding: 6px !important; font-size: 16px !important; }
-
-    .custom-tooltip {
-      background: rgba(15, 23, 42, 0.92) !important;
-      border: 1px solid #38bdf8 !important;
-      color: #ffffff !important;
-      border-radius: 6px !important;
-      padding: 6px 10px !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
-    }
-    .custom-tooltip-title { font-weight: bold; font-size: 12px; color: #ffffff; }
-    .custom-tooltip-sub { font-size: 10px; color: #38bdf8; }
-
-    @media (max-width: 768px) {
-      .leaflet-popup { right: 15px !important; left: 15px !important; top: 70px !important; width: auto !important; }
-      .leaflet-popup-content-wrapper { width: 100% !important; }
-      #side-panel { top: 15px; right: 15px; left: 15px; width: auto; }
-      #status-msg { top: auto; bottom: 20px; left: 15px; }
-    }
+    .geo-title { font-weight: 800; font-size: 13px; color: #38bdf8; }
+    .geo-stat { font-size: 11px; color: #cbd5e1; margin-top: 2px; }
   </style>
 </head>
 <body>
 
-  <script>
-    const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
-    if (!currentSession) { window.location.href = 'login.html'; }
-  </script>
-
-  <div id="status-msg">Cargando módulo dinámico de movimientos...</div>
-
-  <button id="floating-search-btn" onclick="openPanel()">🔍 Buscar</button>
-
-  <div id="side-panel">
-    <div class="panel-header-bar">
-      <span>EFECTOS & MOVIMIENTOS</span>
-      <button class="btn-close-panel" onclick="closePanel()">✖</button>
-    </div>
-
+  <div id="floating-panel">
+    <div class="panel-header">GEOPORTAL ESTADÍSTICO - CAPAS</div>
+    
     <label for="select-depto">Departamento</label>
-    <select id="select-depto">
-      <option value="todos">Todos los Departamentos</option>
-    </select>
+    <select id="select-depto"><option value="todos">Todos los Departamentos</option></select>
 
     <label for="select-muni">Municipio</label>
-    <select id="select-muni">
-      <option value="todos">Todos los Municipios</option>
-    </select>
+    <select id="select-muni"><option value="todos">Todos los Municipios</option></select>
 
-    <label for="search-input">Buscar Productor</label>
-    <div class="search-row">
-      <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <button class="btn-clear-search" onclick="cinematicReset()" title="Escobita: Regreso panorámico lento">🧹</button>
-    </div>
-
-    <div class="list-header">
-      <span>PRODUCTORES REGISTRADOS</span>
-      <span id="count-producers">0</span>
-    </div>
-
-    <div id="producer-list-container">
-      <ul id="producer-list"></ul>
-      <div id="empty-prompt" class="empty-prompt">Selecciona un filtro para desplegar la lista.</div>
-    </div>
-
-    <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+    <button class="btn-reset" onclick="resetView()">🧹 Vista Panorámica General</button>
   </div>
 
   <div id="map"></div>
 
-  <!-- Librerías Leaflet y GeoJSON Converter -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    var statusDiv = document.getElementById('status-msg');
-    var selectDepto = document.getElementById('select-depto');
-    var selectMuni = document.getElementById('select-muni');
-    var searchInput = document.getElementById('search-input');
-    var producerList = document.getElementById('producer-list');
-    var emptyPrompt = document.getElementById('empty-prompt');
-    var countProducers = document.getElementById('count-producers');
-    var sidePanel = document.getElementById('side-panel');
-
-    function closePanel() { sidePanel.classList.add('hidden'); }
-    function openPanel() { sidePanel.classList.remove('hidden'); }
-
-    // Inicialización del Mapa en altura panorámica
     var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 8);
 
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
 
-    var googleEarthPin = L.divIcon({
-      className: 'google-earth-marker',
-      html: `
-        <svg width="28" height="40" viewBox="0 0 28 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.6));">
-          <path d="M14 0C6.26801 0 0 6.26801 0 14C0 24.5 14 40 14 40C14 40 28 24.5 28 14C28 6.26801 21.732 0 14 0Z" fill="#FDE047" stroke="#A16207" stroke-width="1.2"/>
-          <circle cx="14" cy="13.5" r="7" fill="#FFFFFF" stroke="#CA8A04" stroke-width="0.8"/>
-          <path d="M14 8L15.3 11.2 L18.8 11.4 L16.1 13.6 L17 17 L14 15.1 L11 17 L11.9 13.6 L9.2 11.4 L12.7 11.2 Z" fill="#000000"/>
-        </svg>
-      `,
-      iconSize: [28, 40], iconAnchor: [14, 40], popupAnchor: [0, -36]
-    });
-
-    function autolink(text) {
-      if (!text) return "";
-      var str = typeof text === 'string' ? text : String(text);
-      if (typeof text === 'object' && text.value) str = String(text.value);
-      var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-      return str.replace(exp, "<a href='$1' target='_blank'>Enlace KoboToolbox</a>");
-    }
-
-    function cleanDescriptionText(desc) {
-      if (!desc) return "";
-      var str = typeof desc === 'string' ? desc : (desc.value || "");
-      str = str.replace(/GPS_altitude:\s*([\d.]+)/gi, function(match, p1) {
-        return "GPS_altitude: " + Math.round(parseFloat(p1)) + " msnm";
-      });
-      return autolink(str);
-    }
-
-    var rawGeoJSON = null, kmlLayer = null, boundaryLayer = null;
     var hondurasDeptosGeoJSON = null, hondurasMunisGeoJSON = null;
-    var locationData = {}, featureMarkersMap = new Map();
+    var boundaryLayer = null;
 
-    function getProp(props, key) {
-      if (!props) return "";
-      var foundKey = Object.keys(props).find(k => k.toLowerCase() === key.toLowerCase());
-      return foundKey ? props[foundKey] : "";
-    }
-
-    function extractField(feature, fieldName) {
-      var props = feature.properties || {};
-      var val = getProp(props, fieldName);
-      if (val) return String(val).trim();
-      var desc = props.description || "";
-      var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
-      if (strDesc) {
-        var regex = new RegExp(fieldName + "[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
-        var match = strDesc.match(regex);
-        if (match && match[1]) return match[1].replace(/<[^>]+>/g, '').trim();
-      }
-      return "";
-    }
-
-    // Carga de Polígonos GeoJSON Oficiales de Honduras
+    // Cargar Geometrías Territoriales
     Promise.all([
-      fetch('https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/HND/ADM1/geoBoundaries-HND-ADM1_simplified.geojson').then(r => r.json()).catch(() => null),
-      fetch('https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/HND/ADM2/geoBoundaries-HND-ADM2_simplified.geojson').then(r => r.json()).catch(() => null),
-      fetch('./honduras.kml', { cache: 'no-cache' }).then(r => r.text())
-    ]).then(([deptosGeo, munisGeo, kmlText]) => {
-      hondurasDeptosGeoJSON = deptosGeo;
-      hondurasMunisGeoJSON = munisGeo;
+      fetch('https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/HND/ADM1/geoBoundaries-HND-ADM1_simplified.geojson').then(r => r.json()),
+      fetch('https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/HND/ADM2/geoBoundaries-HND-ADM2_simplified.geojson').then(r => r.json())
+    ]).then(([deptos, munis]) => {
+      hondurasDeptosGeoJSON = deptos;
+      hondurasMunisGeoJSON = munis;
 
-      var parser = new DOMParser();
-      rawGeoJSON = toGeoJSON.kml(parser.parseFromString(kmlText, 'text/xml'));
-
-      rawGeoJSON.features.forEach(feature => {
-        var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
-        var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
-        if (!locationData[depto]) locationData[depto] = new Set();
-        if (muni) locationData[depto].add(muni);
-      });
-
-      Object.keys(locationData).sort().forEach(depto => {
+      var selectDepto = document.getElementById('select-depto');
+      deptos.features.forEach(f => {
+        var name = f.properties.shapeName;
         var opt = document.createElement('option');
-        opt.value = depto; opt.textContent = depto;
+        opt.value = name; opt.textContent = name;
         selectDepto.appendChild(opt);
       });
-
-      renderMapFeatures();
-      statusDiv.innerText = "SISTEMA LISTO • Efectos Habilitados";
-      setTimeout(() => statusDiv.style.display = 'none', 3000);
     });
 
-    // Renderizado del Croquis Neón y Encuadre Aéreo
-    function applyCroquisEffect(selectedDepto, selectedMuni) {
+    // Función para renderizar el efecto del croquis coloreado
+    function renderGeoLayer(depto, muni) {
       if (boundaryLayer) map.removeLayer(boundaryLayer);
+      if (depto === 'todos') return;
 
-      if (selectedDepto === 'todos') return;
+      var targetFeatures = [];
+      var isMuniMode = (muni !== 'todos');
 
-      var boundaryFeature = null;
-
-      if (selectedMuni !== 'todos' && hondurasMunisGeoJSON) {
-        boundaryFeature = hondurasMunisGeoJSON.features.find(f => {
-          var name = (f.properties.shapeName || f.properties.name || "").toLowerCase();
-          return name.includes(selectedMuni.toLowerCase());
-        });
+      if (isMuniMode && hondurasMunisGeoJSON) {
+        targetFeatures = hondurasMunisGeoJSON.features.filter(f => 
+          (f.properties.shapeName || "").toLowerCase().includes(muni.toLowerCase())
+        );
+      } else if (hondurasDeptosGeoJSON) {
+        targetFeatures = hondurasDeptosGeoJSON.features.filter(f => 
+          (f.properties.shapeName || "").toLowerCase().includes(depto.toLowerCase())
+        );
       }
 
-      if (!boundaryFeature && hondurasDeptosGeoJSON) {
-        boundaryFeature = hondurasDeptosGeoJSON.features.find(f => {
-          var name = (f.properties.shapeName || f.properties.name || "").toLowerCase();
-          return name.includes(selectedDepto.toLowerCase());
-        });
-      }
-
-      if (boundaryFeature) {
-        boundaryLayer = L.geoJSON(boundaryFeature, {
-          style: {
-            color: '#38bdf8',
-            weight: 3,
-            opacity: 0.95,
-            fillColor: '#0284c7',
-            fillOpacity: 0.25,
-            dashArray: '6, 6'
+      if (targetFeatures.length > 0) {
+        boundaryLayer = L.geoJSON(targetFeatures, {
+          style: function() {
+            return {
+              color: '#38bdf8',
+              weight: 3,
+              opacity: 0.9,
+              fillColor: '#0284c7',
+              fillOpacity: 0.3,
+              dashArray: '4, 4'
+            };
+          },
+          onEachFeature: function(feature, layer) {
+            var name = feature.properties.shapeName || "Zona Territorio";
+            var tooltipHtml = `
+              <div class="geo-title">${name}</div>
+              <div class="geo-stat">Territorio Delimitado Activo</div>
+            `;
+            layer.bindTooltip(tooltipHtml, { permanent: false, className: 'geo-tooltip', direction: 'top' });
           }
         }).addTo(map);
 
-        map.flyToBounds(boundaryLayer.getBounds(), {
-          padding: [50, 50],
-          duration: 1.8,
-          maxZoom: selectedMuni !== 'todos' ? 14 : 11
-        });
+        map.flyToBounds(boundaryLayer.getBounds(), { padding: [50, 50], duration: 1.8 });
       }
     }
 
-    function selectAndFocusProducer(feat, marker) {
-      var props = feat.properties || {};
-      var nombre = props.name || "Productor sin nombre";
-      var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
-      var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
-
-      searchInput.value = nombre;
-      if (depto && selectDepto.value !== depto) {
-        selectDepto.value = depto;
-        updateMuniDropdown(depto);
-      }
-      if (muni) selectMuni.value = muni;
-
-      if (window.innerWidth <= 600) closePanel();
-
-      if (marker) {
-        var latLng = marker.getLatLng();
-        map.flyTo(latLng, 16, { duration: 1.4 });
-        marker.openPopup();
-      }
-    }
-
-    function renderMapFeatures() {
-      var selectedDepto = selectDepto.value, selectedMuni = selectMuni.value, searchText = searchInput.value.toLowerCase().trim();
-
-      if (kmlLayer) map.removeLayer(kmlLayer);
-      producerList.innerHTML = ''; featureMarkersMap.clear();
-
-      var visibleFeatures = [];
-
-      kmlLayer = L.geoJSON(rawGeoJSON, {
-        filter: function(feature) {
-          var nombre = (feature.properties.name || "").toLowerCase();
-          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
-          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
-
-          var matchDepto = (selectedDepto === 'todos' || depto === selectedDepto);
-          var matchMuni = (selectedMuni === 'todos' || muni === selectedMuni);
-          var matchSearch = (searchText === '' || nombre.includes(searchText));
-
-          var isMatch = matchDepto && matchMuni && matchSearch;
-          if (isMatch) visibleFeatures.push(feature);
-          return isMatch;
-        },
-        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: googleEarthPin }),
-        onEachFeature: function(feature, layer) {
-          var nombre = feature.properties.name || "Productor sin nombre";
-          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "";
-          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "";
-
-          var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
-          layer.bindPopup(popupContent, { autoPan: false });
-
-          var tooltipContent = `
-            <div class="custom-tooltip-title">${nombre}</div>
-            <div class="custom-tooltip-sub">${depto}${muni ? ' • ' + muni : ''}</div>
-          `;
-          layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
-
-          layer.on('click', () => selectAndFocusProducer(feature, layer));
-          featureMarkersMap.set(feature, layer);
-        }
-      }).addTo(map);
-
-      visibleFeatures.sort((a, b) => (a.properties.name || "").localeCompare(b.properties.name || ""));
-      countProducers.innerText = visibleFeatures.length;
-
-      var hasActiveFilter = (selectedDepto !== 'todos' || selectedMuni !== 'todos' || searchText !== '');
-
-      if (hasActiveFilter) {
-        emptyPrompt.style.display = 'none'; producerList.style.display = 'flex';
-        visibleFeatures.forEach(feat => {
-          var nombre = feat.properties.name || "Productor sin nombre";
-          var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
-          var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
-
-          var li = document.createElement('li');
-          li.innerHTML = `<span class="p-name">${nombre}</span><span class="p-location">${depto}${muni ? ' • ' + muni : ''}</span>`;
-          li.addEventListener('click', () => selectAndFocusProducer(feat, featureMarkersMap.get(feat)));
-          producerList.appendChild(li);
-        });
-
-        applyCroquisEffect(selectedDepto, selectedMuni);
-      } else {
-        emptyPrompt.style.display = 'block'; producerList.style.display = 'none';
-        if (boundaryLayer) map.removeLayer(boundaryLayer);
-      }
-    }
-
-    // Animación Lenta de Escobita (Reset Cinemático)
-    function cinematicReset() {
-      searchInput.value = '';
-      selectDepto.value = 'todos';
-      updateMuniDropdown('todos');
-      map.closePopup();
-      if (boundaryLayer) map.removeLayer(boundaryLayer);
-      renderMapFeatures();
-      map.flyTo([14.6, -87.8], 8, { duration: 2.5 });
-    }
-
-    function updateMuniDropdown(depto) {
-      selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
-      if (depto !== 'todos' && locationData[depto]) {
-        Array.from(locationData[depto]).sort().forEach(muni => {
-          var opt = document.createElement('option');
-          opt.value = muni; opt.textContent = muni; selectMuni.appendChild(opt);
-        });
-      }
-    }
-
-    selectDepto.addEventListener('change', function() { updateMuniDropdown(this.value); renderMapFeatures(); });
-    selectMuni.addEventListener('change', renderMapFeatures);
-    searchInput.addEventListener('input', function() {
-      if (this.value.trim() === '') { selectDepto.value = 'todos'; updateMuniDropdown('todos'); }
-      renderMapFeatures();
+    document.getElementById('select-depto').addEventListener('change', function() {
+      renderGeoLayer(this.value, 'todos');
     });
 
-    function logout() {
-      sessionStorage.removeItem('current_session');
-      window.location.href = 'login.html';
+    document.getElementById('select-muni').addEventListener('change', function() {
+      renderGeoLayer(document.getElementById('select-depto').value, this.value);
+    });
+
+    function resetView() {
+      document.getElementById('select-depto').value = 'todos';
+      document.getElementById('select-muni').value = 'todos';
+      if (boundaryLayer) map.removeLayer(boundaryLayer);
+      map.flyTo([14.6, -87.8], 8, { duration: 2.0 });
     }
   </script>
 </body>
