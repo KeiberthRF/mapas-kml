@@ -212,7 +212,7 @@
     }
 
     .modal-header-container {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 6px; gap: 8px; flex-wrap: wrap;
     }
 
     .modal-content h3 { color: #38bdf8; margin: 0; font-size: 14px; }
@@ -242,14 +242,21 @@
       background: transparent; border: none; cursor: pointer; font-size: 12px; margin-left: 4px; padding: 2px; vertical-align: middle;
     }
 
+    .btn-group-logs { display: flex; gap: 6px; }
+
     .btn-clear-logs {
-      background: #d97706; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
+      background: #d97706; color: #fff; border: none; padding: 5px 9px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
     }
     .btn-clear-logs:hover { background: #b45309; }
 
+    .btn-download-logs {
+      background: #059669; color: #fff; border: none; padding: 5px 9px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
+    }
+    .btn-download-logs:hover { background: #047857; }
+
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
-    /* Estilo Popup Emergente */
+    /* Estilo Popup Emergente y Botón Cerrar Personalizado */
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
     .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
@@ -267,6 +274,7 @@
     @media (max-width: 600px) {
       #side-panel { top: 10px; right: 10px; left: 10px; width: auto; }
       #status-msg { top: auto; bottom: 15px; left: 10px; }
+      .btn-group-logs { width: 100%; justify-content: flex-end; }
     }
   </style>
 </head>
@@ -303,7 +311,6 @@
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <!-- Requerimiento 3: Icono del Aguacate -->
       <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C8 2 5 7 5 13C5 17.5 8 21 12 21C16 21 19 17.5 19 13C19 7 16 2 12 2Z" fill="#15803d" stroke="#86efac" stroke-width="1.5"/>
@@ -366,10 +373,13 @@
         <tbody id="users-table-body"></tbody>
       </table>
 
-      <!-- Requerimiento 5: Bitácora + Botón para limpiar -->
+      <!-- Bitácora + Botones de Acción -->
       <div class="modal-header-container">
         <h3>Bitácora de Sesiones (Ingresos)</h3>
-        <button class="btn-clear-logs" onclick="clearLogs()">🧹 Limpiar Registros</button>
+        <div class="btn-group-logs">
+          <button class="btn-download-logs" onclick="downloadLogsTXT()" title="Descargar todo el historial registrado en TXT">📥 Descargar Historial (.txt)</button>
+          <button class="btn-clear-logs" onclick="clearLogsScreen()" title="Limpiar la pantalla de la bitácora visible">🧹 Limpiar Registros</button>
+        </div>
       </div>
       <table class="modal-table">
         <thead>
@@ -402,19 +412,15 @@
     var countProducers = document.getElementById('count-producers');
     var sidePanel = document.getElementById('side-panel');
 
-    var isManualPopupClose = true; // Control de reseteo automático al cerrar ficha
-
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Limpieza completa (Efecto Escobita) y retorno a la vista panorama
+    // Limpieza completa y retorno al panorama
     function fullReset() {
       searchInput.value = '';
       selectDepto.value = 'todos';
       updateMuniDropdown('todos');
-      isManualPopupClose = false;
       map.closePopup();
-      isManualPopupClose = true;
       renderMapFeatures();
       map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
     }
@@ -426,10 +432,15 @@
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
 
-    // Requerimiento 2: Al cerrar la Ficha Técnica (Popup), resetea automáticamente
-    map.on('popupclose', function() {
-      if (isManualPopupClose) {
-        fullReset();
+    // Capturar cuando el usuario presiona la 'X' de la ficha para hacer el escobazo
+    map.on('popupclose', function(e) {
+      if (e.popup && e.popup._source) {
+        // Solo aplica escobazo si el cierre fue intencional en la 'X' y no por abrir otro
+        setTimeout(() => {
+          if (!map._popup) {
+            fullReset();
+          }
+        }, 50);
       }
     });
 
@@ -510,6 +521,7 @@
         setTimeout(() => map.flyTo([14.6, -87.8], 8, { duration: 2.2 }), 400);
       });
 
+    // Enfocar productor y sincronizar el panel lateral
     function selectAndFocusProducer(feat, marker) {
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
@@ -522,6 +534,8 @@
         updateMuniDropdown(depto);
       }
       if (muni) selectMuni.value = muni;
+
+      renderMapFeatures();
 
       if (window.innerWidth <= 600) closePanel();
 
@@ -595,7 +609,6 @@
           producerList.appendChild(li);
         });
 
-        // Auto-Zoom Equilibrado al territorio seleccionado
         if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
           map.fitBounds(kmlLayer.getBounds(), {
             padding: [60, 60],
@@ -617,7 +630,7 @@
       }
     }
 
-    // Requerimiento 1: Al cambiar de departamento, se limpia el municipio y el productor previo
+    // Cambio de departamento resetea municipio y buscador
     selectDepto.addEventListener('change', function() { 
       updateMuniDropdown(this.value); 
       selectMuni.value = 'todos';
@@ -640,13 +653,21 @@
         const now = new Date();
         const durationMinutes = Math.max(1, Math.round((now - loginTime) / 60000));
 
-        const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-        logs.push({
+        const newLogEntry = {
           user: currentSession.user,
           login: currentSession.loginFormatted,
           duration: durationMinutes + ' min'
-        });
+        };
+
+        // Guardar en la bitácora visible
+        const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+        logs.push(newLogEntry);
         localStorage.setItem('sig_logs', JSON.stringify(logs));
+
+        // Guardar en el Historial Maestro permanente (Nunca se vacía)
+        const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
+        masterLogs.push(newLogEntry);
+        localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
       }
       sessionStorage.removeItem('current_session');
       window.location.href = 'login.html';
@@ -662,7 +683,6 @@
       document.getElementById('admin-modal').style.display = 'none';
     }
 
-    // Requerimiento 4: Contraseñas con ojito visor
     function loadUsersTable() {
       const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
       const tbody = document.getElementById('users-table-body');
@@ -712,12 +732,55 @@
       });
     }
 
-    // Requerimiento 5: Función para limpiar bitácora
-    function clearLogs() {
-      if (confirm('¿Estás seguro de que deseas vaciar toda la bitácora de sesiones?')) {
+    // Limpia la vista frontal de la bitácora, conservando el historial maestro
+    function clearLogsScreen() {
+      if (confirm('¿Deseas ocultar/limpiar los registros de la pantalla actual? (Nota: Todo el historial completo permanece guardado de forma segura en el archivo descargable).')) {
         localStorage.setItem('sig_logs', JSON.stringify([]));
         loadLogsTable();
       }
+    }
+
+    // Descarga de archivo TXT con la totalidad histórica de accesos
+    function downloadLogsTXT() {
+      const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
+      const visibleLogs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      
+      // Combinar para asegurar compatibilidad total
+      let combined = [...masterLogs];
+      visibleLogs.forEach(v => {
+        if (!combined.some(m => m.user === v.user && m.login === v.login)) {
+          combined.push(v);
+        }
+      });
+
+      if (combined.length === 0) {
+        alert('No existen registros de ingresos almacenados en el historial actualmente.');
+        return;
+      }
+
+      let content = "===========================================================\n";
+      content += "  HISTORIAL GENERAL DE INGRESOS Y SESIONES - SIG AGUACATE  \n";
+      content += "===========================================================\n";
+      content += "Fecha de Reporte: " + new Date().toLocaleString('es-HN') + "\n\n";
+      content += String("USUARIO").padEnd(20) + String("FECHA Y HORA DE INGRESO").padEnd(30) + "DURACIÓN\n";
+      content += "-----------------------------------------------------------\n";
+
+      combined.forEach(item => {
+        content += String(item.user).padEnd(20) + String(item.login).padEnd(30) + String(item.duration) + "\n";
+      });
+
+      content += "-----------------------------------------------------------\n";
+      content += "Total de registros históricos: " + combined.length + "\n";
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bitacora_sesiones_honduras_${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
 
     function addUser(e) {
