@@ -128,7 +128,7 @@
 
     .login-container input::placeholder {
       color: #64748b;
-      font-size: 12px;
+      font-size: 12.5px;
     }
 
     .login-container input:focus {
@@ -228,12 +228,12 @@
     <form id="login-form" onsubmit="handleLogin(event)" autocomplete="off" style="display: flex; flex-direction: column; gap: 12px;">
       <label for="username">USUARIO O NOMBRE</label>
       <div class="input-wrapper">
-        <input type="text" id="username" autocomplete="off" value="" autofocus required placeholder="Ej: carlos, fvt, admin o invitado" />
+        <input type="text" id="username" autocomplete="off" value="" autofocus required placeholder="Ingrese usuario" />
       </div>
 
       <label for="password">CONTRASEÑA</label>
       <div class="input-wrapper">
-        <input type="password" id="password" autocomplete="off" value="" required placeholder="••••••••" />
+        <input type="password" id="password" autocomplete="off" value="" required placeholder="Ingrese contraseña" />
         <button type="button" class="btn-toggle-pass" onclick="togglePasswordVisibility()" title="Mostrar/Ocultar Contraseña">👁️</button>
       </div>
 
