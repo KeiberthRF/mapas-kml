@@ -148,14 +148,16 @@
     }
 
     .btn-clear-search {
-      background: #334155;
-      border: 1px solid #475569;
+      background: #1e293b;
+      border: 1px solid #334155;
       color: #f8fafc;
-      padding: 8px 10px;
+      padding: 6px 8px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 13px;
-      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
     }
     .btn-clear-search:hover { background: #0284c7; border-color: #38bdf8; }
 
@@ -206,10 +208,14 @@
     }
 
     .modal-content {
-      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 580px; color: #fff; max-height: 85vh; overflow-y: auto;
+      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 620px; color: #fff; max-height: 85vh; overflow-y: auto;
     }
 
-    .modal-content h3 { color: #38bdf8; margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; font-size: 14px; }
+    .modal-header-container {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 6px;
+    }
+
+    .modal-content h3 { color: #38bdf8; margin: 0; font-size: 14px; }
 
     .form-create-user {
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;
@@ -224,13 +230,22 @@
     }
 
     .modal-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
-    .modal-table th, .modal-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
+    .modal-table th, .modal-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; vertical-align: middle; }
     .modal-table th { color: #94a3b8; }
 
     .btn-delete-user {
       background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
     }
     .btn-delete-user:hover { background: #dc2626; }
+
+    .btn-toggle-pass {
+      background: transparent; border: none; cursor: pointer; font-size: 12px; margin-left: 4px; padding: 2px; vertical-align: middle;
+    }
+
+    .btn-clear-logs {
+      background: #d97706; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
+    }
+    .btn-clear-logs:hover { background: #b45309; }
 
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
@@ -288,7 +303,14 @@
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">🧹</button>
+      <!-- Requerimiento 3: Icono del Aguacate -->
+      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8 2 5 7 5 13C5 17.5 8 21 12 21C16 21 19 17.5 19 13C19 7 16 2 12 2Z" fill="#15803d" stroke="#86efac" stroke-width="1.5"/>
+          <path d="M12 5C9.5 5 7 8.5 7 13.5C7 16.8 9.2 19 12 19C14.8 19 17 16.8 17 13.5C17 8.5 14.5 5 12 5Z" fill="#facc15"/>
+          <circle cx="12" cy="14" r="2.8" fill="#78350f" stroke="#451a03" stroke-width="1"/>
+        </svg>
+      </button>
     </div>
 
     <div class="list-header">
@@ -314,11 +336,13 @@
     <div class="modal-content">
       <button class="btn-close-modal" onclick="closeAdminModal()">Cerrar</button>
       
-      <h3>Crear Nuevo Usuario</h3>
+      <div class="modal-header-container">
+        <h3>Crear Nuevo Usuario</h3>
+      </div>
       <form class="form-create-user" onsubmit="addUser(event)">
         <input type="text" id="new-name" placeholder="Nombre completo" required>
         <input type="text" id="new-user" placeholder="Usuario" required>
-        <input type="text" id="new-pass" placeholder="Contraseña" required>
+        <input type="password" id="new-pass" placeholder="Contraseña" required>
         <select id="new-role">
           <option value="invitado">Invitado</option>
           <option value="admin">Administrador</option>
@@ -326,7 +350,9 @@
         <button type="submit" class="btn-add-user">+ Registrar Usuario</button>
       </form>
 
-      <h3>Usuarios Registrados</h3>
+      <div class="modal-header-container">
+        <h3>Usuarios Registrados</h3>
+      </div>
       <table class="modal-table">
         <thead>
           <tr>
@@ -340,7 +366,11 @@
         <tbody id="users-table-body"></tbody>
       </table>
 
-      <h3>Bitácora de Sesiones (Ingresos)</h3>
+      <!-- Requerimiento 5: Bitácora + Botón para limpiar -->
+      <div class="modal-header-container">
+        <h3>Bitácora de Sesiones (Ingresos)</h3>
+        <button class="btn-clear-logs" onclick="clearLogs()">🧹 Limpiar Registros</button>
+      </div>
       <table class="modal-table">
         <thead>
           <tr>
@@ -372,15 +402,19 @@
     var countProducers = document.getElementById('count-producers');
     var sidePanel = document.getElementById('side-panel');
 
+    var isManualPopupClose = true; // Control de reseteo automático al cerrar ficha
+
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Limpieza completa (Escobita) y retorno a la vista panorama
+    // Limpieza completa (Efecto Escobita) y retorno a la vista panorama
     function fullReset() {
       searchInput.value = '';
       selectDepto.value = 'todos';
       updateMuniDropdown('todos');
+      isManualPopupClose = false;
       map.closePopup();
+      isManualPopupClose = true;
       renderMapFeatures();
       map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
     }
@@ -391,6 +425,13 @@
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
+
+    // Requerimiento 2: Al cerrar la Ficha Técnica (Popup), resetea automáticamente
+    map.on('popupclose', function() {
+      if (isManualPopupClose) {
+        fullReset();
+      }
+    });
 
     // Marcador Globo Amarillo con Estrella Negra
     var googleEarthPin = L.divIcon({
@@ -576,8 +617,16 @@
       }
     }
 
-    selectDepto.addEventListener('change', function() { updateMuniDropdown(this.value); renderMapFeatures(); });
+    // Requerimiento 1: Al cambiar de departamento, se limpia el municipio y el productor previo
+    selectDepto.addEventListener('change', function() { 
+      updateMuniDropdown(this.value); 
+      selectMuni.value = 'todos';
+      searchInput.value = '';
+      renderMapFeatures(); 
+    });
+
     selectMuni.addEventListener('change', renderMapFeatures);
+    
     searchInput.addEventListener('input', function() {
       if (this.value.trim() === '') {
         selectDepto.value = 'todos'; updateMuniDropdown('todos');
@@ -589,7 +638,7 @@
       if (currentSession) {
         const loginTime = new Date(currentSession.loginTime);
         const now = new Date();
-        const durationMinutes = Math.round((now - loginTime) / 60000);
+        const durationMinutes = Math.max(1, Math.round((now - loginTime) / 60000));
 
         const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
         logs.push({
@@ -613,17 +662,23 @@
       document.getElementById('admin-modal').style.display = 'none';
     }
 
+    // Requerimiento 4: Contraseñas con ojito visor
     function loadUsersTable() {
       const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
       const tbody = document.getElementById('users-table-body');
       tbody.innerHTML = '';
-      users.forEach(u => {
+      users.forEach((u, index) => {
         const tr = document.createElement('tr');
         const isMainAdmin = u.user.toLowerCase() === 'admin';
+        const passVal = u.pass || '***';
+        
         tr.innerHTML = `
           <td>${u.name}</td>
           <td>${u.user}</td>
-          <td><code style="color:#38bdf8;">${u.pass || '***'}</code></td>
+          <td>
+            <span id="pass-text-${index}">••••••••</span>
+            <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility(${index}, '${passVal}')" title="Mostrar/Ocultar Contraseña">👁️</button>
+          </td>
           <td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>
           <td>
             ${isMainAdmin ? '<span style="color:#64748b; font-size:10px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}
@@ -631,6 +686,19 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function togglePassVisibility(index, realPass) {
+      const elem = document.getElementById(`pass-text-${index}`);
+      if (elem.innerText === '••••••••') {
+        elem.innerText = realPass;
+        elem.style.color = '#38bdf8';
+        elem.style.fontFamily = 'monospace';
+      } else {
+        elem.innerText = '••••••••';
+        elem.style.color = '#fff';
+        elem.style.fontFamily = 'inherit';
+      }
     }
 
     function loadLogsTable() {
@@ -642,6 +710,14 @@
         tr.innerHTML = `<td>${log.user}</td><td>${log.login}</td><td>${log.duration}</td>`;
         tbody.appendChild(tr);
       });
+    }
+
+    // Requerimiento 5: Función para limpiar bitácora
+    function clearLogs() {
+      if (confirm('¿Estás seguro de que deseas vaciar toda la bitácora de sesiones?')) {
+        localStorage.setItem('sig_logs', JSON.stringify([]));
+        loadLogsTable();
+      }
     }
 
     function addUser(e) {
