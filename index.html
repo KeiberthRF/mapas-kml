@@ -256,7 +256,7 @@
 
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
-    /* Estilo Popup Emergente y Ficha Técnica */
+    /* Estilo Popup Emergente */
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
     .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
@@ -311,6 +311,7 @@
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
+      <!-- Icono Aguacate de reseteo completo -->
       <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C8 2 5 7 5 13C5 17.5 8 21 12 21C16 21 19 17.5 19 13C19 7 16 2 12 2Z" fill="#15803d" stroke="#86efac" stroke-width="1.5"/>
@@ -373,7 +374,7 @@
         <tbody id="users-table-body"></tbody>
       </table>
 
-      <!-- Bitácora + Botones de Acción -->
+      <!-- Bitácora de Sesiones -->
       <div class="modal-header-container">
         <h3>Bitácora de Sesiones (Ingresos)</h3>
         <div class="btn-group-logs">
@@ -415,7 +416,7 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Limpieza completa de filtros y retorno al panorama nacional
+    // Función Escobita Manual (Solo activada por el botón aguacate)
     function fullReset() {
       searchInput.value = '';
       selectDepto.value = 'todos';
@@ -431,13 +432,6 @@
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
-
-    // Detección directa del clic en el botón 'X' del Popup para hacer la escobita
-    document.addEventListener('click', function(e) {
-      if (e.target && e.target.classList.contains('leaflet-popup-close-button')) {
-        setTimeout(fullReset, 100);
-      }
-    });
 
     // Marcador Globo Amarillo con Estrella Negra
     var googleEarthPin = L.divIcon({
@@ -516,7 +510,6 @@
         setTimeout(() => map.flyTo([14.6, -87.8], 8, { duration: 2.2 }), 400);
       });
 
-    // Función para enfocar un productor y desplegar su ficha técnica
     function selectAndFocusProducer(feat, marker) {
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
@@ -530,8 +523,6 @@
       }
       if (muni) selectMuni.value = muni;
 
-      renderMapFeatures(false); // Renderizar sin alterar el zoom activo
-
       if (window.innerWidth <= 600) closePanel();
 
       var targetMarker = marker || featureMarkersMap.get(feat);
@@ -539,15 +530,13 @@
         var latLng = targetMarker.getLatLng();
         var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
         var targetPoint = map.project(latLng, 15).subtract(offset);
-        
         map.flyTo(map.unproject(targetPoint, 15), 15, { duration: 1.2 });
-        setTimeout(() => {
-          targetMarker.openPopup();
-        }, 300);
+        targetMarker.openPopup();
+        targetMarker.openTooltip();
       }
     }
 
-    function renderMapFeatures(shouldAutoZoom = true) {
+    function renderMapFeatures() {
       var selectedDepto = selectDepto.value, selectedMuni = selectMuni.value, searchText = searchInput.value.toLowerCase().trim();
 
       if (kmlLayer) map.removeLayer(kmlLayer);
@@ -584,10 +573,7 @@
           `;
           layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
 
-          layer.on('click', function(e) {
-            L.DomEvent.stopPropagation(e);
-            selectAndFocusProducer(feature, layer);
-          });
+          layer.on('click', () => selectAndFocusProducer(feature, layer));
           featureMarkersMap.set(feature, layer);
         }
       }).addTo(map);
@@ -610,7 +596,7 @@
           producerList.appendChild(li);
         });
 
-        if (shouldAutoZoom && kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
+        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
           map.fitBounds(kmlLayer.getBounds(), {
             padding: [60, 60],
             maxZoom: 13
@@ -631,21 +617,21 @@
       }
     }
 
-    // Al cambiar de departamento, se resetean municipios y buscador
+    // Al seleccionar otro departamento: resetea municipio y el buscador
     selectDepto.addEventListener('change', function() { 
       updateMuniDropdown(this.value); 
       selectMuni.value = 'todos';
       searchInput.value = '';
-      renderMapFeatures(true); 
+      renderMapFeatures(); 
     });
 
-    selectMuni.addEventListener('change', () => renderMapFeatures(true));
+    selectMuni.addEventListener('change', renderMapFeatures);
     
     searchInput.addEventListener('input', function() {
       if (this.value.trim() === '') {
         selectDepto.value = 'todos'; updateMuniDropdown('todos');
       }
-      renderMapFeatures(true);
+      renderMapFeatures();
     });
 
     function logout() {
@@ -732,7 +718,7 @@
     }
 
     function clearLogsScreen() {
-      if (confirm('¿Deseas ocultar/limpiar los registros de la pantalla actual? (Nota: Todo el historial completo permanece guardado de forma segura en el archivo descargable).')) {
+      if (confirm('¿Deseas ocultar/limpiar los registros de la pantalla actual? (El historial completo permanece resguardado en el archivo descargable).')) {
         localStorage.setItem('sig_logs', JSON.stringify([]));
         loadLogsTable();
       }
