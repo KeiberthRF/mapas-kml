@@ -1,120 +1,196 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <title>Acceso - SIG Productores de Aguacate de Honduras</title>
+  <title>Acceso - SISTEMA SIG</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background-color: #0f172a;
+      background: radial-gradient(circle at 50% 30%, #1e293b 0%, #0f172a 60%, #020617 100%);
       color: #f8fafc;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
       overflow: hidden;
+      position: relative;
+    }
+
+    /* Anillo orbital geográfico de fondo */
+    body::before {
+      content: '';
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      border: 1.5px dashed rgba(56, 189, 248, 0.2);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: rotateBg 120s linear infinite;
+    }
+
+    @keyframes rotateBg {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     .login-container {
-      background: rgba(15, 23, 42, 0.96);
-      backdrop-filter: blur(10px);
-      padding: 30px;
-      border-radius: 12px;
-      border: 1px solid #334155;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-      width: 320px;
+      position: relative;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(14, 165, 233, 0.15);
+      border-radius: 20px;
+      padding: 40px 36px;
+      width: 420px;
+      max-width: 92vw;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
+      z-index: 10;
     }
 
     .login-header {
       text-align: center;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 10px;
-      margin-bottom: 5px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.8);
+      padding-bottom: 16px;
+      margin-bottom: 4px;
     }
 
     .login-header-icon {
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       display: inline-block;
+      filter: drop-shadow(0 4px 10px rgba(22, 163, 74, 0.4));
     }
 
     .login-header h2 {
       margin: 0;
-      font-size: 18px;
-      font-weight: 800;
+      font-size: 20px;
+      font-weight: 900;
       color: #38bdf8;
-      letter-spacing: 1px;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
     }
 
     .login-header h3 {
-      margin: 3px 0 0 0;
+      margin: 5px 0 0 0;
       font-size: 12px;
-      font-weight: 600;
-      color: #f1f5f9;
+      font-weight: 700;
+      color: #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
     }
 
     .login-header p {
-      margin: 4px 0 0 0;
-      font-size: 10px;
+      margin: 6px 0 0 0;
+      font-size: 11px;
       color: #94a3b8;
     }
 
     .login-container label {
-      font-size: 10px;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 700;
-      color: #94a3b8;
-      margin-bottom: -6px;
+      letter-spacing: 0.8px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: -8px;
       display: block;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
     }
 
     .login-container input[type="text"],
     .login-container input[type="password"] {
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 12px 14px;
+      border-radius: 10px;
       border: 1px solid #334155;
-      background: #1e293b;
-      color: #f8fafc;
-      font-size: 13px;
+      background: rgba(30, 41, 59, 0.9);
+      color: #ffffff;
+      font-size: 13.5px;
       outline: none;
       width: 100%;
       box-sizing: border-box;
+      transition: all 0.25s ease;
+    }
+
+    .login-container input::placeholder {
+      color: #64748b;
+      font-size: 12px;
     }
 
     .login-container input:focus {
       border-color: #38bdf8;
+      background: rgba(30, 58, 138, 0.4);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-toggle-pass {
+      position: absolute;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 15px;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+
+    .btn-toggle-pass:hover {
+      color: #38bdf8;
     }
 
     .btn-login {
-      padding: 9px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 800;
       border: none;
       cursor: pointer;
       text-align: center;
-      background: #0ea5e9;
-      color: #fff;
-      transition: background 0.2s;
-      margin-top: 5px;
+      background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 100%);
+      color: #ffffff;
+      transition: all 0.25s ease;
+      margin-top: 6px;
       width: 100%;
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .btn-login:hover {
-      background: #0284c7;
+      background: linear-gradient(90deg, #0369a1 0%, #0284c7 100%);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
     }
 
     #error-msg {
-      color: #ef4444;
-      font-size: 11px;
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 11.5px;
       text-align: center;
       display: none;
       font-weight: bold;
@@ -122,11 +198,11 @@
 
     .footer-credits {
       text-align: center;
-      font-size: 10px;
+      font-size: 10.5px;
       color: #64748b;
-      margin-top: 4px;
-      border-top: 1px solid #334155;
-      padding-top: 8px;
+      margin-top: 6px;
+      border-top: 1px solid rgba(51, 65, 85, 0.8);
+      padding-top: 10px;
     }
   </style>
 </head>
@@ -134,28 +210,34 @@
 
   <div class="login-container">
     <div class="login-header">
+      <!-- Icono del Aguacate -->
       <div class="login-header-icon">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C8 2 5 7 5 13C5 17.5 8 21 12 21C16 21 19 17.5 19 13C19 7 16 2 12 2Z" fill="#15803d" stroke="#86efac" stroke-width="1.5"/>
           <path d="M12 5C9.5 5 7 8.5 7 13.5C7 16.8 9.2 19 12 19C14.8 19 17 16.8 17 13.5C17 8.5 14.5 5 12 5Z" fill="#facc15"/>
           <circle cx="12" cy="14" r="2.8" fill="#78350f" stroke="#451a03" stroke-width="1"/>
         </svg>
       </div>
-      <h2>SIG</h2>
-      <h3>Productores de Aguacate de Honduras</h3>
+      <h2>SISTEMA SIG</h2>
+      <h3>PRODUCTORES DE AGUACATE DE HONDURAS</h3>
       <p>Plataforma de Georreferenciación y Gestión</p>
     </div>
 
     <div id="error-msg">Usuario o contraseña incorrectos</div>
 
-    <form id="login-form" onsubmit="handleLogin(event)" autocomplete="off" style="display: flex; flex-direction: column; gap: 10px;">
-      <label for="username">Usuario</label>
-      <input type="text" id="username" autocomplete="off" value="" autofocus required placeholder="Escribe tu usuario..." />
+    <form id="login-form" onsubmit="handleLogin(event)" autocomplete="off" style="display: flex; flex-direction: column; gap: 12px;">
+      <label for="username">USUARIO O NOMBRE</label>
+      <div class="input-wrapper">
+        <input type="text" id="username" autocomplete="off" value="" autofocus required placeholder="Ej: carlos, fvt, admin o invitado" />
+      </div>
 
-      <label for="password">Contraseña</label>
-      <input type="password" id="password" autocomplete="off" value="" required placeholder="Escribe tu contraseña..." />
+      <label for="password">CONTRASEÑA</label>
+      <div class="input-wrapper">
+        <input type="password" id="password" autocomplete="off" value="" required placeholder="••••••••" />
+        <button type="button" class="btn-toggle-pass" onclick="togglePasswordVisibility()" title="Mostrar/Ocultar Contraseña">👁️</button>
+      </div>
 
-      <button type="submit" class="btn-login">Ingresar al Sistema</button>
+      <button type="submit" class="btn-login">Iniciar Sesión</button>
     </form>
 
     <div class="footer-credits">
@@ -164,7 +246,7 @@
   </div>
 
   <script>
-    // Inicialización de Usuarios por defecto si no existen
+    // Inicialización de usuarios por defecto si no existen
     function initDatabase() {
       const existingUsers = localStorage.getItem('sig_users');
       if (!existingUsers) {
@@ -176,7 +258,7 @@
       }
     }
 
-    // Campos vacíos y cursor listo en 'Usuario'
+    // Campos vacíos y cursor parpadeando automáticamente en 'Usuario'
     window.onload = function() {
       initDatabase();
       const userField = document.getElementById('username');
@@ -186,6 +268,16 @@
       passField.value = '';
       userField.focus();
     };
+
+    // Ojito para alternar visibilidad de la contraseña
+    function togglePasswordVisibility() {
+      const passInput = document.getElementById('password');
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+      } else {
+        passInput.type = 'password';
+      }
+    }
 
     // Validación e Inicio de Sesión
     function handleLogin(e) {
