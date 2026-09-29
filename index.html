@@ -256,7 +256,7 @@
 
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
-    /* Estilo Popup Emergente y Botón Cerrar Personalizado */
+    /* Estilo Popup Emergente y Ficha Técnica */
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
     .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
@@ -415,7 +415,7 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Limpieza completa y retorno al panorama
+    // Limpieza completa de filtros y retorno al panorama nacional
     function fullReset() {
       searchInput.value = '';
       selectDepto.value = 'todos';
@@ -432,15 +432,10 @@
       maxZoom: 20, attribution: '© Google Earth'
     }).addTo(map);
 
-    // Capturar cuando el usuario presiona la 'X' de la ficha para hacer el escobazo
-    map.on('popupclose', function(e) {
-      if (e.popup && e.popup._source) {
-        // Solo aplica escobazo si el cierre fue intencional en la 'X' y no por abrir otro
-        setTimeout(() => {
-          if (!map._popup) {
-            fullReset();
-          }
-        }, 50);
+    // Detección directa del clic en el botón 'X' del Popup para hacer la escobita
+    document.addEventListener('click', function(e) {
+      if (e.target && e.target.classList.contains('leaflet-popup-close-button')) {
+        setTimeout(fullReset, 100);
       }
     });
 
@@ -521,7 +516,7 @@
         setTimeout(() => map.flyTo([14.6, -87.8], 8, { duration: 2.2 }), 400);
       });
 
-    // Enfocar productor y sincronizar el panel lateral
+    // Función para enfocar un productor y desplegar su ficha técnica
     function selectAndFocusProducer(feat, marker) {
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
@@ -535,21 +530,24 @@
       }
       if (muni) selectMuni.value = muni;
 
-      renderMapFeatures();
+      renderMapFeatures(false); // Renderizar sin alterar el zoom activo
 
       if (window.innerWidth <= 600) closePanel();
 
-      if (marker) {
-        var latLng = marker.getLatLng();
+      var targetMarker = marker || featureMarkersMap.get(feat);
+      if (targetMarker) {
+        var latLng = targetMarker.getLatLng();
         var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
         var targetPoint = map.project(latLng, 15).subtract(offset);
+        
         map.flyTo(map.unproject(targetPoint, 15), 15, { duration: 1.2 });
-        marker.openPopup();
-        marker.openTooltip();
+        setTimeout(() => {
+          targetMarker.openPopup();
+        }, 300);
       }
     }
 
-    function renderMapFeatures() {
+    function renderMapFeatures(shouldAutoZoom = true) {
       var selectedDepto = selectDepto.value, selectedMuni = selectMuni.value, searchText = searchInput.value.toLowerCase().trim();
 
       if (kmlLayer) map.removeLayer(kmlLayer);
@@ -586,7 +584,10 @@
           `;
           layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
 
-          layer.on('click', () => selectAndFocusProducer(feature, layer));
+          layer.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+            selectAndFocusProducer(feature, layer);
+          });
           featureMarkersMap.set(feature, layer);
         }
       }).addTo(map);
@@ -609,7 +610,7 @@
           producerList.appendChild(li);
         });
 
-        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
+        if (shouldAutoZoom && kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
           map.fitBounds(kmlLayer.getBounds(), {
             padding: [60, 60],
             maxZoom: 13
@@ -630,21 +631,21 @@
       }
     }
 
-    // Cambio de departamento resetea municipio y buscador
+    // Al cambiar de departamento, se resetean municipios y buscador
     selectDepto.addEventListener('change', function() { 
       updateMuniDropdown(this.value); 
       selectMuni.value = 'todos';
       searchInput.value = '';
-      renderMapFeatures(); 
+      renderMapFeatures(true); 
     });
 
-    selectMuni.addEventListener('change', renderMapFeatures);
+    selectMuni.addEventListener('change', () => renderMapFeatures(true));
     
     searchInput.addEventListener('input', function() {
       if (this.value.trim() === '') {
         selectDepto.value = 'todos'; updateMuniDropdown('todos');
       }
-      renderMapFeatures();
+      renderMapFeatures(true);
     });
 
     function logout() {
@@ -659,12 +660,10 @@
           duration: durationMinutes + ' min'
         };
 
-        // Guardar en la bitácora visible
         const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
         logs.push(newLogEntry);
         localStorage.setItem('sig_logs', JSON.stringify(logs));
 
-        // Guardar en el Historial Maestro permanente (Nunca se vacía)
         const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
         masterLogs.push(newLogEntry);
         localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
@@ -732,7 +731,6 @@
       });
     }
 
-    // Limpia la vista frontal de la bitácora, conservando el historial maestro
     function clearLogsScreen() {
       if (confirm('¿Deseas ocultar/limpiar los registros de la pantalla actual? (Nota: Todo el historial completo permanece guardado de forma segura en el archivo descargable).')) {
         localStorage.setItem('sig_logs', JSON.stringify([]));
@@ -740,12 +738,10 @@
       }
     }
 
-    // Descarga de archivo TXT con la totalidad histórica de accesos
     function downloadLogsTXT() {
       const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
       const visibleLogs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
       
-      // Combinar para asegurar compatibilidad total
       let combined = [...masterLogs];
       visibleLogs.forEach(v => {
         if (!combined.some(m => m.user === v.user && m.login === v.login)) {
