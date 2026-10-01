@@ -5,199 +5,78 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Estilos de Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body { 
-      margin: 0; 
-      padding: 0; 
+      margin: 0; padding: 0; 
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
-      background-color: #0f172a; 
-      overflow: hidden;
+      background-color: #0f172a; overflow: hidden;
     }
     #map { height: 100vh; width: 100vw; z-index: 1; }
 
     #status-msg {
-      position: absolute;
-      top: 10px;
-      left: 50px;
-      z-index: 1000;
-      background: #0f172a;
-      color: #38bdf8;
-      padding: 8px 15px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      border: 1px solid #1e293b;
+      position: absolute; top: 10px; left: 50px; z-index: 1000;
+      background: #0f172a; color: #38bdf8; padding: 8px 15px;
+      border-radius: 6px; font-size: 12px; font-weight: bold; border: 1px solid #1e293b;
     }
 
     #floating-search-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1090;
-      background: #0284c7;
-      color: #fff;
-      border: 1px solid #38bdf8;
-      padding: 10px 14px;
-      border-radius: 50px;
-      font-size: 14px;
-      font-weight: bold;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
+      position: absolute; top: 10px; right: 10px; z-index: 1090;
+      background: #0284c7; color: #fff; border: 1px solid #38bdf8;
+      padding: 10px 14px; border-radius: 50px; font-size: 14px; font-weight: bold;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6); cursor: pointer;
+      display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;
     }
     #floating-search-btn:hover { background: #0369a1; transform: scale(1.05); }
 
     #side-panel {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1100;
-      background: rgba(15, 23, 42, 0.96);
-      backdrop-filter: blur(10px);
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid #334155;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      width: 290px;
-      max-height: calc(100vh - 30px);
-      box-sizing: border-box;
+      position: absolute; top: 10px; right: 10px; z-index: 1100;
+      background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(10px);
+      padding: 14px; border-radius: 12px; border: 1px solid #334155;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6); display: flex; flex-direction: column;
+      gap: 10px; width: 290px; max-height: calc(100vh - 30px); box-sizing: border-box;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    #side-panel.hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(120%);
-    }
+    #side-panel.hidden { opacity: 0; pointer-events: none; transform: translateX(120%); }
 
-    .panel-header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 6px;
-    }
-
-    .panel-header-bar span {
-      font-size: 11px;
-      font-weight: 700;
-      color: #38bdf8;
-      letter-spacing: 0.5px;
-    }
+    .panel-header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 6px; }
+    .panel-header-bar span { font-size: 11px; font-weight: 700; color: #38bdf8; letter-spacing: 0.5px; }
 
     .btn-close-panel {
-      background: #334155;
-      color: #94a3b8;
-      border: none;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: #334155; color: #94a3b8; border: none; width: 22px; height: 22px;
+      border-radius: 50%; font-size: 12px; font-weight: bold; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
     }
     .btn-close-panel:hover { background: #ef4444; color: #fff; }
 
-    #side-panel label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 700;
-      color: #94a3b8;
-    }
+    #side-panel label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: #94a3b8; }
+    #side-panel select { padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font-size: 13px; outline: none; width: 100%; box-sizing: border-box; }
 
-    #side-panel select {
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      background: #1e293b;
-      color: #f8fafc;
-      font-size: 13px;
-      outline: none;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .search-row {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    #search-input {
-      flex: 1;
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      background: #1e293b;
-      color: #f8fafc;
-      font-size: 13px;
-      outline: none;
-      box-sizing: border-box;
-    }
+    .search-row { display: flex; gap: 6px; align-items: center; }
+    #search-input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font-size: 13px; outline: none; box-sizing: border-box; }
 
     .btn-clear-search {
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #f8fafc;
-      padding: 6px 8px;
-      border-radius: 6px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
+      background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 6px 8px;
+      border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
     }
     .btn-clear-search:hover { background: #0284c7; border-color: #38bdf8; }
 
-    .list-header {
-      font-size: 11px;
-      font-weight: bold;
-      color: #38bdf8;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 6px;
-      margin-top: 2px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
+    .list-header { font-size: 11px; font-weight: bold; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 6px; margin-top: 2px; display: flex; justify-content: space-between; align-items: center; }
     #producer-list-container { overflow-y: auto; max-height: 200px; }
-
-    #producer-list {
-      list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px;
-    }
+    #producer-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
 
     #producer-list li {
       padding: 8px 10px; border-radius: 6px; cursor: pointer; background: #1e293b; border: 1px solid #334155;
       display: flex; flex-direction: column; gap: 2px; transition: all 0.2s;
     }
-
     #producer-list li .p-name { font-size: 12px; font-weight: 600; color: #f1f5f9; }
     #producer-list li .p-location { font-size: 10px; color: #38bdf8; }
     #producer-list li:hover { background: #0284c7; border-color: #38bdf8; }
 
     .empty-prompt { font-size: 11px; color: #64748b; text-align: center; padding: 12px 5px; font-style: italic; }
-
-    .admin-bar {
-      display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 8px;
-    }
-
-    .btn-admin {
-      flex: 1; padding: 7px; border-radius: 6px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; text-align: center;
-    }
-
+    .admin-bar { display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 8px; }
+    .btn-admin { flex: 1; padding: 7px; border-radius: 6px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; text-align: center; }
     .btn-users { background: #0ea5e9; color: #fff; }
     .btn-logout { background: #ef4444; color: #fff; }
 
@@ -205,80 +84,40 @@
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center;
     }
-
-    .modal-content {
-      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 620px; color: #fff; max-height: 85vh; overflow-y: auto;
-    }
-
-    .modal-header-container {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 6px; gap: 8px; flex-wrap: wrap;
-    }
-
+    .modal-content { background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 620px; color: #fff; max-height: 85vh; overflow-y: auto; }
+    .modal-header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 6px; gap: 8px; flex-wrap: wrap; }
     .modal-content h3 { color: #38bdf8; margin: 0; font-size: 14px; }
 
-    .form-create-user {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;
-    }
-
-    .form-create-user input, .form-create-user select {
-      padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #fff; font-size: 12px;
-    }
-
-    .btn-add-user {
-      grid-column: span 2; background: #16a34a; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;
-    }
+    .form-create-user { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; }
+    .form-create-user input, .form-create-user select { padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #fff; font-size: 12px; }
+    .btn-add-user { grid-column: span 2; background: #16a34a; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
 
     .modal-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
     .modal-table th, .modal-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; vertical-align: middle; }
     .modal-table th { color: #94a3b8; }
 
-    .btn-delete-user {
-      background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
-    }
-    .btn-delete-user:hover { background: #dc2626; }
-
-    .btn-toggle-pass {
-      background: transparent; border: none; cursor: pointer; font-size: 12px; margin-left: 4px; padding: 2px; vertical-align: middle;
-    }
-
+    .btn-delete-user { background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold; }
+    .btn-toggle-pass { background: transparent; border: none; cursor: pointer; font-size: 12px; margin-left: 4px; padding: 2px; }
     .btn-group-logs { display: flex; gap: 6px; }
-
-    .btn-clear-logs {
-      background: #d97706; color: #fff; border: none; padding: 5px 9px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
-    }
-    .btn-clear-logs:hover { background: #b45309; }
-
-    .btn-download-logs {
-      background: #059669; color: #fff; border: none; padding: 5px 9px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
-    }
-    .btn-download-logs:hover { background: #047857; }
-
+    .btn-clear-logs { background: #d97706; color: #fff; border: none; padding: 5px 9px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold; }
+    .btn-download-logs { background: #059669; color: #fff; border: none; padding: 5px 9px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold; }
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
     .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
-    .custom-tooltip {
-      background: rgba(15, 23, 42, 0.92) !important;
-      border: 1px solid #38bdf8 !important;
-      color: #ffffff !important;
-      border-radius: 6px !important;
-      padding: 6px 10px !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
-    }
+    .custom-tooltip { background: rgba(15, 23, 42, 0.92) !important; border: 1px solid #38bdf8 !important; color: #ffffff !important; border-radius: 6px !important; padding: 6px 10px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important; }
     .custom-tooltip-title { font-weight: bold; font-size: 12px; color: #ffffff; }
     .custom-tooltip-sub { font-size: 10px; color: #38bdf8; }
 
     @media (max-width: 600px) {
       #side-panel { top: 10px; right: 10px; left: 10px; width: auto; }
       #status-msg { top: auto; bottom: 15px; left: 10px; }
-      .btn-group-logs { width: 100%; justify-content: flex-end; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Validación de Sesión -->
   <script>
     const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
     if (!currentSession) {
@@ -287,7 +126,6 @@
   </script>
 
   <div id="status-msg">Cargando datos del KML...</div>
-
   <button id="floating-search-btn" onclick="openPanel()">🔍 Buscar</button>
 
   <div id="side-panel">
@@ -297,19 +135,15 @@
     </div>
 
     <label for="select-depto">Departamento</label>
-    <select id="select-depto">
-      <option value="todos">Todos los Departamentos</option>
-    </select>
+    <select id="select-depto"><option value="todos">Todos los Departamentos</option></select>
 
     <label for="select-muni">Municipio</label>
-    <select id="select-muni">
-      <option value="todos">Todos los Municipios</option>
-    </select>
+    <select id="select-muni"><option value="todos">Todos los Municipios</option></select>
 
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">
+      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar Filtros">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C8 2 5 7 5 13C5 17.5 8 21 12 21C16 21 19 17.5 19 13C19 7 16 2 12 2Z" fill="#15803d" stroke="#86efac" stroke-width="1.5"/>
           <path d="M12 5C9.5 5 7 8.5 7 13.5C7 16.8 9.2 19 12 19C14.8 19 17 16.8 17 13.5C17 8.5 14.5 5 12 5Z" fill="#facc15"/>
@@ -360,32 +194,21 @@
       </div>
       <table class="modal-table">
         <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Usuario</th>
-            <th>Contraseña</th>
-            <th>Rol</th>
-            <th>Acción</th>
-          </tr>
+          <tr><th>Nombre</th><th>Usuario</th><th>Contraseña</th><th>Rol</th><th>Acción</th></tr>
         </thead>
         <tbody id="users-table-body"></tbody>
       </table>
 
-      <!-- Bitácora de Sesiones -->
       <div class="modal-header-container">
         <h3>Bitácora de Sesiones (Ingresos)</h3>
         <div class="btn-group-logs">
-          <button class="btn-download-logs" onclick="downloadLogsTXT()" title="Descargar todo el historial registrado en TXT">📥 Descargar Historial (.txt)</button>
-          <button class="btn-clear-logs" onclick="clearLogsScreen()" title="Limpiar la pantalla de la bitácora visible">🧹 Limpiar Registros</button>
+          <button class="btn-download-logs" onclick="downloadLogsTXT()">📥 Descargar Historial (.txt)</button>
+          <button class="btn-clear-logs" onclick="clearLogsScreen()">🧹 Limpiar Registros</button>
         </div>
       </div>
       <table class="modal-table">
         <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>Ingreso</th>
-            <th>Duración</th>
-          </tr>
+          <tr><th>Usuario</th><th>Ingreso</th><th>Duración</th></tr>
         </thead>
         <tbody id="logs-table-body"></tbody>
       </table>
@@ -427,8 +250,7 @@
     var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 8);
 
     L.tileLayer('https://mt1.google.com/vt/lyrs=y,p&x={x}&y={y}&z={z}', {
-      maxZoom: 20, 
-      attribution: '© Google Earth Terrain'
+      maxZoom: 20, attribution: '© Google Earth Terrain'
     }).addTo(map);
 
     var googleEarthPin = L.divIcon({
@@ -443,22 +265,10 @@
       iconSize: [28, 40], iconAnchor: [14, 40], popupAnchor: [0, -36]
     });
 
-    function autolink(text) {
-      if (!text) return "";
-      var str = typeof text === 'string' ? text : String(text);
-      if (typeof text === 'object' && text.value) str = String(text.value);
-      var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-      return str.replace(exp, "<a href='$1' target='_blank' style='color:#38bdf8;'>Enlace KoboToolbox</a>");
-    }
-
     function cleanDescriptionText(desc) {
       if (!desc) return "Sin información disponible.";
       var str = typeof desc === 'string' ? desc : (desc.value || "");
-      if (!str) return "Sin información disponible.";
-      str = str.replace(/GPS_altitude:\s*([\d.]+)/gi, function(match, p1) {
-        return "GPS_altitude: " + Math.round(parseFloat(p1)) + " msnm";
-      });
-      return autolink(str);
+      return str || "Sin información disponible.";
     }
 
     var rawGeoJSON = null, kmlLayer = null, locationData = {}, featureMarkersMap = new Map();
@@ -474,80 +284,35 @@
       var props = feature.properties;
       var val = getProp(props, fieldName);
       if (val !== undefined && val !== null && String(val).trim() !== "") return String(val).trim();
-      
-      var desc = props.description || "";
-      var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
-      if (strDesc) {
-        var regex = new RegExp(fieldName + "[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
-        var match = strDesc.match(regex);
-        if (match && match[1]) return match[1].replace(/<[^>]+>/g, '').trim();
-      }
       return "";
     }
 
     fetch('./honduras.kml', { cache: 'no-cache' })
-      .then(r => {
-        if (!r.ok) throw new Error("No se pudo cargar el archivo KML");
-        return r.text();
-      })
+      .then(r => r.text())
       .then(kmlText => {
         var parser = new DOMParser();
-        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
-        rawGeoJSON = toGeoJSON.kml(kmlDom);
+        rawGeoJSON = toGeoJSON.kml(parser.parseFromString(kmlText, 'text/xml'));
 
-        if (!rawGeoJSON || !rawGeoJSON.features) {
-          if (statusDiv) statusDiv.innerText = "Error: El KML no contiene datos válidos.";
-          return;
+        if (rawGeoJSON && rawGeoJSON.features) {
+          rawGeoJSON.features.forEach(feature => {
+            if (!feature) return;
+            var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
+            var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
+            if (!locationData[depto]) locationData[depto] = new Set();
+            if (muni) locationData[depto].add(muni);
+          });
+
+          Object.keys(locationData).sort().forEach(depto => {
+            var opt = document.createElement('option');
+            opt.value = depto; opt.textContent = depto;
+            selectDepto.appendChild(opt);
+          });
+
+          renderMapFeatures();
         }
-
-        rawGeoJSON.features.forEach(feature => {
-          if (!feature) return;
-          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
-          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
-          if (!locationData[depto]) locationData[depto] = new Set();
-          if (muni) locationData[depto].add(muni);
-        });
-
-        Object.keys(locationData).sort().forEach(depto => {
-          var opt = document.createElement('option');
-          opt.value = depto; opt.textContent = depto;
-          selectDepto.appendChild(opt);
-        });
-
-        renderMapFeatures();
         if (statusDiv) statusDiv.style.display = 'none';
       })
-      .catch(err => {
-        console.error(err);
-        if (statusDiv) statusDiv.innerText = "Error al cargar la capa geográfica.";
-      });
-
-    function selectAndFocusProducer(feat, marker) {
-      if (!feat) return;
-      var props = feat.properties || {};
-      var nombre = props.name || "Productor sin nombre";
-      var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
-      var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
-
-      if (searchInput) searchInput.value = nombre;
-      if (depto && selectDepto && selectDepto.value !== depto) {
-        selectDepto.value = depto;
-        updateMuniDropdown(depto);
-      }
-      if (muni && selectMuni) selectMuni.value = muni;
-
-      if (window.innerWidth <= 600) closePanel();
-
-      var targetMarker = marker || featureMarkersMap.get(feat);
-      if (targetMarker) {
-        var latLng = targetMarker.getLatLng();
-        var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
-        var targetPoint = map.project(latLng, 15).subtract(offset);
-        map.flyTo(map.unproject(targetPoint, 15), 15, { duration: 1.2 });
-        targetMarker.openPopup();
-        targetMarker.openTooltip();
-      }
-    }
+      .catch(() => { if (statusDiv) statusDiv.innerText = "Error cargando KML"; });
 
     function renderMapFeatures() {
       if (!rawGeoJSON) return;
@@ -556,7 +321,7 @@
       var searchText = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
       if (kmlLayer) map.removeLayer(kmlLayer);
-      if (producerList) producerList.innerHTML = ''; 
+      if (producerList) producerList.innerHTML = '';
       featureMarkersMap.clear();
 
       var visibleFeatures = [];
@@ -579,56 +344,12 @@
         pointToLayer: (feature, latlng) => L.marker(latlng, { icon: googleEarthPin }),
         onEachFeature: function(feature, layer) {
           var nombre = (feature.properties && feature.properties.name) ? feature.properties.name : "Productor sin nombre";
-          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "";
-          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "";
-
-          var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties ? feature.properties.description : "") + "</div>";
-          layer.bindPopup(popupContent, { autoPan: false });
-
-          var tooltipContent = `
-            <div class="custom-tooltip-title">${nombre}</div>
-            <div class="custom-tooltip-sub">${depto}${muni ? ' • ' + muni : ''}</div>
-          `;
-          layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
-
-          layer.on('click', () => selectAndFocusProducer(feature, layer));
+          layer.bindPopup("<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties ? feature.properties.description : "") + "</div>");
           featureMarkersMap.set(feature, layer);
         }
       }).addTo(map);
 
-      visibleFeatures.sort((a, b) => {
-        var nameA = (a.properties && a.properties.name) ? a.properties.name : "";
-        var nameB = (b.properties && b.properties.name) ? b.properties.name : "";
-        return nameA.localeCompare(nameB);
-      });
-
       if (countProducers) countProducers.innerText = visibleFeatures.length;
-
-      var hasActiveFilter = (selectedDepto !== 'todos' || selectedMuni !== 'todos' || searchText !== '');
-
-      if (hasActiveFilter) {
-        if (emptyPrompt) emptyPrompt.style.display = 'none'; 
-        if (producerList) {
-          producerList.style.display = 'flex';
-          visibleFeatures.forEach(feat => {
-            var nombre = (feat.properties && feat.properties.name) ? feat.properties.name : "Productor sin nombre";
-            var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
-            var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
-
-            var li = document.createElement('li');
-            li.innerHTML = `<span class="p-name">${nombre}</span><span class="p-location">${depto}${muni ? ' • ' + muni : ''}</span>`;
-            li.addEventListener('click', () => selectAndFocusProducer(feat, featureMarkersMap.get(feat)));
-            producerList.appendChild(li);
-          });
-        }
-
-        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
-          map.fitBounds(kmlLayer.getBounds(), { padding: [60, 60], maxZoom: 13 });
-        }
-      } else {
-        if (emptyPrompt) emptyPrompt.style.display = 'block'; 
-        if (producerList) producerList.style.display = 'none';
-      }
     }
 
     function updateMuniDropdown(depto) {
@@ -642,40 +363,14 @@
       }
     }
 
-    if (selectDepto) {
-      selectDepto.addEventListener('change', function() { 
-        updateMuniDropdown(this.value); 
-        if (selectMuni) selectMuni.value = 'todos';
-        if (searchInput) searchInput.value = '';
-        map.closePopup();
-        renderMapFeatures(); 
-      });
-    }
+    if (selectDepto) selectDepto.addEventListener('change', function() { updateMuniDropdown(this.value); renderMapFeatures(); });
+    if (selectMuni) selectMuni.addEventListener('change', function() { renderMapFeatures(); });
+    if (searchInput) searchInput.addEventListener('input', function() { renderMapFeatures(); });
 
-    if (selectMuni) {
-      selectMuni.addEventListener('change', function() {
-        if (searchInput) searchInput.value = '';
-        map.closePopup();
-        renderMapFeatures();
-      });
-    }
-
-    if (searchInput) {
-      searchInput.addEventListener('input', function() {
-        if (this.value.trim() === '') {
-          if (selectDepto) selectDepto.value = 'todos'; 
-          updateMuniDropdown('todos');
-        }
-        renderMapFeatures();
-      });
-    }
-
-    // Cálculo optimizado de la duración al cerrar sesión
     function logout() {
       if (currentSession && currentSession.loginTime) {
         const loginTime = new Date(currentSession.loginTime).getTime();
-        const now = Date.now();
-        const durationMinutes = Math.max(1, Math.round((now - loginTime) / 60000));
+        const durationMinutes = Math.max(1, Math.round((Date.now() - loginTime) / 60000));
 
         const newLogEntry = {
           user: currentSession.user || 'Desconocido',
@@ -686,10 +381,6 @@
         const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
         logs.push(newLogEntry);
         localStorage.setItem('sig_logs', JSON.stringify(logs));
-
-        const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-        masterLogs.push(newLogEntry);
-        localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
       }
       sessionStorage.removeItem('current_session');
       window.location.href = 'login.html';
@@ -715,19 +406,12 @@
       users.forEach((u, index) => {
         const tr = document.createElement('tr');
         const isMainAdmin = u.user && u.user.toLowerCase() === 'admin';
-        const passVal = u.pass || '***';
-        
         tr.innerHTML = `
           <td>${u.name || u.user}</td>
           <td>${u.user}</td>
-          <td>
-            <span id="pass-text-${index}">••••••••</span>
-            <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility(${index}, '${passVal}')" title="Mostrar/Ocultar Contraseña">👁️</button>
-          </td>
+          <td><span id="pass-text-${index}">••••••••</span><button type="button" class="btn-toggle-pass" onclick="togglePassVisibility(${index}, '${u.pass}')">👁️</button></td>
           <td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>
-          <td>
-            ${isMainAdmin ? '<span style="color:#64748b; font-size:10px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}
-          </td>
+          <td>${isMainAdmin ? '<span style="color:#64748b; font-size:10px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -736,15 +420,7 @@
     function togglePassVisibility(index, realPass) {
       const elem = document.getElementById(`pass-text-${index}`);
       if (!elem) return;
-      if (elem.innerText === '••••••••') {
-        elem.innerText = realPass;
-        elem.style.color = '#38bdf8';
-        elem.style.fontFamily = 'monospace';
-      } else {
-        elem.innerText = '••••••••';
-        elem.style.color = '#fff';
-        elem.style.fontFamily = 'inherit';
-      }
+      elem.innerText = (elem.innerText === '••••••••') ? realPass : '••••••••';
     }
 
     function loadLogsTable() {
@@ -760,51 +436,20 @@
     }
 
     function clearLogsScreen() {
-      if (confirm('¿Deseas ocultar/limpiar los registros de la pantalla actual? (El historial completo permanece resguardado en el archivo descargable).')) {
-        localStorage.setItem('sig_logs', JSON.stringify([]));
-        loadLogsTable();
-      }
+      localStorage.setItem('sig_logs', JSON.stringify([]));
+      loadLogsTable();
     }
 
     function downloadLogsTXT() {
-      const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-      const visibleLogs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-      
-      let combined = [...masterLogs];
-      visibleLogs.forEach(v => {
-        if (!combined.some(m => m.user === v.user && m.login === v.login)) {
-          combined.push(v);
-        }
-      });
-
-      if (combined.length === 0) {
-        alert('No existen registros de ingresos almacenados en el historial actualmente.');
-        return;
-      }
-
-      let content = "===========================================================\n";
-      content += "  HISTORIAL GENERAL DE INGRESOS Y SESIONES - SIG AGUACATE  \n";
-      content += "===========================================================\n";
-      content += "Fecha de Reporte: " + new Date().toLocaleString('es-HN') + "\n\n";
-      content += String("USUARIO").padEnd(20) + String("FECHA Y HORA DE INGRESO").padEnd(30) + "DURACIÓN\n";
-      content += "-----------------------------------------------------------\n";
-
-      combined.forEach(item => {
-        content += String(item.user || 'N/A').padEnd(20) + String(item.login || 'N/A').padEnd(30) + String(item.duration || 'N/A') + "\n";
-      });
-
-      content += "-----------------------------------------------------------\n";
-      content += "Total de registros históricos: " + combined.length + "\n";
-
+      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      if (logs.length === 0) { alert('No hay registros.'); return; }
+      let content = "HISTORIAL DE SESIONES\n\n";
+      logs.forEach(l => { content += `${l.user} - ${l.login} - Duración: ${l.duration}\n`; });
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.download = `bitacora_sesiones_honduras_${new Date().toISOString().slice(0,10)}.txt`;
-      document.body.appendChild(link);
+      link.href = URL.createObjectURL(blob);
+      link.download = `bitacora_${new Date().toISOString().slice(0,10)}.txt`;
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
     }
 
     function addUser(e) {
@@ -814,14 +459,9 @@
       const pass = document.getElementById('new-pass').value.trim();
       const role = document.getElementById('new-role').value;
 
-      if (!name || !user || !pass) {
-        alert('Por favor completa todos los campos requeridos.');
-        return;
-      }
-
       const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
       if (users.some(u => u.user && u.user.toLowerCase() === user.toLowerCase())) {
-        alert('El usuario ya existe. Por favor elige otro.');
+        alert('El usuario ya existe.');
         return;
       }
 
@@ -833,11 +473,11 @@
       document.getElementById('new-pass').value = '';
 
       loadUsersTable();
-      alert('Usuario registrado exitosamente');
+      alert('Usuario registrado exitosamente en este dispositivo.');
     }
 
     function deleteUser(username) {
-      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
+      if (confirm(`¿Eliminar usuario "${username}"?`)) {
         let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
         users = users.filter(u => u.user && u.user.toLowerCase() !== username.toLowerCase());
         localStorage.setItem('sig_users', JSON.stringify(users));
