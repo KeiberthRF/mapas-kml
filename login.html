@@ -5,11 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -49,7 +45,6 @@
       padding: 40px 36px;
       width: 420px;
       max-width: 92vw;
-      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -121,14 +116,10 @@
       font-size: 13.5px;
       outline: none;
       width: 100%;
-      box-sizing: border-box;
       transition: all 0.25s ease;
     }
 
-    .login-container input::placeholder {
-      color: #64748b;
-      font-size: 12.5px;
-    }
+    .login-container input::placeholder { color: #64748b; font-size: 12.5px; }
 
     .login-container input:focus {
       border-color: #38bdf8;
@@ -145,15 +136,9 @@
       cursor: pointer;
       font-size: 15px;
       padding: 2px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: color 0.2s;
     }
 
-    .btn-toggle-pass:hover {
-      color: #38bdf8;
-    }
+    .btn-toggle-pass:hover { color: #38bdf8; }
 
     .btn-login {
       padding: 12px;
@@ -177,10 +162,6 @@
       background: linear-gradient(90deg, #0369a1 0%, #0284c7 100%);
       box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
       transform: translateY(-1px);
-    }
-
-    .btn-login:active {
-      transform: translateY(0);
     }
 
     #error-msg {
@@ -246,12 +227,11 @@
   <script>
     const ADMIN_PASSWORD = '16218391499krf';
 
-    // LISTA MAESTRA DE USUARIOS PREDETERMINADOS (Disponibles en cualquier dispositivo)
-    const DEFAULT_USERS = [
+    // USUARIOS GLOBALES (Cualquier dispositivo podrá ingresar con estas credenciales)
+    const GLOBAL_USERS = [
       { name: 'Administrador Principal', user: 'admin', pass: ADMIN_PASSWORD, role: 'admin' },
       { name: 'Usuario Invitado', user: 'invitado', pass: '123456', role: 'invitado' },
-      { name: 'Administrador Secundario', user: 'admin2', pass: 'admin123', role: 'admin' },
-      { name: 'Invitado Especial', user: 'invitado2', pass: 'invitado123', role: 'invitado' }
+      { name: 'Carlos', user: 'carlos', pass: 'carlos123', role: 'invitado' }
     ];
 
     function initDatabase() {
@@ -262,16 +242,14 @@
         currentUsers = [];
       }
 
-      // Merge inteligente: Asegura que todos los usuarios predeterminados estén presentes en el dispositivo
-      DEFAULT_USERS.forEach(defaultUser => {
-        const existingIndex = currentUsers.findIndex(u => u && u.user && u.user.toLowerCase() === defaultUser.user.toLowerCase());
-        if (existingIndex === -1) {
-          currentUsers.push(defaultUser);
+      // Sincronizar usuarios predefinidos en el almacenamiento local
+      GLOBAL_USERS.forEach(gUser => {
+        const idx = currentUsers.findIndex(u => u && u.user && u.user.toLowerCase() === gUser.user.toLowerCase());
+        if (idx === -1) {
+          currentUsers.push(gUser);
         } else {
-          // Actualizar contraseña si cambió para admin global
-          if (defaultUser.user.toLowerCase() === 'admin') {
-            currentUsers[existingIndex].pass = ADMIN_PASSWORD;
-          }
+          // Asegurar contraseñas correctas para usuarios del sistema
+          currentUsers[idx].pass = gUser.pass;
         }
       });
 
@@ -282,7 +260,6 @@
       initDatabase();
       const userField = document.getElementById('username');
       const passField = document.getElementById('password');
-      
       if (userField) userField.value = '';
       if (passField) passField.value = '';
       if (userField) userField.focus();
@@ -304,19 +281,27 @@
 
       if (!userElem || !passElem) return;
 
-      const userInput = userElem.value.trim();
+      const userInput = userElem.value.trim().toLowerCase();
       const passInput = passElem.value.trim();
 
+      // Cargar lista combinada (LocalStorage + Lista Global de Respaldo)
       let users = [];
       try {
         users = JSON.parse(localStorage.getItem('sig_users') || '[]');
       } catch (err) {
-        users = DEFAULT_USERS;
+        users = [];
       }
-      
-      // Coincidencia insensible a mayúsculas y minúsculas para el nombre de usuario
+
+      // Fusionar con usuarios globales por si LocalStorage está vacío en este dispositivo
+      GLOBAL_USERS.forEach(gu => {
+        if (!users.some(u => u && u.user && u.user.toLowerCase() === gu.user.toLowerCase())) {
+          users.push(gu);
+        }
+      });
+
+      // Validación doble (Compara contra la lista)
       const matchedUser = users.find(u => 
-        u && u.user && u.user.toLowerCase() === userInput.toLowerCase() && u.pass === passInput
+        u && u.user && u.user.toLowerCase() === userInput && u.pass === passInput
       );
 
       if (matchedUser) {
