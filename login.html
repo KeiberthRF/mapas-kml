@@ -225,95 +225,87 @@
   </div>
 
   <script>
-    const ADMIN_PASSWORD = '16218391499krf';
-
-    // USUARIOS GLOBALES (Cualquier dispositivo podrá ingresar con estas credenciales)
-    const GLOBAL_USERS = [
-      { name: 'Administrador Principal', user: 'admin', pass: ADMIN_PASSWORD, role: 'admin' },
+    // LISTA DE USUARIOS AUTORIZADOS PARA FUNCIONAR EN CUALQUIER DISPOSITIVO DEL MUNDO
+    const USUARIOS_DEL_SISTEMA = [
+      { name: 'Administrador Principal', user: 'admin', pass: '16218391499krf', role: 'admin' },
       { name: 'Usuario Invitado', user: 'invitado', pass: '123456', role: 'invitado' },
       { name: 'Carlos', user: 'carlos', pass: 'carlos123', role: 'invitado' }
+      // Puedes agregar más usuarios aquí si lo deseas, por ejemplo:
+      // { name: 'Maria', user: 'maria', pass: 'maria123', role: 'invitado' }
     ];
 
-    function initDatabase() {
-      let currentUsers = [];
+    function sincronizarMemoria() {
+      let locales = [];
       try {
-        currentUsers = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        locales = JSON.parse(localStorage.getItem('sig_users') || '[]');
       } catch (e) {
-        currentUsers = [];
+        locales = [];
       }
 
-      // Sincronizar usuarios predefinidos en el almacenamiento local
-      GLOBAL_USERS.forEach(gUser => {
-        const idx = currentUsers.findIndex(u => u && u.user && u.user.toLowerCase() === gUser.user.toLowerCase());
+      USUARIOS_DEL_SISTEMA.forEach(uSistema => {
+        const idx = locales.findIndex(l => l && l.user && l.user.toLowerCase() === uSistema.user.toLowerCase());
         if (idx === -1) {
-          currentUsers.push(gUser);
+          locales.push(uSistema);
         } else {
-          // Asegurar contraseñas correctas para usuarios del sistema
-          currentUsers[idx].pass = gUser.pass;
+          locales[idx].pass = uSistema.pass; // Actualiza la clave si cambió en el código
         }
       });
 
-      localStorage.setItem('sig_users', JSON.stringify(currentUsers));
+      localStorage.setItem('sig_users', JSON.stringify(locales));
     }
 
     window.onload = function() {
-      initDatabase();
-      const userField = document.getElementById('username');
-      const passField = document.getElementById('password');
-      if (userField) userField.value = '';
-      if (passField) passField.value = '';
-      if (userField) userField.focus();
+      sincronizarMemoria();
+      const uInput = document.getElementById('username');
+      const pInput = document.getElementById('password');
+      if (uInput) uInput.value = '';
+      if (pInput) pInput.value = '';
+      if (uInput) uInput.focus();
     };
 
     function togglePasswordVisibility() {
-      const passInput = document.getElementById('password');
-      if (passInput) {
-        passInput.type = passInput.type === 'password' ? 'text' : 'password';
-      }
+      const pInput = document.getElementById('password');
+      if (pInput) pInput.type = pInput.type === 'password' ? 'text' : 'password';
     }
 
     function handleLogin(e) {
       e.preventDefault();
       
-      const userElem = document.getElementById('username');
-      const passElem = document.getElementById('password');
+      const uInput = document.getElementById('username');
+      const pInput = document.getElementById('password');
       const errorDiv = document.getElementById('error-msg');
 
-      if (!userElem || !passElem) return;
+      if (!uInput || !pInput) return;
 
-      const userInput = userElem.value.trim().toLowerCase();
-      const passInput = passElem.value.trim();
+      const userTxt = uInput.value.trim().toLowerCase();
+      const passTxt = pInput.value.trim();
 
-      // Cargar lista combinada (LocalStorage + Lista Global de Respaldo)
-      let users = [];
+      let listaCompleta = [...USUARIOS_DEL_SISTEMA];
+      
       try {
-        users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-      } catch (err) {
-        users = [];
-      }
+        const creadosEnEsteDispositivo = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        creadosEnEsteDispositivo.forEach(uLocal => {
+          if (!listaCompleta.some(u => u.user.toLowerCase() === uLocal.user.toLowerCase())) {
+            listaCompleta.push(uLocal);
+          }
+        });
+      } catch (err) {}
 
-      // Fusionar con usuarios globales por si LocalStorage está vacío en este dispositivo
-      GLOBAL_USERS.forEach(gu => {
-        if (!users.some(u => u && u.user && u.user.toLowerCase() === gu.user.toLowerCase())) {
-          users.push(gu);
-        }
-      });
-
-      // Validación doble (Compara contra la lista)
-      const matchedUser = users.find(u => 
-        u && u.user && u.user.toLowerCase() === userInput && u.pass === passInput
+      // Busca coincidencia en la lista
+      const usuarioValido = listaCompleta.find(u => 
+        u && u.user && u.user.toLowerCase() === userTxt && u.pass === passTxt
       );
 
-      if (matchedUser) {
+      if (usuarioValido) {
         if (errorDiv) errorDiv.style.display = 'none';
 
         const now = new Date();
         const loginFormatted = now.toLocaleDateString('es-HN') + ' ' + now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
 
         const sessionData = {
-          user: matchedUser.user,
-          name: matchedUser.name || matchedUser.user,
-          role: matchedUser.role || 'invitado',
+          user: usuarioValido.user,
+          name: usuarioValido.name || usuarioValido.user,
+          role: usuarioValido.role || 'invitado',
           loginTime: now.getTime(),
           loginFormatted: loginFormatted
         };
@@ -322,8 +314,8 @@
         window.location.href = 'index.html';
       } else {
         if (errorDiv) errorDiv.style.display = 'block';
-        passElem.value = '';
-        passElem.focus();
+        pInput.value = '';
+        pInput.focus();
       }
     }
   </script>
