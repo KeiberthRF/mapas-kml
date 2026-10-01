@@ -201,7 +201,6 @@
     .btn-users { background: #0ea5e9; color: #fff; }
     .btn-logout { background: #ef4444; color: #fff; }
 
-    /* Modal Administración */
     #admin-modal {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center;
@@ -256,7 +255,6 @@
 
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
 
-    /* Estilo Popup Emergente */
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
     .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
 
@@ -311,7 +309,6 @@
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <!-- Icono Aguacate de reseteo completo -->
       <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C8 2 5 7 5 13C5 17.5 8 21 12 21C16 21 19 17.5 19 13C19 7 16 2 12 2Z" fill="#15803d" stroke="#86efac" stroke-width="1.5"/>
@@ -395,13 +392,13 @@
     </div>
   </div>
 
-  <!-- Librerías Leaflet y Conversor KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
     if (currentSession && currentSession.role === 'admin') {
-      document.getElementById('btn-logs').style.display = 'block';
+      const btnLogs = document.getElementById('btn-logs');
+      if (btnLogs) btnLogs.style.display = 'block';
     }
 
     var statusDiv = document.getElementById('status-msg');
@@ -416,25 +413,24 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Función Escobita Manual (Solo activada por el botón aguacate)
     function fullReset() {
-      searchInput.value = '';
-      selectDepto.value = 'todos';
+      if (searchInput) searchInput.value = '';
+      if (selectDepto) selectDepto.value = 'todos';
       updateMuniDropdown('todos');
-      map.closePopup();
-      renderMapFeatures();
-      map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
+      if (map) {
+        map.closePopup();
+        renderMapFeatures();
+        map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
+      }
     }
 
-    // Inicialización del Mapa con Capa Satelital Híbrida + Relieve de Google Earth
-    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
+    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 8);
 
     L.tileLayer('https://mt1.google.com/vt/lyrs=y,p&x={x}&y={y}&z={z}', {
       maxZoom: 20, 
       attribution: '© Google Earth Terrain'
     }).addTo(map);
 
-    // Marcador Globo Amarillo con Estrella Negra
     var googleEarthPin = L.divIcon({
       className: 'google-earth-marker',
       html: `
@@ -452,12 +448,13 @@
       var str = typeof text === 'string' ? text : String(text);
       if (typeof text === 'object' && text.value) str = String(text.value);
       var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-      return str.replace(exp, "<a href='$1' target='_blank'>Enlace KoboToolbox</a>");
+      return str.replace(exp, "<a href='$1' target='_blank' style='color:#38bdf8;'>Enlace KoboToolbox</a>");
     }
 
     function cleanDescriptionText(desc) {
-      if (!desc) return "";
+      if (!desc) return "Sin información disponible.";
       var str = typeof desc === 'string' ? desc : (desc.value || "");
+      if (!str) return "Sin información disponible.";
       str = str.replace(/GPS_altitude:\s*([\d.]+)/gi, function(match, p1) {
         return "GPS_altitude: " + Math.round(parseFloat(p1)) + " msnm";
       });
@@ -467,15 +464,17 @@
     var rawGeoJSON = null, kmlLayer = null, locationData = {}, featureMarkersMap = new Map();
 
     function getProp(props, key) {
-      if (!props) return "";
+      if (!props || typeof props !== 'object') return "";
       var foundKey = Object.keys(props).find(k => k.toLowerCase() === key.toLowerCase());
       return foundKey ? props[foundKey] : "";
     }
 
     function extractField(feature, fieldName) {
-      var props = feature.properties || {};
+      if (!feature || !feature.properties) return "";
+      var props = feature.properties;
       var val = getProp(props, fieldName);
-      if (val) return String(val).trim();
+      if (val !== undefined && val !== null && String(val).trim() !== "") return String(val).trim();
+      
       var desc = props.description || "";
       var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
       if (strDesc) {
@@ -487,12 +486,22 @@
     }
 
     fetch('./honduras.kml', { cache: 'no-cache' })
-      .then(r => r.text())
+      .then(r => {
+        if (!r.ok) throw new Error("No se pudo cargar el archivo KML");
+        return r.text();
+      })
       .then(kmlText => {
         var parser = new DOMParser();
-        rawGeoJSON = toGeoJSON.kml(parser.parseFromString(kmlText, 'text/xml'));
+        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
+        rawGeoJSON = toGeoJSON.kml(kmlDom);
+
+        if (!rawGeoJSON || !rawGeoJSON.features) {
+          if (statusDiv) statusDiv.innerText = "Error: El KML no contiene datos válidos.";
+          return;
+        }
 
         rawGeoJSON.features.forEach(feature => {
+          if (!feature) return;
           var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
           var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
           if (!locationData[depto]) locationData[depto] = new Set();
@@ -506,23 +515,26 @@
         });
 
         renderMapFeatures();
-        statusDiv.style.display = 'none';
-
-        setTimeout(() => map.flyTo([14.6, -87.8], 8, { duration: 2.2 }), 400);
+        if (statusDiv) statusDiv.style.display = 'none';
+      })
+      .catch(err => {
+        console.error(err);
+        if (statusDiv) statusDiv.innerText = "Error al cargar la capa geográfica.";
       });
 
     function selectAndFocusProducer(feat, marker) {
+      if (!feat) return;
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
       var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
       var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
 
-      searchInput.value = nombre;
-      if (depto && selectDepto.value !== depto) {
+      if (searchInput) searchInput.value = nombre;
+      if (depto && selectDepto && selectDepto.value !== depto) {
         selectDepto.value = depto;
         updateMuniDropdown(depto);
       }
-      if (muni) selectMuni.value = muni;
+      if (muni && selectMuni) selectMuni.value = muni;
 
       if (window.innerWidth <= 600) closePanel();
 
@@ -538,16 +550,21 @@
     }
 
     function renderMapFeatures() {
-      var selectedDepto = selectDepto.value, selectedMuni = selectMuni.value, searchText = searchInput.value.toLowerCase().trim();
+      if (!rawGeoJSON) return;
+      var selectedDepto = selectDepto ? selectDepto.value : 'todos';
+      var selectedMuni = selectMuni ? selectMuni.value : 'todos';
+      var searchText = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
       if (kmlLayer) map.removeLayer(kmlLayer);
-      producerList.innerHTML = ''; featureMarkersMap.clear();
+      if (producerList) producerList.innerHTML = ''; 
+      featureMarkersMap.clear();
 
       var visibleFeatures = [];
 
       kmlLayer = L.geoJSON(rawGeoJSON, {
         filter: function(feature) {
-          var nombre = (feature.properties.name || "").toLowerCase();
+          if (!feature) return false;
+          var nombre = (feature.properties && feature.properties.name ? feature.properties.name : "").toLowerCase();
           var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
           var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
 
@@ -561,11 +578,11 @@
         },
         pointToLayer: (feature, latlng) => L.marker(latlng, { icon: googleEarthPin }),
         onEachFeature: function(feature, layer) {
-          var nombre = feature.properties.name || "Productor sin nombre";
+          var nombre = (feature.properties && feature.properties.name) ? feature.properties.name : "Productor sin nombre";
           var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "";
           var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "";
 
-          var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
+          var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties ? feature.properties.description : "") + "</div>";
           layer.bindPopup(popupContent, { autoPan: false });
 
           var tooltipContent = `
@@ -579,36 +596,43 @@
         }
       }).addTo(map);
 
-      visibleFeatures.sort((a, b) => (a.properties.name || "").localeCompare(b.properties.name || ""));
-      countProducers.innerText = visibleFeatures.length;
+      visibleFeatures.sort((a, b) => {
+        var nameA = (a.properties && a.properties.name) ? a.properties.name : "";
+        var nameB = (b.properties && b.properties.name) ? b.properties.name : "";
+        return nameA.localeCompare(nameB);
+      });
+
+      if (countProducers) countProducers.innerText = visibleFeatures.length;
 
       var hasActiveFilter = (selectedDepto !== 'todos' || selectedMuni !== 'todos' || searchText !== '');
 
       if (hasActiveFilter) {
-        emptyPrompt.style.display = 'none'; producerList.style.display = 'flex';
-        visibleFeatures.forEach(feat => {
-          var nombre = feat.properties.name || "Productor sin nombre";
-          var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
-          var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
+        if (emptyPrompt) emptyPrompt.style.display = 'none'; 
+        if (producerList) {
+          producerList.style.display = 'flex';
+          visibleFeatures.forEach(feat => {
+            var nombre = (feat.properties && feat.properties.name) ? feat.properties.name : "Productor sin nombre";
+            var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
+            var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
 
-          var li = document.createElement('li');
-          li.innerHTML = `<span class="p-name">${nombre}</span><span class="p-location">${depto}${muni ? ' • ' + muni : ''}</span>`;
-          li.addEventListener('click', () => selectAndFocusProducer(feat, featureMarkersMap.get(feat)));
-          producerList.appendChild(li);
-        });
-
-        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
-          map.fitBounds(kmlLayer.getBounds(), {
-            padding: [60, 60],
-            maxZoom: 13
+            var li = document.createElement('li');
+            li.innerHTML = `<span class="p-name">${nombre}</span><span class="p-location">${depto}${muni ? ' • ' + muni : ''}</span>`;
+            li.addEventListener('click', () => selectAndFocusProducer(feat, featureMarkersMap.get(feat)));
+            producerList.appendChild(li);
           });
         }
+
+        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
+          map.fitBounds(kmlLayer.getBounds(), { padding: [60, 60], maxZoom: 13 });
+        }
       } else {
-        emptyPrompt.style.display = 'block'; producerList.style.display = 'none';
+        if (emptyPrompt) emptyPrompt.style.display = 'block'; 
+        if (producerList) producerList.style.display = 'none';
       }
     }
 
     function updateMuniDropdown(depto) {
+      if (!selectMuni) return;
       selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
       if (depto !== 'todos' && locationData[depto]) {
         Array.from(locationData[depto]).sort().forEach(muni => {
@@ -618,38 +642,44 @@
       }
     }
 
-    // Al cambiar de Departamento: vacía el buscador y resetea municipios
-    selectDepto.addEventListener('change', function() { 
-      updateMuniDropdown(this.value); 
-      selectMuni.value = 'todos';
-      searchInput.value = '';
-      map.closePopup();
-      renderMapFeatures(); 
-    });
+    if (selectDepto) {
+      selectDepto.addEventListener('change', function() { 
+        updateMuniDropdown(this.value); 
+        if (selectMuni) selectMuni.value = 'todos';
+        if (searchInput) searchInput.value = '';
+        map.closePopup();
+        renderMapFeatures(); 
+      });
+    }
 
-    // Al cambiar de Municipio: limpia el buscador y cierra popups anteriores
-    selectMuni.addEventListener('change', function() {
-      searchInput.value = '';
-      map.closePopup();
-      renderMapFeatures();
-    });
-    
-    searchInput.addEventListener('input', function() {
-      if (this.value.trim() === '') {
-        selectDepto.value = 'todos'; updateMuniDropdown('todos');
-      }
-      renderMapFeatures();
-    });
+    if (selectMuni) {
+      selectMuni.addEventListener('change', function() {
+        if (searchInput) searchInput.value = '';
+        map.closePopup();
+        renderMapFeatures();
+      });
+    }
 
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        if (this.value.trim() === '') {
+          if (selectDepto) selectDepto.value = 'todos'; 
+          updateMuniDropdown('todos');
+        }
+        renderMapFeatures();
+      });
+    }
+
+    // Cálculo optimizado de la duración al cerrar sesión
     function logout() {
-      if (currentSession) {
-        const loginTime = new Date(currentSession.loginTime);
-        const now = new Date();
+      if (currentSession && currentSession.loginTime) {
+        const loginTime = new Date(currentSession.loginTime).getTime();
+        const now = Date.now();
         const durationMinutes = Math.max(1, Math.round((now - loginTime) / 60000));
 
         const newLogEntry = {
-          user: currentSession.user,
-          login: currentSession.loginFormatted,
+          user: currentSession.user || 'Desconocido',
+          login: currentSession.loginFormatted || new Date().toLocaleString('es-HN'),
           duration: durationMinutes + ' min'
         };
 
@@ -668,24 +698,27 @@
     function openAdminModal() {
       loadUsersTable();
       loadLogsTable();
-      document.getElementById('admin-modal').style.display = 'flex';
+      const modal = document.getElementById('admin-modal');
+      if (modal) modal.style.display = 'flex';
     }
 
     function closeAdminModal() {
-      document.getElementById('admin-modal').style.display = 'none';
+      const modal = document.getElementById('admin-modal');
+      if (modal) modal.style.display = 'none';
     }
 
     function loadUsersTable() {
       const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
       const tbody = document.getElementById('users-table-body');
+      if (!tbody) return;
       tbody.innerHTML = '';
       users.forEach((u, index) => {
         const tr = document.createElement('tr');
-        const isMainAdmin = u.user.toLowerCase() === 'admin';
+        const isMainAdmin = u.user && u.user.toLowerCase() === 'admin';
         const passVal = u.pass || '***';
         
         tr.innerHTML = `
-          <td>${u.name}</td>
+          <td>${u.name || u.user}</td>
           <td>${u.user}</td>
           <td>
             <span id="pass-text-${index}">••••••••</span>
@@ -702,6 +735,7 @@
 
     function togglePassVisibility(index, realPass) {
       const elem = document.getElementById(`pass-text-${index}`);
+      if (!elem) return;
       if (elem.innerText === '••••••••') {
         elem.innerText = realPass;
         elem.style.color = '#38bdf8';
@@ -716,10 +750,11 @@
     function loadLogsTable() {
       const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
       const tbody = document.getElementById('logs-table-body');
+      if (!tbody) return;
       tbody.innerHTML = '';
       logs.slice().reverse().forEach(log => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${log.user}</td><td>${log.login}</td><td>${log.duration}</td>`;
+        tr.innerHTML = `<td>${log.user || '-'}</td><td>${log.login || '-'}</td><td>${log.duration || '-'}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -755,7 +790,7 @@
       content += "-----------------------------------------------------------\n";
 
       combined.forEach(item => {
-        content += String(item.user).padEnd(20) + String(item.login).padEnd(30) + String(item.duration) + "\n";
+        content += String(item.user || 'N/A').padEnd(20) + String(item.login || 'N/A').padEnd(30) + String(item.duration || 'N/A') + "\n";
       });
 
       content += "-----------------------------------------------------------\n";
@@ -779,8 +814,13 @@
       const pass = document.getElementById('new-pass').value.trim();
       const role = document.getElementById('new-role').value;
 
+      if (!name || !user || !pass) {
+        alert('Por favor completa todos los campos requeridos.');
+        return;
+      }
+
       const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-      if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
+      if (users.some(u => u.user && u.user.toLowerCase() === user.toLowerCase())) {
         alert('El usuario ya existe. Por favor elige otro.');
         return;
       }
@@ -799,7 +839,7 @@
     function deleteUser(username) {
       if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
         let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
+        users = users.filter(u => u.user && u.user.toLowerCase() !== username.toLowerCase());
         localStorage.setItem('sig_users', JSON.stringify(users));
         loadUsersTable();
       }
