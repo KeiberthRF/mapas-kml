@@ -23,7 +23,6 @@
       position: relative;
     }
 
-    /* Anillo orbital geográfico de fondo */
     body::before {
       content: '';
       position: absolute;
@@ -210,7 +209,6 @@
 
   <div class="login-container">
     <div class="login-header">
-      <!-- Icono del Aguacate -->
       <div class="login-header-icon">
         <svg width="42" height="42" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C8 2 5 7 5 13C5 17.5 8 21 12 21C16 21 19 17.5 19 13C19 7 16 2 12 2Z" fill="#15803d" stroke="#86efac" stroke-width="1.5"/>
@@ -246,19 +244,27 @@
   </div>
 
   <script>
-    // Inicialización de usuarios por defecto si no existen
+    const ADMIN_PASSWORD = '16218391499krf';
+
     function initDatabase() {
-      const existingUsers = localStorage.getItem('sig_users');
-      if (!existingUsers) {
-        const defaultUsers = [
-          { name: 'Administrador Principal', user: 'admin', pass: '16218391499krf', role: 'admin' },
+      let users = JSON.parse(localStorage.getItem('sig_users') || 'null');
+      
+      if (!users) {
+        users = [
+          { name: 'Administrador Principal', user: 'admin', pass: ADMIN_PASSWORD, role: 'admin' },
           { name: 'Usuario Invitado', user: 'invitado', pass: '123456', role: 'invitado' }
         ];
-        localStorage.setItem('sig_users', JSON.stringify(defaultUsers));
+        localStorage.setItem('sig_users', JSON.stringify(users));
+      } else {
+        // Fuerza la actualización de la clave del admin en el localStorage si aún tenía la anterior
+        const adminIndex = users.findIndex(u => u.user.toLowerCase() === 'admin');
+        if (adminIndex !== -1 && users[adminIndex].pass !== ADMIN_PASSWORD) {
+          users[adminIndex].pass = ADMIN_PASSWORD;
+          localStorage.setItem('sig_users', JSON.stringify(users));
+        }
       }
     }
 
-    // Campos vacíos y cursor parpadeando automáticamente en 'Usuario'
     window.onload = function() {
       initDatabase();
       const userField = document.getElementById('username');
@@ -269,17 +275,11 @@
       userField.focus();
     };
 
-    // Ojito para alternar visibilidad de la contraseña
     function togglePasswordVisibility() {
       const passInput = document.getElementById('password');
-      if (passInput.type === 'password') {
-        passInput.type = 'text';
-      } else {
-        passInput.type = 'password';
-      }
+      passInput.type = passInput.type === 'password' ? 'text' : 'password';
     }
 
-    // Validación e Inicio de Sesión
     function handleLogin(e) {
       e.preventDefault();
       
