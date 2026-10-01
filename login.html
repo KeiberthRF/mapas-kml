@@ -5,7 +5,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -45,6 +49,7 @@
       padding: 40px 36px;
       width: 420px;
       max-width: 92vw;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -116,10 +121,14 @@
       font-size: 13.5px;
       outline: none;
       width: 100%;
+      box-sizing: border-box;
       transition: all 0.25s ease;
     }
 
-    .login-container input::placeholder { color: #64748b; font-size: 12.5px; }
+    .login-container input::placeholder {
+      color: #64748b;
+      font-size: 12.5px;
+    }
 
     .login-container input:focus {
       border-color: #38bdf8;
@@ -136,9 +145,15 @@
       cursor: pointer;
       font-size: 15px;
       padding: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
     }
 
-    .btn-toggle-pass:hover { color: #38bdf8; }
+    .btn-toggle-pass:hover {
+      color: #38bdf8;
+    }
 
     .btn-login {
       padding: 12px;
@@ -162,6 +177,10 @@
       background: linear-gradient(90deg, #0369a1 0%, #0284c7 100%);
       box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
       transform: translateY(-1px);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
     }
 
     #error-msg {
@@ -207,12 +226,12 @@
     <form id="login-form" onsubmit="handleLogin(event)" autocomplete="off" style="display: flex; flex-direction: column; gap: 12px;">
       <label for="username">USUARIO O NOMBRE</label>
       <div class="input-wrapper">
-        <input type="text" id="username" autocomplete="off" value="" autofocus required placeholder="Ingrese usuario" />
+        <input type="text" id="username" autocomplete="off" autofocus required placeholder="Ingrese usuario" />
       </div>
 
       <label for="password">CONTRASEÑA</label>
       <div class="input-wrapper">
-        <input type="password" id="password" autocomplete="off" value="" required placeholder="Ingrese contraseña" />
+        <input type="password" id="password" autocomplete="off" required placeholder="Ingrese contraseña" />
         <button type="button" class="btn-toggle-pass" onclick="togglePasswordVisibility()" title="Mostrar/Ocultar Contraseña">👁️</button>
       </div>
 
@@ -225,88 +244,92 @@
   </div>
 
   <script>
-    // LISTA DE USUARIOS AUTORIZADOS PARA FUNCIONAR EN CUALQUIER DISPOSITIVO DEL MUNDO
-    const USUARIOS_DEL_SISTEMA = [
-      { name: 'Administrador Principal', user: 'admin', pass: '16218391499krf', role: 'admin' },
-      { name: 'Administrador Principal', user: 'keiberth', pass: '17angeles', role: 'admin' },
-      { name: 'Carlos', user: 'carlos', pass: 'aspah2026', role: 'invitado' }
-       { name: 'Fernando', user: 'fvt', pass: 'fepsa2026', role: 'invitado' }
-      // Puedes agregar más usuarios aquí si lo deseas, por ejemplo:
-      // { name: 'Maria', user: 'maria', pass: 'maria123', role: 'invitado' }
+    const ADMIN_PASSWORD = '16218391499krf';
+
+    // Usuarios Base Predeterminados del Sistema
+    const DEFAULT_USERS = [
+      { name: 'Administrador Principal', user: 'admin', pass: ADMIN_PASSWORD, role: 'admin' },
+      { name: 'Usuario Invitado', user: 'invitado', pass: '123456', role: 'invitado' },
+      { name: 'Carlos', user: 'carlos', pass: 'carlos123', role: 'invitado' }
     ];
 
-    function sincronizarMemoria() {
-      let locales = [];
+    function initDatabase() {
+      let users = [];
       try {
-        locales = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        users = JSON.parse(localStorage.getItem('sig_users') || '[]');
       } catch (e) {
-        locales = [];
+        users = [];
       }
 
-      USUARIOS_DEL_SISTEMA.forEach(uSistema => {
-        const idx = locales.findIndex(l => l && l.user && l.user.toLowerCase() === uSistema.user.toLowerCase());
+      // Asegura que los usuarios base siempre estén presentes
+      DEFAULT_USERS.forEach(defUser => {
+        const idx = users.findIndex(u => u && u.user && u.user.toLowerCase() === defUser.user.toLowerCase());
         if (idx === -1) {
-          locales.push(uSistema);
-        } else {
-          locales[idx].pass = uSistema.pass; // Actualiza la clave si cambió en el código
+          users.push(defUser);
+        } else if (defUser.user.toLowerCase() === 'admin') {
+          users[idx].pass = ADMIN_PASSWORD;
         }
       });
 
-      localStorage.setItem('sig_users', JSON.stringify(locales));
+      localStorage.setItem('sig_users', JSON.stringify(users));
     }
 
     window.onload = function() {
-      sincronizarMemoria();
-      const uInput = document.getElementById('username');
-      const pInput = document.getElementById('password');
-      if (uInput) uInput.value = '';
-      if (pInput) pInput.value = '';
-      if (uInput) uInput.focus();
+      initDatabase();
+      const userField = document.getElementById('username');
+      const passField = document.getElementById('password');
+      if (userField) userField.value = '';
+      if (passField) passField.value = '';
+      if (userField) userField.focus();
     };
 
     function togglePasswordVisibility() {
-      const pInput = document.getElementById('password');
-      if (pInput) pInput.type = pInput.type === 'password' ? 'text' : 'password';
+      const passInput = document.getElementById('password');
+      if (passInput) {
+        passInput.type = (passInput.type === 'password') ? 'text' : 'password';
+      }
     }
 
     function handleLogin(e) {
       e.preventDefault();
       
-      const uInput = document.getElementById('username');
-      const pInput = document.getElementById('password');
+      const userField = document.getElementById('username');
+      const passField = document.getElementById('password');
       const errorDiv = document.getElementById('error-msg');
 
-      if (!uInput || !pInput) return;
+      if (!userField || !passField) return;
 
-      const userTxt = uInput.value.trim().toLowerCase();
-      const passTxt = pInput.value.trim();
+      const userInput = userField.value.trim().toLowerCase();
+      const passInput = passField.value.trim();
 
-      let listaCompleta = [...USUARIOS_DEL_SISTEMA];
-      
+      let users = [];
       try {
-        const creadosEnEsteDispositivo = JSON.parse(localStorage.getItem('sig_users') || '[]');
-        creadosEnEsteDispositivo.forEach(uLocal => {
-          if (!listaCompleta.some(u => u.user.toLowerCase() === uLocal.user.toLowerCase())) {
-            listaCompleta.push(uLocal);
-          }
-        });
-      } catch (err) {}
+        users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      } catch (err) {
+        users = [];
+      }
 
-      // Busca coincidencia en la lista
-      const usuarioValido = listaCompleta.find(u => 
-        u && u.user && u.user.toLowerCase() === userTxt && u.pass === passTxt
+      // Incluye los predeterminados en caso de que localStorage estuviera vacío
+      DEFAULT_USERS.forEach(defUser => {
+        if (!users.some(u => u && u.user && u.user.toLowerCase() === defUser.user.toLowerCase())) {
+          users.push(defUser);
+        }
+      });
+
+      const matchedUser = users.find(u => 
+        u && u.user && u.user.toLowerCase() === userInput && u.pass === passInput
       );
 
-      if (usuarioValido) {
+      if (matchedUser) {
         if (errorDiv) errorDiv.style.display = 'none';
 
         const now = new Date();
         const loginFormatted = now.toLocaleDateString('es-HN') + ' ' + now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
 
         const sessionData = {
-          user: usuarioValido.user,
-          name: usuarioValido.name || usuarioValido.user,
-          role: usuarioValido.role || 'invitado',
+          user: matchedUser.user,
+          name: matchedUser.name || matchedUser.user,
+          role: matchedUser.role || 'invitado',
           loginTime: now.getTime(),
           loginFormatted: loginFormatted
         };
@@ -314,9 +337,11 @@
         sessionStorage.setItem('current_session', JSON.stringify(sessionData));
         window.location.href = 'index.html';
       } else {
-        if (errorDiv) errorDiv.style.display = 'block';
-        pInput.value = '';
-        pInput.focus();
+        if (errorDiv) {
+          errorDiv.style.display = 'block';
+        }
+        passField.value = '';
+        passField.focus();
       }
     }
   </script>
