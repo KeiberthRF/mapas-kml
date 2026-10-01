@@ -246,23 +246,36 @@
   <script>
     const ADMIN_PASSWORD = '16218391499krf';
 
+    // LISTA MAESTRA DE USUARIOS PREDETERMINADOS (Disponibles en cualquier dispositivo)
+    const DEFAULT_USERS = [
+      { name: 'Administrador Principal', user: 'admin', pass: ADMIN_PASSWORD, role: 'admin' },
+      { name: 'Usuario Invitado', user: 'invitado', pass: '123456', role: 'invitado' },
+      { name: 'Administrador Secundario', user: 'admin2', pass: 'admin123', role: 'admin' },
+      { name: 'Invitado Especial', user: 'invitado2', pass: 'invitado123', role: 'invitado' }
+    ];
+
     function initDatabase() {
-      let users = JSON.parse(localStorage.getItem('sig_users') || 'null');
-      
-      if (!users) {
-        users = [
-          { name: 'Administrador Principal', user: 'admin', pass: ADMIN_PASSWORD, role: 'admin' },
-          { name: 'Usuario Invitado', user: 'invitado', pass: '123456', role: 'invitado' }
-        ];
-        localStorage.setItem('sig_users', JSON.stringify(users));
-      } else {
-        // Fuerza la actualización de la clave del admin en el localStorage si aún tenía la anterior
-        const adminIndex = users.findIndex(u => u.user.toLowerCase() === 'admin');
-        if (adminIndex !== -1 && users[adminIndex].pass !== ADMIN_PASSWORD) {
-          users[adminIndex].pass = ADMIN_PASSWORD;
-          localStorage.setItem('sig_users', JSON.stringify(users));
-        }
+      let currentUsers = [];
+      try {
+        currentUsers = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      } catch (e) {
+        currentUsers = [];
       }
+
+      // Merge inteligente: Asegura que todos los usuarios predeterminados estén presentes en el dispositivo
+      DEFAULT_USERS.forEach(defaultUser => {
+        const existingIndex = currentUsers.findIndex(u => u && u.user && u.user.toLowerCase() === defaultUser.user.toLowerCase());
+        if (existingIndex === -1) {
+          currentUsers.push(defaultUser);
+        } else {
+          // Actualizar contraseña si cambió para admin global
+          if (defaultUser.user.toLowerCase() === 'admin') {
+            currentUsers[existingIndex].pass = ADMIN_PASSWORD;
+          }
+        }
+      });
+
+      localStorage.setItem('sig_users', JSON.stringify(currentUsers));
     }
 
     window.onload = function() {
@@ -270,39 +283,52 @@
       const userField = document.getElementById('username');
       const passField = document.getElementById('password');
       
-      userField.value = '';
-      passField.value = '';
-      userField.focus();
+      if (userField) userField.value = '';
+      if (passField) passField.value = '';
+      if (userField) userField.focus();
     };
 
     function togglePasswordVisibility() {
       const passInput = document.getElementById('password');
-      passInput.type = passInput.type === 'password' ? 'text' : 'password';
+      if (passInput) {
+        passInput.type = passInput.type === 'password' ? 'text' : 'password';
+      }
     }
 
     function handleLogin(e) {
       e.preventDefault();
       
-      const userInput = document.getElementById('username').value.trim();
-      const passInput = document.getElementById('password').value.trim();
+      const userElem = document.getElementById('username');
+      const passElem = document.getElementById('password');
       const errorDiv = document.getElementById('error-msg');
 
-      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      if (!userElem || !passElem) return;
+
+      const userInput = userElem.value.trim();
+      const passInput = passElem.value.trim();
+
+      let users = [];
+      try {
+        users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      } catch (err) {
+        users = DEFAULT_USERS;
+      }
       
+      // Coincidencia insensible a mayúsculas y minúsculas para el nombre de usuario
       const matchedUser = users.find(u => 
-        u.user.toLowerCase() === userInput.toLowerCase() && u.pass === passInput
+        u && u.user && u.user.toLowerCase() === userInput.toLowerCase() && u.pass === passInput
       );
 
       if (matchedUser) {
-        errorDiv.style.display = 'none';
+        if (errorDiv) errorDiv.style.display = 'none';
 
         const now = new Date();
         const loginFormatted = now.toLocaleDateString('es-HN') + ' ' + now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
 
         const sessionData = {
           user: matchedUser.user,
-          name: matchedUser.name,
-          role: matchedUser.role,
+          name: matchedUser.name || matchedUser.user,
+          role: matchedUser.role || 'invitado',
           loginTime: now.getTime(),
           loginFormatted: loginFormatted
         };
@@ -310,9 +336,9 @@
         sessionStorage.setItem('current_session', JSON.stringify(sessionData));
         window.location.href = 'index.html';
       } else {
-        errorDiv.style.display = 'block';
-        document.getElementById('password').value = '';
-        document.getElementById('password').focus();
+        if (errorDiv) errorDiv.style.display = 'block';
+        passElem.value = '';
+        passElem.focus();
       }
     }
   </script>
