@@ -426,11 +426,12 @@
       map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
     }
 
-    // Inicialización del Mapa
+    // Inicialización del Mapa con Capa Satelital Híbrida + Relieve de Google Earth
     var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
 
-    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-      maxZoom: 20, attribution: '© Google Earth'
+    L.tileLayer('https://mt1.google.com/vt/lyrs=y,p&x={x}&y={y}&z={z}', {
+      maxZoom: 20, 
+      attribution: '© Google Earth Terrain'
     }).addTo(map);
 
     // Marcador Globo Amarillo con Estrella Negra
@@ -617,15 +618,21 @@
       }
     }
 
-    // Al seleccionar otro departamento: resetea municipio y el buscador
+    // Al cambiar de Departamento: vacía el buscador y resetea municipios
     selectDepto.addEventListener('change', function() { 
       updateMuniDropdown(this.value); 
       selectMuni.value = 'todos';
       searchInput.value = '';
+      map.closePopup();
       renderMapFeatures(); 
     });
 
-    selectMuni.addEventListener('change', renderMapFeatures);
+    // Al cambiar de Municipio: limpia el buscador y cierra popups anteriores
+    selectMuni.addEventListener('change', function() {
+      searchInput.value = '';
+      map.closePopup();
+      renderMapFeatures();
+    });
     
     searchInput.addEventListener('input', function() {
       if (this.value.trim() === '') {
