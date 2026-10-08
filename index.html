@@ -208,11 +208,11 @@
     }
 
     .modal-content {
-      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 620px; color: #fff; max-height: 85vh; overflow-y: auto;
+      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 650px; color: #fff; max-height: 85vh; overflow-y: auto;
     }
 
     .modal-header-container {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 6px; gap: 8px; flex-wrap: wrap;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 6px; gap: 8px; flex-wrap: wrap; margin-top: 10px;
     }
 
     .modal-content h3 { color: #38bdf8; margin: 0; font-size: 14px; }
@@ -255,6 +255,13 @@
     .btn-download-logs:hover { background: #047857; }
 
     .btn-close-modal { background: #64748b; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 12px; }
+
+    /* Insignias de Estado (Éxito / Fallido) */
+    .badge-status {
+      padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; display: inline-block;
+    }
+    .badge-exitoso { background: rgba(22, 163, 74, 0.2); color: #4ade80; border: 1px solid #16a34a; }
+    .badge-fallido { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
 
     /* Estilo Popup Emergente */
     .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
@@ -344,7 +351,7 @@
     <div class="modal-content">
       <button class="btn-close-modal" onclick="closeAdminModal()">Cerrar</button>
       
-      <div class="modal-header-container">
+      <div class="modal-header-container" style="margin-top:0;">
         <h3>Crear Nuevo Usuario</h3>
       </div>
       <form class="form-create-user" onsubmit="addUser(event)">
@@ -374,13 +381,28 @@
         <tbody id="users-table-body"></tbody>
       </table>
 
-      <!-- Bitácora de Sesiones -->
+      <!-- Bitácora de Intentos de Acceso -->
       <div class="modal-header-container">
-        <h3>Bitácora de Sesiones (Ingresos)</h3>
+        <h3>Bitácora de Intentos de Ingreso</h3>
         <div class="btn-group-logs">
           <button class="btn-download-logs" onclick="downloadLogsTXT()" title="Descargar todo el historial registrado en TXT">📥 Descargar Historial (.txt)</button>
           <button class="btn-clear-logs" onclick="clearLogsScreen()" title="Limpiar la pantalla de la bitácora visible">🧹 Limpiar Registros</button>
         </div>
+      </div>
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Usuario Ingresado</th>
+            <th>Fecha y Hora</th>
+            <th>Resultado</th>
+          </tr>
+        </thead>
+        <tbody id="access-logs-table-body"></tbody>
+      </table>
+
+      <!-- Bitácora de Tiempos de Sesión -->
+      <div class="modal-header-container">
+        <h3>Tiempo de Sesiones Activas</h3>
       </div>
       <table class="modal-table">
         <thead>
@@ -667,6 +689,7 @@
 
     function openAdminModal() {
       loadUsersTable();
+      loadAccessLogsTable();
       loadLogsTable();
       document.getElementById('admin-modal').style.display = 'flex';
     }
@@ -713,10 +736,42 @@
       }
     }
 
+    // Cargar la Tabla de Intentos de Ingreso (Fallidos / Exitosos)
+    function loadAccessLogsTable() {
+      const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
+      const tbody = document.getElementById('access-logs-table-body');
+      tbody.innerHTML = '';
+
+      if (accessLogs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b; font-style:italic;">No hay intentos registrados.</td></tr>';
+        return;
+      }
+
+      accessLogs.slice().reverse().forEach(log => {
+        const tr = document.createElement('tr');
+        const isExitoso = log.estado === 'Exitoso';
+        const badgeClass = isExitoso ? 'badge-exitoso' : 'badge-fallido';
+        const statusText = isExitoso ? '✓ Exitoso' : '✕ Fallido';
+
+        tr.innerHTML = `
+          <td><strong>${log.usuario}</strong></td>
+          <td>${log.fechaHora}</td>
+          <td><span class="badge-status ${badgeClass}">${statusText}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
     function loadLogsTable() {
       const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
       const tbody = document.getElementById('logs-table-body');
       tbody.innerHTML = '';
+
+      if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b; font-style:italic;">No hay sesiones registradas.</td></tr>';
+        return;
+      }
+
       logs.slice().reverse().forEach(log => {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${log.user}</td><td>${log.login}</td><td>${log.duration}</td>`;
@@ -725,13 +780,16 @@
     }
 
     function clearLogsScreen() {
-      if (confirm('¿Deseas ocultar/limpiar los registros de la pantalla actual? (El historial completo permanece resguardado en el archivo descargable).')) {
+      if (confirm('¿Deseas ocultar/limpiar los registros de la pantalla actual? (El historial completo permanece resguardado para descarga).')) {
         localStorage.setItem('sig_logs', JSON.stringify([]));
+        localStorage.setItem('sig_access_logs', JSON.stringify([]));
+        loadAccessLogsTable();
         loadLogsTable();
       }
     }
 
     function downloadLogsTXT() {
+      const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
       const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
       const visibleLogs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
       
@@ -742,30 +800,38 @@
         }
       });
 
-      if (combined.length === 0) {
-        alert('No existen registros de ingresos almacenados en el historial actualmente.');
+      if (accessLogs.length === 0 && combined.length === 0) {
+        alert('No existen registros almacenados en la bitácora actualmente.');
         return;
       }
 
       let content = "===========================================================\n";
-      content += "  HISTORIAL GENERAL DE INGRESOS Y SESIONES - SIG AGUACATE  \n";
+      content += "    BITÁCORA GENERAL DE ACCESOS Y SESIONES - SIG AGUACATE  \n";
       content += "===========================================================\n";
       content += "Fecha de Reporte: " + new Date().toLocaleString('es-HN') + "\n\n";
+
+      content += "--- 1. INTENTOS DE INGRESO (FALLIDOS Y EXITOSOS) ---\n";
+      content += String("USUARIO INGRESADO").padEnd(25) + String("FECHA Y HORA").padEnd(30) + "RESULTADO\n";
+      content += "-----------------------------------------------------------\n";
+      accessLogs.forEach(item => {
+        content += String(item.usuario).padEnd(25) + String(item.fechaHora).padEnd(30) + String(item.estado) + "\n";
+      });
+
+      content += "\n--- 2. DURACIÓN DE SESIONES COMPLETADAS ---\n";
       content += String("USUARIO").padEnd(20) + String("FECHA Y HORA DE INGRESO").padEnd(30) + "DURACIÓN\n";
       content += "-----------------------------------------------------------\n";
-
       combined.forEach(item => {
         content += String(item.user).padEnd(20) + String(item.login).padEnd(30) + String(item.duration) + "\n";
       });
 
       content += "-----------------------------------------------------------\n";
-      content += "Total de registros históricos: " + combined.length + "\n";
+      content += "Total de intentos: " + accessLogs.length + " | Total de sesiones: " + combined.length + "\n";
 
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `bitacora_sesiones_honduras_${new Date().toISOString().slice(0,10)}.txt`;
+      link.download = `bitacora_completa_sig_${new Date().toISOString().slice(0,10)}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
