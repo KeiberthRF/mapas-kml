@@ -5,7 +5,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -45,6 +49,7 @@
       padding: 40px 36px;
       width: 420px;
       max-width: 92vw;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -116,10 +121,14 @@
       font-size: 13.5px;
       outline: none;
       width: 100%;
+      box-sizing: border-box;
       transition: all 0.25s ease;
     }
 
-    .login-container input::placeholder { color: #64748b; font-size: 12.5px; }
+    .login-container input::placeholder {
+      color: #64748b;
+      font-size: 12.5px;
+    }
 
     .login-container input:focus {
       border-color: #38bdf8;
@@ -136,9 +145,15 @@
       cursor: pointer;
       font-size: 15px;
       padding: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
     }
 
-    .btn-toggle-pass:hover { color: #38bdf8; }
+    .btn-toggle-pass:hover {
+      color: #38bdf8;
+    }
 
     .btn-login {
       padding: 12px;
@@ -162,6 +177,10 @@
       background: linear-gradient(90deg, #0369a1 0%, #0284c7 100%);
       box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
       transform: translateY(-1px);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
     }
 
     #error-msg {
@@ -227,81 +246,111 @@
   <script>
     const ADMIN_PASSWORD = '16218391499krf';
 
-    // USUARIOS BASE QUE ACCEDEN DESDE CUALQUIER NAVEGADOR
-    const BASE_USERS = [
+    // Usuarios Base Predeterminados del Sistema
+    const DEFAULT_USERS = [
       { name: 'Administrador Principal', user: 'admin', pass: ADMIN_PASSWORD, role: 'admin' },
-      { name: 'Administrador', user: 'keiberth', pass: '17angeles', role: 'admin' },
-      { name: 'Fernando', user: 'fernando', pass: 'fepsa2026', role: 'invitado' },
-      { name: 'Carlos', user: 'carlos', pass: 'aspah2026', role: 'invitado' }
+      { name: 'Usuario Invitado', user: 'invitado', pass: '123456', role: 'invitado' },
+      { name: 'Carlos', user: 'carlos', pass: 'carlos123', role: 'invitado' }
     ];
 
     function initDatabase() {
-      let currentUsers = [];
+      let users = [];
       try {
-        currentUsers = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        users = JSON.parse(localStorage.getItem('sig_users') || '[]');
       } catch (e) {
-        currentUsers = [];
+        users = [];
       }
 
-      BASE_USERS.forEach(bUser => {
-        const idx = currentUsers.findIndex(u => u && u.user && u.user.toLowerCase() === bUser.user.toLowerCase());
+      // Asegura que los usuarios base siempre estén presentes
+      DEFAULT_USERS.forEach(defUser => {
+        const idx = users.findIndex(u => u && u.user && u.user.toLowerCase() === defUser.user.toLowerCase());
         if (idx === -1) {
-          currentUsers.push(bUser);
-        } else {
-          currentUsers[idx].pass = bUser.pass;
+          users.push(defUser);
+        } else if (defUser.user.toLowerCase() === 'admin') {
+          users[idx].pass = ADMIN_PASSWORD;
         }
       });
 
-      localStorage.setItem('sig_users', JSON.stringify(currentUsers));
+      localStorage.setItem('sig_users', JSON.stringify(users));
     }
 
     window.onload = function() {
       initDatabase();
-      const uInput = document.getElementById('username');
-      const pInput = document.getElementById('password');
-      if (uInput) uInput.value = '';
-      if (pInput) pInput.value = '';
-      if (uInput) uInput.focus();
+      const userField = document.getElementById('username');
+      const passField = document.getElementById('password');
+      if (userField) userField.value = '';
+      if (passField) passField.value = '';
+      if (userField) userField.focus();
     };
 
     function togglePasswordVisibility() {
-      const pInput = document.getElementById('password');
-      if (pInput) {
-        pInput.type = (pInput.type === 'password') ? 'text' : 'password';
+      const passInput = document.getElementById('password');
+      if (passInput) {
+        passInput.type = (passInput.type === 'password') ? 'text' : 'password';
+      }
+    }
+
+    // REGISTRO DE INTENTOS DE INGRESO (BITÁCORA)
+    function registrarIntentoAcceso(usuarioProporcionado, estado) {
+      try {
+        const ahora = new Date();
+        const fechaHora = ahora.toLocaleDateString('es-HN') + ' ' + ahora.toLocaleTimeString('es-HN', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit' 
+        });
+
+        const nuevoIntento = {
+          usuario: usuarioProporcionado || '(Vacío)',
+          estado: estado, // 'Exitoso' o 'Fallido'
+          fechaHora: fechaHora,
+          timestamp: ahora.getTime()
+        };
+
+        let historialLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
+        historialLogs.push(nuevoIntento);
+
+        // Guardar la bitácora de intentos acumulados en localStorage
+        localStorage.setItem('sig_access_logs', JSON.stringify(historialLogs));
+      } catch (err) {
+        console.error("Error al registrar intento:", err);
       }
     }
 
     function handleLogin(e) {
       e.preventDefault();
       
-      const uInput = document.getElementById('username');
-      const pInput = document.getElementById('password');
+      const userField = document.getElementById('username');
+      const passField = document.getElementById('password');
       const errorDiv = document.getElementById('error-msg');
 
-      if (!uInput || !pInput) return;
+      if (!userField || !passField) return;
 
-      const userTxt = uInput.value.trim().toLowerCase();
-      const passTxt = pInput.value.trim();
+      const userInput = userField.value.trim().toLowerCase();
+      const passInput = passField.value.trim();
 
-      let localUsers = [];
+      let users = [];
       try {
-        localUsers = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        users = JSON.parse(localStorage.getItem('sig_users') || '[]');
       } catch (err) {
-        localUsers = [];
+        users = [];
       }
 
-      // Fusionar lista local con lista base
-      BASE_USERS.forEach(bUser => {
-        if (!localUsers.some(u => u && u.user && u.user.toLowerCase() === bUser.user.toLowerCase())) {
-          localUsers.push(bUser);
+      // Incluye los predeterminados en caso de que localStorage estuviera vacío
+      DEFAULT_USERS.forEach(defUser => {
+        if (!users.some(u => u && u.user && u.user.toLowerCase() === defUser.user.toLowerCase())) {
+          users.push(defUser);
         }
       });
 
-      const matchedUser = localUsers.find(u => 
-        u && u.user && u.user.toLowerCase() === userTxt && u.pass === passTxt
+      const matchedUser = users.find(u => 
+        u && u.user && u.user.toLowerCase() === userInput && u.pass === passInput
       );
 
       if (matchedUser) {
+        // REGISTRO DEL INTENTO EXITOSO
+        registrarIntentoAcceso(userInput, 'Exitoso');
+
         if (errorDiv) errorDiv.style.display = 'none';
 
         const now = new Date();
@@ -318,9 +367,14 @@
         sessionStorage.setItem('current_session', JSON.stringify(sessionData));
         window.location.href = 'index.html';
       } else {
-        if (errorDiv) errorDiv.style.display = 'block';
-        pInput.value = '';
-        pInput.focus();
+        // REGISTRO DEL INTENTO FALLIDO
+        registrarIntentoAcceso(userInput, 'Fallido');
+
+        if (errorDiv) {
+          errorDiv.style.display = 'block';
+        }
+        passField.value = '';
+        passField.focus();
       }
     }
   </script>
