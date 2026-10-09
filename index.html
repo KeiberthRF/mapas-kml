@@ -208,7 +208,7 @@
     }
 
     .modal-content {
-      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 650px; color: #fff; max-height: 85vh; overflow-y: auto;
+      background: #1e293b; border: 1px solid #475569; padding: 20px; border-radius: 12px; width: 94%; max-width: 680px; color: #fff; max-height: 85vh; overflow-y: auto;
     }
 
     .modal-header-container {
@@ -381,9 +381,9 @@
         <tbody id="users-table-body"></tbody>
       </table>
 
-      <!-- Bitácora de Intentos de Acceso -->
+      <!-- TABLA ÚNICA INTEGRADA DE BITÁCORA -->
       <div class="modal-header-container">
-        <h3>Bitácora de Intentos de Ingreso</h3>
+        <h3>Bitácora de Accesos e Intentos de Ingreso</h3>
         <div class="btn-group-logs">
           <button class="btn-download-logs" onclick="downloadLogsTXT()" title="Descargar todo el historial registrado en TXT">📥 Descargar Historial (.txt)</button>
           <button class="btn-clear-logs" onclick="clearLogsScreen()" title="Limpiar la pantalla de la bitácora visible">🧹 Limpiar Registros</button>
@@ -395,24 +395,10 @@
             <th>Usuario Ingresado</th>
             <th>Fecha y Hora</th>
             <th>Resultado</th>
+            <th>Duración Sesión</th>
           </tr>
         </thead>
         <tbody id="access-logs-table-body"></tbody>
-      </table>
-
-      <!-- Bitácora de Tiempos de Sesión -->
-      <div class="modal-header-container">
-        <h3>Tiempo de Sesiones Activas</h3>
-      </div>
-      <table class="modal-table">
-        <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>Ingreso</th>
-            <th>Duración</th>
-          </tr>
-        </thead>
-        <tbody id="logs-table-body"></tbody>
       </table>
     </div>
   </div>
@@ -643,233 +629,4 @@
     // Al cambiar de Departamento: vacía el buscador y resetea municipios
     selectDepto.addEventListener('change', function() { 
       updateMuniDropdown(this.value); 
-      selectMuni.value = 'todos';
-      searchInput.value = '';
-      map.closePopup();
-      renderMapFeatures(); 
-    });
-
-    // Al cambiar de Municipio: limpia el buscador y cierra popups anteriores
-    selectMuni.addEventListener('change', function() {
-      searchInput.value = '';
-      map.closePopup();
-      renderMapFeatures();
-    });
-    
-    searchInput.addEventListener('input', function() {
-      if (this.value.trim() === '') {
-        selectDepto.value = 'todos'; updateMuniDropdown('todos');
-      }
-      renderMapFeatures();
-    });
-
-    function logout() {
-      if (currentSession) {
-        const loginTime = new Date(currentSession.loginTime);
-        const now = new Date();
-        const durationMinutes = Math.max(1, Math.round((now - loginTime) / 60000));
-
-        const newLogEntry = {
-          user: currentSession.user,
-          login: currentSession.loginFormatted,
-          duration: durationMinutes + ' min'
-        };
-
-        const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-        logs.push(newLogEntry);
-        localStorage.setItem('sig_logs', JSON.stringify(logs));
-
-        const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-        masterLogs.push(newLogEntry);
-        localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
-      }
-      sessionStorage.removeItem('current_session');
-      window.location.href = 'login.html';
-    }
-
-    function openAdminModal() {
-      loadUsersTable();
-      loadAccessLogsTable();
-      loadLogsTable();
-      document.getElementById('admin-modal').style.display = 'flex';
-    }
-
-    function closeAdminModal() {
-      document.getElementById('admin-modal').style.display = 'none';
-    }
-
-    function loadUsersTable() {
-      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-      const tbody = document.getElementById('users-table-body');
-      tbody.innerHTML = '';
-      users.forEach((u, index) => {
-        const tr = document.createElement('tr');
-        const isMainAdmin = u.user.toLowerCase() === 'admin';
-        const passVal = u.pass || '***';
-        
-        tr.innerHTML = `
-          <td>${u.name}</td>
-          <td>${u.user}</td>
-          <td>
-            <span id="pass-text-${index}">••••••••</span>
-            <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility(${index}, '${passVal}')" title="Mostrar/Ocultar Contraseña">👁️</button>
-          </td>
-          <td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>
-          <td>
-            ${isMainAdmin ? '<span style="color:#64748b; font-size:10px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function togglePassVisibility(index, realPass) {
-      const elem = document.getElementById(`pass-text-${index}`);
-      if (elem.innerText === '••••••••') {
-        elem.innerText = realPass;
-        elem.style.color = '#38bdf8';
-        elem.style.fontFamily = 'monospace';
-      } else {
-        elem.innerText = '••••••••';
-        elem.style.color = '#fff';
-        elem.style.fontFamily = 'inherit';
-      }
-    }
-
-    // Cargar la Tabla de Intentos de Ingreso (Fallidos / Exitosos)
-    function loadAccessLogsTable() {
-      const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
-      const tbody = document.getElementById('access-logs-table-body');
-      tbody.innerHTML = '';
-
-      if (accessLogs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b; font-style:italic;">No hay intentos registrados.</td></tr>';
-        return;
-      }
-
-      accessLogs.slice().reverse().forEach(log => {
-        const tr = document.createElement('tr');
-        const isExitoso = log.estado === 'Exitoso';
-        const badgeClass = isExitoso ? 'badge-exitoso' : 'badge-fallido';
-        const statusText = isExitoso ? '✓ Exitoso' : '✕ Fallido';
-
-        tr.innerHTML = `
-          <td><strong>${log.usuario}</strong></td>
-          <td>${log.fechaHora}</td>
-          <td><span class="badge-status ${badgeClass}">${statusText}</span></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function loadLogsTable() {
-      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-      const tbody = document.getElementById('logs-table-body');
-      tbody.innerHTML = '';
-
-      if (logs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b; font-style:italic;">No hay sesiones registradas.</td></tr>';
-        return;
-      }
-
-      logs.slice().reverse().forEach(log => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${log.user}</td><td>${log.login}</td><td>${log.duration}</td>`;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function clearLogsScreen() {
-      if (confirm('¿Deseas ocultar/limpiar los registros de la pantalla actual? (El historial completo permanece resguardado para descarga).')) {
-        localStorage.setItem('sig_logs', JSON.stringify([]));
-        localStorage.setItem('sig_access_logs', JSON.stringify([]));
-        loadAccessLogsTable();
-        loadLogsTable();
-      }
-    }
-
-    function downloadLogsTXT() {
-      const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
-      const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-      const visibleLogs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-      
-      let combined = [...masterLogs];
-      visibleLogs.forEach(v => {
-        if (!combined.some(m => m.user === v.user && m.login === v.login)) {
-          combined.push(v);
-        }
-      });
-
-      if (accessLogs.length === 0 && combined.length === 0) {
-        alert('No existen registros almacenados en la bitácora actualmente.');
-        return;
-      }
-
-      let content = "===========================================================\n";
-      content += "    BITÁCORA GENERAL DE ACCESOS Y SESIONES - SIG AGUACATE  \n";
-      content += "===========================================================\n";
-      content += "Fecha de Reporte: " + new Date().toLocaleString('es-HN') + "\n\n";
-
-      content += "--- 1. INTENTOS DE INGRESO (FALLIDOS Y EXITOSOS) ---\n";
-      content += String("USUARIO INGRESADO").padEnd(25) + String("FECHA Y HORA").padEnd(30) + "RESULTADO\n";
-      content += "-----------------------------------------------------------\n";
-      accessLogs.forEach(item => {
-        content += String(item.usuario).padEnd(25) + String(item.fechaHora).padEnd(30) + String(item.estado) + "\n";
-      });
-
-      content += "\n--- 2. DURACIÓN DE SESIONES COMPLETADAS ---\n";
-      content += String("USUARIO").padEnd(20) + String("FECHA Y HORA DE INGRESO").padEnd(30) + "DURACIÓN\n";
-      content += "-----------------------------------------------------------\n";
-      combined.forEach(item => {
-        content += String(item.user).padEnd(20) + String(item.login).padEnd(30) + String(item.duration) + "\n";
-      });
-
-      content += "-----------------------------------------------------------\n";
-      content += "Total de intentos: " + accessLogs.length + " | Total de sesiones: " + combined.length + "\n";
-
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `bitacora_completa_sig_${new Date().toISOString().slice(0,10)}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
-
-    function addUser(e) {
-      e.preventDefault();
-      const name = document.getElementById('new-name').value.trim();
-      const user = document.getElementById('new-user').value.trim();
-      const pass = document.getElementById('new-pass').value.trim();
-      const role = document.getElementById('new-role').value;
-
-      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-      if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
-        alert('El usuario ya existe. Por favor elige otro.');
-        return;
-      }
-
-      users.push({ name, user, pass, role });
-      localStorage.setItem('sig_users', JSON.stringify(users));
-
-      document.getElementById('new-name').value = '';
-      document.getElementById('new-user').value = '';
-      document.getElementById('new-pass').value = '';
-
-      loadUsersTable();
-      alert('Usuario registrado exitosamente');
-    }
-
-    function deleteUser(username) {
-      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
-        let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
-        localStorage.setItem('sig_users', JSON.stringify(users));
-        loadUsersTable();
-      }
-    }
-  </script>
-</body>
-</html>
+      select
