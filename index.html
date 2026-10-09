@@ -318,7 +318,6 @@
     <label for="search-input">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
-      <!-- Icono Aguacate de reseteo completo -->
       <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C8 2 5 7 5 13C5 17.5 8 21 12 21C16 21 19 17.5 19 13C19 7 16 2 12 2Z" fill="#15803d" stroke="#86efac" stroke-width="1.5"/>
@@ -408,7 +407,8 @@
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    if (currentSession && currentSession.role === 'admin') {
+    // Verificar visibilidad de opción Administrador
+    if (currentSession && (currentSession.role === 'admin' || String(currentSession.role).toLowerCase() === 'admin')) {
       document.getElementById('btn-logs').style.display = 'block';
     }
 
@@ -424,7 +424,6 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Función Escobita Manual (Solo activada por el botón aguacate)
     function fullReset() {
       searchInput.value = '';
       selectDepto.value = 'todos';
@@ -434,8 +433,8 @@
       map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
     }
 
-    // Inicialización del Mapa con Capa Satelital Híbrida + Relieve de Google Earth
-    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
+    // Inicialización del Mapa
+    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 8);
 
     L.tileLayer('https://mt1.google.com/vt/lyrs=y,p&x={x}&y={y}&z={z}', {
       maxZoom: 20, 
@@ -494,20 +493,376 @@
       return "";
     }
 
+    // Carga de Archivo KML
     fetch('./honduras.kml', { cache: 'no-cache' })
-      .then(r => r.text())
+      .then(r => {
+        if (!r.ok) throw new Error("No se pudo cargar el archivo honduras.kml");
+        return r.text();
+      })
       .then(kmlText => {
         var parser = new DOMParser();
-        rawGeoJSON = toGeoJSON.kml(parser.parseFromString(kmlText, 'text/xml'));
+        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
+        rawGeoJSON = toGeoJSON.kml(kmlDom);
 
-        rawGeoJSON.features.forEach(feature => {
+        if (rawGeoJSON && rawGeoJSON.features) {
+          rawGeoJSON.features.forEach(feature => {
+            var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
+            var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
+            if (!locationData[depto]) locationData[depto] = new Set();
+            if (muni) locationData[depto].add(muni);
+          });
+
+          Object.keys(locationData).sort().forEach(depto => {
+            var opt = document.createElement('option');
+            opt.value = depto; opt.textContent = depto;
+            selectDepto.appendChild(opt);
+          });
+
+          renderMapFeatures();
+        }
+        statusDiv.style.display = 'none';
+      })
+      .catch(err => {
+        console.error(err);
+        statusDiv.innerText = "Error cargando archivo KML";
+        statusDiv.style.color = "#ef4444";
+      });
+
+    function selectAndFocusProducer(feat, marker) {
+      var props = feat.properties || {};
+      var nombre = props.name || "Productor sin nombre";
+      var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
+      var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
+
+      searchInput.value = nombre;
+      if (depto && selectDepto.value !== depto) {
+        selectDepto.value = depto;
+        updateMuniDropdown(depto);
+      }
+      if (muni) selectMuni.value = muni;
+
+      if (window.innerWidth <= 600) closePanel();
+
+      var targetMarker = marker || featureMarkersMap.get(feat);
+      if (targetMarker) {
+        var latLng = targetMarker.getLatLng();
+        var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
+        var targetPoint = map.project(latLng, 15).subtract(offset);
+        map.flyTo(map.unproject(targetPoint, 15), 15, { duration: 1.2 });
+        targetMarker.openPopup();
+        targetMarker.openTooltip();
+      }
+    }
+
+    function renderMapFeatures() {
+      if (!rawGeoJSON) return;
+
+      var selectedDepto = selectDepto.value, selectedMuni = selectMuni.value, searchText = searchInput.value.toLowerCase().trim();
+
+      if (kmlLayer) map.removeLayer(kmlLayer);
+      producerList.innerHTML = ''; featureMarkersMap.clear();
+
+      var visibleFeatures = [];
+
+      kmlLayer = L.geoJSON(rawGeoJSON, {
+        filter: function(feature) {
+          var nombre = (feature.properties.name || "").toLowerCase();
           var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
           var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
-          if (!locationData[depto]) locationData[depto] = new Set();
-          if (muni) locationData[depto].add(muni);
+
+          var matchDepto = (selectedDepto === 'todos' || depto === selectedDepto);
+          var matchMuni = (selectedMuni === 'todos' || muni === selectedMuni);
+          var matchSearch = (searchText === '' || nombre.includes(searchText));
+
+          var isMatch = matchDepto && matchMuni && matchSearch;
+          if (isMatch) visibleFeatures.push(feature);
+          return isMatch;
+        },
+        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: googleEarthPin }),
+        onEachFeature: function(feature, layer) {
+          var nombre = feature.properties.name || "Productor sin nombre";
+          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "";
+          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "";
+
+          var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
+          layer.bindPopup(popupContent, { autoPan: false });
+
+          var tooltipContent = `
+            <div class="custom-tooltip-title">${nombre}</div>
+            <div class="custom-tooltip-sub">${depto}${muni ? ' • ' + muni : ''}</div>
+          `;
+          layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
+
+          layer.on('click', () => selectAndFocusProducer(feature, layer));
+          featureMarkersMap.set(feature, layer);
+        }
+      }).addTo(map);
+
+      visibleFeatures.sort((a, b) => (a.properties.name || "").localeCompare(b.properties.name || ""));
+      countProducers.innerText = visibleFeatures.length;
+
+      var hasActiveFilter = (selectedDepto !== 'todos' || selectedMuni !== 'todos' || searchText !== '');
+
+      if (hasActiveFilter) {
+        emptyPrompt.style.display = 'none'; producerList.style.display = 'flex';
+        visibleFeatures.forEach(feat => {
+          var nombre = feat.properties.name || "Productor sin nombre";
+          var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
+          var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
+
+          var li = document.createElement('li');
+          li.innerHTML = `<span class="p-name">${nombre}</span><span class="p-location">${depto}${muni ? ' • ' + muni : ''}</span>`;
+          li.addEventListener('click', () => selectAndFocusProducer(feat, featureMarkersMap.get(feat)));
+          producerList.appendChild(li);
         });
 
-        Object.keys(locationData).sort().forEach(depto => {
+        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
+          map.fitBounds(kmlLayer.getBounds(), { padding: [60, 60], maxZoom: 13 });
+        }
+      } else {
+        emptyPrompt.style.display = 'block'; producerList.style.display = 'none';
+      }
+    }
+
+    function updateMuniDropdown(depto) {
+      selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
+      if (depto !== 'todos' && locationData[depto]) {
+        Array.from(locationData[depto]).sort().forEach(muni => {
           var opt = document.createElement('option');
-          opt.value = depto; opt.textContent = depto;
-          select
+          opt.value = muni; opt.textContent = muni; selectMuni.appendChild(opt);
+        });
+      }
+    }
+
+    selectDepto.addEventListener('change', function() { 
+      updateMuniDropdown(this.value); 
+      selectMuni.value = 'todos';
+      searchInput.value = '';
+      map.closePopup();
+      renderMapFeatures(); 
+    });
+
+    selectMuni.addEventListener('change', function() {
+      searchInput.value = '';
+      map.closePopup();
+      renderMapFeatures();
+    });
+    
+    searchInput.addEventListener('input', function() {
+      if (this.value.trim() === '') {
+        selectDepto.value = 'todos'; updateMuniDropdown('todos');
+      }
+      renderMapFeatures();
+    });
+
+    function logout() {
+      if (currentSession) {
+        const loginTime = new Date(currentSession.loginTime);
+        const now = new Date();
+        const durationMinutes = Math.max(1, Math.round((now - loginTime) / 60000));
+
+        const newLogEntry = {
+          user: currentSession.user,
+          login: currentSession.loginFormatted,
+          duration: durationMinutes + ' min'
+        };
+
+        const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+        logs.push(newLogEntry);
+        localStorage.setItem('sig_logs', JSON.stringify(logs));
+
+        const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
+        masterLogs.push(newLogEntry);
+        localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
+      }
+      sessionStorage.removeItem('current_session');
+      window.location.href = 'login.html';
+    }
+
+    function openAdminModal() {
+      loadUsersTable();
+      loadUnifiedLogsTable();
+      document.getElementById('admin-modal').style.display = 'flex';
+    }
+
+    function closeAdminModal() {
+      document.getElementById('admin-modal').style.display = 'none';
+    }
+
+    function loadUsersTable() {
+      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = '';
+      users.forEach((u, index) => {
+        const tr = document.createElement('tr');
+        const isMainAdmin = u.user.toLowerCase() === 'admin';
+        const passVal = u.pass || '***';
+        
+        tr.innerHTML = `
+          <td>${u.name}</td>
+          <td>${u.user}</td>
+          <td>
+            <span id="pass-text-${index}">••••••••</span>
+            <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility(${index}, '${passVal}')" title="Mostrar/Ocultar Contraseña">👁️</button>
+          </td>
+          <td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>
+          <td>
+            ${isMainAdmin ? '<span style="color:#64748b; font-size:10px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function togglePassVisibility(index, realPass) {
+      const elem = document.getElementById(`pass-text-${index}`);
+      if (elem.innerText === '••••••••') {
+        elem.innerText = realPass;
+        elem.style.color = '#38bdf8';
+        elem.style.fontFamily = 'monospace';
+      } else {
+        elem.innerText = '••••••••';
+        elem.style.color = '#fff';
+        elem.style.fontFamily = 'inherit';
+      }
+    }
+
+    function loadUnifiedLogsTable() {
+      const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
+      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      const tbody = document.getElementById('unified-logs-table-body');
+      tbody.innerHTML = '';
+
+      if (accessLogs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; font-style:italic;">No hay actividad registrada en la bitácora.</td></tr>';
+        return;
+      }
+
+      const durationMap = {};
+      logs.forEach(l => {
+        const key = `${l.user.toLowerCase()}_${l.login}`;
+        durationMap[key] = l.duration;
+      });
+
+      accessLogs.slice().reverse().forEach(log => {
+        const tr = document.createElement('tr');
+        const isExitoso = log.estado === 'Exitoso';
+        const badgeClass = isExitoso ? 'badge-exitoso' : 'badge-fallido';
+        const statusText = isExitoso ? '✓ Exitoso' : '✕ Fallido';
+
+        const durKey = `${log.usuario.toLowerCase()}_${log.fechaHora}`;
+        let durationText = '-';
+        
+        if (isExitoso) {
+          durationText = durationMap[durKey] || 'En curso / Activa';
+        }
+
+        tr.innerHTML = `
+          <td><strong>${log.usuario}</strong></td>
+          <td>${log.fechaHora}</td>
+          <td><span class="badge-status ${badgeClass}">${statusText}</span></td>
+          <td style="color:${isExitoso ? '#38bdf8' : '#64748b'}">${durationText}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function clearLogsScreen() {
+      if (confirm('¿Deseas ocultar/limpiar los registros de la pantalla actual? (El historial completo permanece resguardado para descarga).')) {
+        localStorage.setItem('sig_logs', JSON.stringify([]));
+        localStorage.setItem('sig_access_logs', JSON.stringify([]));
+        loadUnifiedLogsTable();
+      }
+    }
+
+    function downloadLogsTXT() {
+      const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
+      const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
+      const visibleLogs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      
+      let combinedSessions = [...masterLogs];
+      visibleLogs.forEach(v => {
+        if (!combinedSessions.some(m => m.user === v.user && m.login === v.login)) {
+          combinedSessions.push(v);
+        }
+      });
+
+      if (accessLogs.length === 0 && combinedSessions.length === 0) {
+        alert('No existen registros almacenados en la bitácora actualmente.');
+        return;
+      }
+
+      const durationMap = {};
+      combinedSessions.forEach(l => {
+        const key = `${l.user.toLowerCase()}_${l.login}`;
+        durationMap[key] = l.duration;
+      });
+
+      let content = "=========================================================================================\n";
+      content += "               BITÁCORA UNIFICADA DE ACCESOS Y SESIONES - SIG AGUACATE                  \n";
+      content += "=========================================================================================\n";
+      content += "Fecha de Reporte: " + new Date().toLocaleString('es-HN') + "\n\n";
+
+      content += String("USUARIO").padEnd(20) + String("FECHA Y HORA").padEnd(28) + String("RESULTADO").padEnd(15) + "DURACIÓN SESIÓN\n";
+      content += "-----------------------------------------------------------------------------------------\n";
+
+      accessLogs.forEach(item => {
+        const isExitoso = item.estado === 'Exitoso';
+        const durKey = `${item.usuario.toLowerCase()}_${item.fechaHora}`;
+        const duration = isExitoso ? (durationMap[durKey] || "En curso / Finalizada") : "-";
+
+        content += String(item.usuario).padEnd(20) + 
+                   String(item.fechaHora).padEnd(28) + 
+                   String(item.estado).padEnd(15) + 
+                   duration + "\n";
+      });
+
+      content += "-----------------------------------------------------------------------------------------\n";
+      content += "Total de registros procesados: " + accessLogs.length + "\n";
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bitacora_unificada_sig_${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function addUser(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-name').value.trim();
+      const user = document.getElementById('new-user').value.trim();
+      const pass = document.getElementById('new-pass').value.trim();
+      const role = document.getElementById('new-role').value;
+
+      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
+        alert('El usuario ya existe. Por favor elige otro.');
+        return;
+      }
+
+      users.push({ name, user, pass, role });
+      localStorage.setItem('sig_users', JSON.stringify(users));
+
+      document.getElementById('new-name').value = '';
+      document.getElementById('new-user').value = '';
+      document.getElementById('new-pass').value = '';
+
+      loadUsersTable();
+      alert('Usuario registrado exitosamente');
+    }
+
+    function deleteUser(username) {
+      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
+        let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
+        localStorage.setItem('sig_users', JSON.stringify(users));
+        loadUsersTable();
+      }
+    }
+  </script>
+</body>
+</html>
