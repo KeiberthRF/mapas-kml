@@ -589,7 +589,7 @@
         statusDiv.style.color = "#ef4444";
       });
 
-    // CORRECCIÓN DE POSICIONAMIENTO EN PUNTO GPS
+    // CORRECCIÓN DEFINITIVA DE POSICIONAMIENTO EN PUNTO GPS
     function selectAndFocusProducer(feat, marker) {
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
@@ -609,16 +609,14 @@
       if (targetMarker) {
         var latLng = targetMarker.getLatLng();
         
-        // Centrado exacto sin desvíos de píxeles
+        // Centrado exacto deshabilitando autopan automático
         map.flyTo(latLng, 16, { 
-          duration: 1.8,
+          duration: 1.5,
           easeLinearity: 0.25 
         });
         
-        setTimeout(() => {
-          targetMarker.openPopup();
-          targetMarker.openTooltip();
-        }, 800);
+        targetMarker.openPopup({ autoPan: false });
+        targetMarker.openTooltip();
       }
     }
 
@@ -731,18 +729,16 @@
         const durationMinutes = Math.max(1, Math.round((now - loginTime) / 60000));
 
         const newLogEntry = {
-          sessionId: currentSession.sessionId,
+          sessionId: currentSession.sessionId || null,
           user: currentSession.user,
           login: currentSession.loginFormatted,
           duration: durationMinutes + ' min'
         };
 
-        // Guardar la sesión como finalizada
         const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
         logs.push(newLogEntry);
         localStorage.setItem('sig_logs', JSON.stringify(logs));
 
-        // Revocar la sesión globalmente para expulsar cualquier dispositivo o pestaña
         if (currentSession.sessionId) {
           const revoked = JSON.parse(localStorage.getItem('sig_revoked_sessions') || '[]');
           if (!revoked.includes(currentSession.sessionId)) {
@@ -804,7 +800,7 @@
       }
     }
 
-    // CARGA DE BITÁCORA UNIFICADA CON DURACIONES CORRECTAS
+    // CARGA DE BITÁCORA UNIFICADA SIN ERRORES DE ESTADO
     function loadUnifiedLogsTable() {
       const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
       const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
@@ -816,15 +812,16 @@
         return;
       }
 
-      // Mapear duraciones por sessionId o por índice para evitar falsos "En curso"
       const durationMap = {};
       logs.forEach(l => {
         if (l.sessionId) {
           durationMap[l.sessionId] = l.duration;
+        } else if (l.user && l.login) {
+          durationMap[`${l.user.toLowerCase()}_${l.login}`] = l.duration;
         }
       });
 
-      accessLogs.slice().reverse().forEach((log, idx) => {
+      accessLogs.slice().reverse().forEach((log) => {
         const tr = document.createElement('tr');
         const isExitoso = log.estado === 'Exitoso';
         const badgeClass = isExitoso ? 'badge-exitoso' : 'badge-fallido';
@@ -832,12 +829,17 @@
 
         let durationText = '-';
         if (isExitoso) {
+          const userKey = log.usuario ? log.usuario.toLowerCase() : '';
+          const compositeKey = `${userKey}_${log.fechaHora}`;
+
           if (log.sessionId && durationMap[log.sessionId]) {
             durationText = durationMap[log.sessionId];
-          } else if (currentSession && currentSession.sessionId === log.sessionId) {
+          } else if (durationMap[compositeKey]) {
+            durationText = durationMap[compositeKey];
+          } else if (currentSession && (currentSession.sessionId === log.sessionId || (currentSession.user.toLowerCase() === userKey && currentSession.loginFormatted === log.fechaHora))) {
             durationText = 'En curso / Activa';
           } else {
-            durationText = log.duracion || 'Finalizada';
+            durationText = 'Finalizada';
           }
         }
 
@@ -870,7 +872,11 @@
 
       const durationMap = {};
       logs.forEach(l => {
-        if (l.sessionId) durationMap[l.sessionId] = l.duration;
+        if (l.sessionId) {
+          durationMap[l.sessionId] = l.duration;
+        } else if (l.user && l.login) {
+          durationMap[`${l.user.toLowerCase()}_${l.login}`] = l.duration;
+        }
       });
 
       let content = "=========================================================================================\n";
@@ -885,61 +891,11 @@
         const isExitoso = item.estado === 'Exitoso';
         let duration = "-";
         if (isExitoso) {
-          duration = (item.sessionId && durationMap[item.sessionId]) ? durationMap[item.sessionId] : (item.duracion || "Finalizada");
-        }
-
-        content += String(item.usuario).padEnd(20) + 
-                   String(item.fechaHora).padEnd(28) + 
-                   String(item.estado).padEnd(15) + 
-                   duration + "\n";
-      });
-
-      content += "-----------------------------------------------------------------------------------------\n";
-      content += "Total de registros procesados: " + accessLogs.length + "\n";
-
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `bitacora_unificada_sig_${new Date().toISOString().slice(0,10)}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
-
-    function addUser(e) {
-      e.preventDefault();
-      const name = document.getElementById('new-name').value.trim();
-      const user = document.getElementById('new-user').value.trim();
-      const pass = document.getElementById('new-pass').value.trim();
-      const role = document.getElementById('new-role').value;
-
-      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-      if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
-        alert('El usuario ya existe. Por favor elige otro.');
-        return;
-      }
-
-      users.push({ name, user, pass, role });
-      localStorage.setItem('sig_users', JSON.stringify(users));
-
-      document.getElementById('new-name').value = '';
-      document.getElementById('new-user').value = '';
-      document.getElementById('new-pass').value = '';
-
-      loadUsersTable();
-      alert('Usuario registrado exitosamente');
-    }
-
-    function deleteUser(username) {
-      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
-        let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
-        localStorage.setItem('sig_users', JSON.stringify(users));
-        loadUsersTable();
-      }
-    }
-  </script>
-</body>
-</html>
+          const userKey = item.usuario ? item.usuario.toLowerCase() : '';
+          const compositeKey = `${userKey}_${item.fechaHora}`;
+          
+          if (item.sessionId && durationMap[item.sessionId]) {
+            duration = durationMap[item.sessionId];
+          } else if (durationMap[compositeKey]) {
+            duration = durationMap[compositeKey];
+          } else if (currentSession && (currentSession.sessionId === item.sessionId || (currentSession.
