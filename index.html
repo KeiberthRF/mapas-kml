@@ -590,7 +590,7 @@
         statusDiv.style.color = "#ef4444";
       });
 
-    // CORRECCIÓN DEFINITIVA DE POSICIONAMIENTO EN PUNTO GPS
+    // POSICIONAMIENTO PERFECTO GPS SIN DESVÍOS (SEGUNDA FASE)
     function selectAndFocusProducer(feat, marker) {
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
@@ -610,14 +610,20 @@
       if (targetMarker) {
         var latLng = targetMarker.getLatLng();
         
-        // Centrado exacto deshabilitando autopan automático
+        // Cierra cualquier popup previo
+        map.closePopup();
+
+        // Vuelo exacto al centro de las coordenadas GPS
         map.flyTo(latLng, 16, { 
           duration: 1.5,
           easeLinearity: 0.25 
         });
         
-        targetMarker.openPopup({ autoPan: false });
-        targetMarker.openTooltip();
+        // Abre el popup y el tooltip exactamente al concluir el vuelo
+        setTimeout(() => {
+          targetMarker.openPopup({ autoPan: false });
+          targetMarker.openTooltip();
+        }, 800);
       }
     }
 
@@ -801,7 +807,7 @@
       }
     }
 
-    // CARGA DE BITÁCORA UNIFICADA SIN ERRORES DE ESTADO
+    // CARGA DE BITÁCORA UNIFICADA CONTROLADA
     function loadUnifiedLogsTable() {
       const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
       const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
@@ -822,7 +828,10 @@
         }
       });
 
-      accessLogs.slice().reverse().forEach((log) => {
+      // Se recorren los accesos invirtiendo para mostrar los más recientes arriba
+      const reversedLogs = accessLogs.slice().reverse();
+
+      reversedLogs.forEach((log, index) => {
         const tr = document.createElement('tr');
         const isExitoso = log.estado === 'Exitoso';
         const badgeClass = isExitoso ? 'badge-exitoso' : 'badge-fallido';
@@ -833,12 +842,13 @@
           const userKey = log.usuario ? log.usuario.toLowerCase() : '';
           const compositeKey = `${userKey}_${log.fechaHora}`;
 
-          if (log.sessionId && durationMap[log.sessionId]) {
+          // Solo la PRIMERA fila (el último acceso del usuario en curso) se muestra como activa
+          if (index === 0 && currentSession && currentSession.user && currentSession.user.toLowerCase() === userKey) {
+            durationText = 'En curso / Activa';
+          } else if (log.sessionId && durationMap[log.sessionId]) {
             durationText = durationMap[log.sessionId];
           } else if (durationMap[compositeKey]) {
             durationText = durationMap[compositeKey];
-          } else if (currentSession && (currentSession.sessionId === log.sessionId || (currentSession.user && currentSession.user.toLowerCase() === userKey && currentSession.loginFormatted === log.fechaHora))) {
-            durationText = 'En curso / Activa';
           } else {
             durationText = 'Finalizada';
           }
@@ -888,19 +898,21 @@
       content += String("USUARIO").padEnd(20) + String("FECHA Y HORA").padEnd(28) + String("RESULTADO").padEnd(15) + "DURACIÓN SESIÓN\n";
       content += "-----------------------------------------------------------------------------------------\n";
 
-      accessLogs.forEach(item => {
+      const reversedLogs = accessLogs.slice().reverse();
+
+      reversedLogs.forEach((item, index) => {
         const isExitoso = item.estado === 'Exitoso';
         let duration = "-";
         if (isExitoso) {
           const userKey = item.usuario ? item.usuario.toLowerCase() : '';
           const compositeKey = `${userKey}_${item.fechaHora}`;
           
-          if (item.sessionId && durationMap[item.sessionId]) {
+          if (index === 0 && currentSession && currentSession.user && currentSession.user.toLowerCase() === userKey) {
+            duration = "En curso / Activa";
+          } else if (item.sessionId && durationMap[item.sessionId]) {
             duration = durationMap[item.sessionId];
           } else if (durationMap[compositeKey]) {
             duration = durationMap[compositeKey];
-          } else if (currentSession && (currentSession.sessionId === item.sessionId || (currentSession.user && currentSession.user.toLowerCase() === userKey && currentSession.loginFormatted === item.fechaHora))) {
-            duration = "En curso / Activa";
           } else {
             duration = "Finalizada";
           }
