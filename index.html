@@ -29,6 +29,7 @@
       font-size: 12px;
       font-weight: bold;
       border: 1px solid #1e293b;
+      transition: opacity 0.5s ease;
     }
 
     #floating-search-btn {
@@ -433,8 +434,8 @@
       map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
     }
 
-    // Inicialización del Mapa
-    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 8);
+    // Inicialización del Mapa con vista alta para efecto Google Earth
+    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
 
     L.tileLayer('https://mt1.google.com/vt/lyrs=y,p&x={x}&y={y}&z={z}', {
       maxZoom: 20, 
@@ -493,7 +494,7 @@
       return "";
     }
 
-    // Carga de Archivo KML
+    // Carga de Archivo KML con efecto de entrada
     fetch('./honduras.kml', { cache: 'no-cache' })
       .then(r => {
         if (!r.ok) throw new Error("No se pudo cargar el archivo honduras.kml");
@@ -520,7 +521,14 @@
 
           renderMapFeatures();
         }
-        statusDiv.style.display = 'none';
+
+        // Animación de Entrada Estilo Google Earth
+        setTimeout(function() {
+          map.flyTo([14.6, -87.8], 8, { duration: 3.2, easeLinearity: 0.25 });
+        }, 200);
+
+        statusDiv.style.opacity = '0';
+        setTimeout(function() { statusDiv.style.display = 'none'; }, 500);
       })
       .catch(err => {
         console.error(err);
