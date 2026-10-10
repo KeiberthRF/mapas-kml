@@ -290,7 +290,7 @@
     .badge-exitoso { background: rgba(22, 163, 74, 0.2); color: #4ade80; border: 1px solid #16a34a; }
     .badge-fallido { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
 
-    /* Estilos del Marcador de Google Earth con Efectos */
+    /* Marcador Google Earth con animación */
     .google-earth-marker {
       transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
@@ -299,7 +299,7 @@
       z-index: 1000 !important;
     }
 
-    /* Estilo Popup Emergente */
+    /* Popup Emergente */
     .leaflet-popup-content-wrapper { 
       border-radius: 10px; 
       padding: 12px; 
@@ -331,15 +331,27 @@
 </head>
 <body>
 
-  <!-- Validación de Sesión -->
+  <!-- Validación y Control de Sesión Global -->
   <script>
     const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
-    if (!currentSession) {
+    const revokedSessions = JSON.parse(localStorage.getItem('sig_revoked_sessions') || '[]');
+
+    if (!currentSession || (currentSession.sessionId && revokedSessions.includes(currentSession.sessionId))) {
+      sessionStorage.removeItem('current_session');
       window.location.href = 'login.html';
     }
+
+    // Monitoreo en tiempo real de revocación de sesión
+    setInterval(() => {
+      const revoked = JSON.parse(localStorage.getItem('sig_revoked_sessions') || '[]');
+      if (currentSession && currentSession.sessionId && revoked.includes(currentSession.sessionId)) {
+        sessionStorage.removeItem('current_session');
+        window.location.href = 'login.html';
+      }
+    }, 3000);
   </script>
 
-  <div id="status-msg">Iniciando sistema de mapa...</div>
+  <div id="status-msg">Iniciando mapa...</div>
 
   <button id="floating-search-btn" onclick="openPanel()">🔍 Buscar</button>
 
@@ -467,10 +479,8 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Inicialización del Mapa con vista espacial global inicial (Zoom Earth 3)
+    // Inicialización del Mapa
     var map = L.map('map', { maxZoom: 20, zoomControl: false }).setView([14.6, -87.8], 3);
-
-    // Reposicionar Controles de Zoom abajo a la izquierda para no estorbar el panel
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
     L.tileLayer('https://mt1.google.com/vt/lyrs=y,p&x={x}&y={y}&z={z}', {
@@ -478,7 +488,6 @@
       attribution: '© Google Earth Terrain'
     }).addTo(map);
 
-    // Marcador Globo Amarillo con Estrella Negra de Google Earth
     var googleEarthPin = L.divIcon({
       className: 'google-earth-marker',
       html: `
@@ -536,16 +545,10 @@
       updateMuniDropdown('todos');
       map.closePopup();
       renderMapFeatures();
-      
-      // Animación suave de regreso a la vista general de Honduras
-      map.flyTo([14.6, -87.8], 8, {
-        duration: 2.2,
-        easeLinearity: 0.25
-      });
+      map.flyTo([14.6, -87.8], 8, { duration: 2.2, easeLinearity: 0.25 });
     }
 
-    // Carga de Archivo KML + Animación Google Earth Fly-In
-    statusDiv.innerText = "Cargando capa KML...";
+    statusDiv.innerText = "Cargando datos del KML...";
     fetch('./honduras.kml', { cache: 'no-cache' })
       .then(r => {
         if (!r.ok) throw new Error("No se pudo cargar el archivo honduras.kml");
@@ -576,12 +579,8 @@
         statusDiv.style.opacity = '0';
         setTimeout(() => statusDiv.style.display = 'none', 500);
 
-        // EFECTO GOOGLE EARTH: Zoom in automático desde el espacio hacia Honduras
         setTimeout(() => {
-          map.flyTo([14.6, -87.8], 8, {
-            duration: 3.5,
-            easeLinearity: 0.2
-          });
+          map.flyTo([14.6, -87.8], 8, { duration: 3.2, easeLinearity: 0.2 });
         }, 300);
       })
       .catch(err => {
@@ -590,6 +589,7 @@
         statusDiv.style.color = "#ef4444";
       });
 
+    // CORRECCIÓN DE POSICIONAMIENTO EN PUNTO GPS
     function selectAndFocusProducer(feat, marker) {
       var props = feat.properties || {};
       var nombre = props.name || "Productor sin nombre";
@@ -608,17 +608,17 @@
       var targetMarker = marker || featureMarkersMap.get(feat);
       if (targetMarker) {
         var latLng = targetMarker.getLatLng();
-        var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
-        var targetPoint = map.project(latLng, 15).subtract(offset);
         
-        // Vuelo suave hacia el punto objetivo
-        map.flyTo(map.unproject(targetPoint, 15), 15, { 
+        // Centrado exacto sin desvíos de píxeles
+        map.flyTo(latLng, 16, { 
           duration: 1.8,
           easeLinearity: 0.25 
         });
         
-        targetMarker.openPopup();
-        targetMarker.openTooltip();
+        setTimeout(() => {
+          targetMarker.openPopup();
+          targetMarker.openTooltip();
+        }, 800);
       }
     }
 
@@ -723,6 +723,7 @@
       renderMapFeatures();
     });
 
+    // CIERRE DEFINITIVO Y GLOBAL DE SESIÓN
     function logout() {
       if (currentSession) {
         const loginTime = new Date(currentSession.loginTime);
@@ -730,19 +731,27 @@
         const durationMinutes = Math.max(1, Math.round((now - loginTime) / 60000));
 
         const newLogEntry = {
+          sessionId: currentSession.sessionId,
           user: currentSession.user,
           login: currentSession.loginFormatted,
           duration: durationMinutes + ' min'
         };
 
+        // Guardar la sesión como finalizada
         const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
         logs.push(newLogEntry);
         localStorage.setItem('sig_logs', JSON.stringify(logs));
 
-        const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-        masterLogs.push(newLogEntry);
-        localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
+        // Revocar la sesión globalmente para expulsar cualquier dispositivo o pestaña
+        if (currentSession.sessionId) {
+          const revoked = JSON.parse(localStorage.getItem('sig_revoked_sessions') || '[]');
+          if (!revoked.includes(currentSession.sessionId)) {
+            revoked.push(currentSession.sessionId);
+            localStorage.setItem('sig_revoked_sessions', JSON.stringify(revoked));
+          }
+        }
       }
+
       sessionStorage.removeItem('current_session');
       window.location.href = 'login.html';
     }
@@ -795,6 +804,7 @@
       }
     }
 
+    // CARGA DE BITÁCORA UNIFICADA CON DURACIONES CORRECTAS
     function loadUnifiedLogsTable() {
       const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
       const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
@@ -806,30 +816,36 @@
         return;
       }
 
+      // Mapear duraciones por sessionId o por índice para evitar falsos "En curso"
       const durationMap = {};
       logs.forEach(l => {
-        const key = `${l.user.toLowerCase()}_${l.login}`;
-        durationMap[key] = l.duration;
+        if (l.sessionId) {
+          durationMap[l.sessionId] = l.duration;
+        }
       });
 
-      accessLogs.slice().reverse().forEach(log => {
+      accessLogs.slice().reverse().forEach((log, idx) => {
         const tr = document.createElement('tr');
         const isExitoso = log.estado === 'Exitoso';
         const badgeClass = isExitoso ? 'badge-exitoso' : 'badge-fallido';
         const statusText = isExitoso ? '✓ Exitoso' : '✕ Fallido';
 
-        const durKey = `${log.usuario.toLowerCase()}_${log.fechaHora}`;
         let durationText = '-';
-        
         if (isExitoso) {
-          durationText = durationMap[durKey] || 'En curso / Activa';
+          if (log.sessionId && durationMap[log.sessionId]) {
+            durationText = durationMap[log.sessionId];
+          } else if (currentSession && currentSession.sessionId === log.sessionId) {
+            durationText = 'En curso / Activa';
+          } else {
+            durationText = log.duracion || 'Finalizada';
+          }
         }
 
         tr.innerHTML = `
           <td><strong>${log.usuario}</strong></td>
           <td>${log.fechaHora}</td>
           <td><span class="badge-status ${badgeClass}">${statusText}</span></td>
-          <td style="color:${isExitoso ? '#38bdf8' : '#64748b'}">${durationText}</td>
+          <td style="color:${durationText === 'En curso / Activa' ? '#38bdf8' : '#94a3b8'}">${durationText}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -845,25 +861,16 @@
 
     function downloadLogsTXT() {
       const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
-      const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-      const visibleLogs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
       
-      let combinedSessions = [...masterLogs];
-      visibleLogs.forEach(v => {
-        if (!combinedSessions.some(m => m.user === v.user && m.login === v.login)) {
-          combinedSessions.push(v);
-        }
-      });
-
-      if (accessLogs.length === 0 && combinedSessions.length === 0) {
+      if (accessLogs.length === 0) {
         alert('No existen registros almacenados en la bitácora actualmente.');
         return;
       }
 
       const durationMap = {};
-      combinedSessions.forEach(l => {
-        const key = `${l.user.toLowerCase()}_${l.login}`;
-        durationMap[key] = l.duration;
+      logs.forEach(l => {
+        if (l.sessionId) durationMap[l.sessionId] = l.duration;
       });
 
       let content = "=========================================================================================\n";
@@ -876,8 +883,10 @@
 
       accessLogs.forEach(item => {
         const isExitoso = item.estado === 'Exitoso';
-        const durKey = `${item.usuario.toLowerCase()}_${item.fechaHora}`;
-        const duration = isExitoso ? (durationMap[durKey] || "En curso / Finalizada") : "-";
+        let duration = "-";
+        if (isExitoso) {
+          duration = (item.sessionId && durationMap[item.sessionId]) ? durationMap[item.sessionId] : (item.duracion || "Finalizada");
+        }
 
         content += String(item.usuario).padEnd(20) + 
                    String(item.fechaHora).padEnd(28) + 
