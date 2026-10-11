@@ -316,7 +316,12 @@
       <option value="todos">Todos los Municipios</option>
     </select>
 
-    <label for="search-input">Buscar Productor</label>
+    <!-- Botón Dashboard Integrado en el Panel de Filtros -->
+    <button type="button" id="btn-dashboard-panel" onclick="abrirDashboardFiltrado()" style="width: 100%; margin-top: 4px; padding: 9px; background-color: #16a34a; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s; font-size: 12px;">
+      📊 Ver Dashboard Estadístico
+    </button>
+
+    <label for="search-input" style="margin-top: 4px;">Buscar Productor</label>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Escribe un nombre..." />
       <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">
@@ -425,6 +430,15 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
+    // Función que vincula los filtros seleccionados hacia el módulo de Dashboard
+    function abrirDashboardFiltrado() {
+      const deptoSeleccionado = selectDepto.value;
+      const muniSeleccionado = selectMuni.value;
+
+      const urlDashboard = `dashboard.html?depto=${encodeURIComponent(deptoSeleccionado)}&municipio=${encodeURIComponent(muniSeleccionado)}`;
+      window.location.href = urlDashboard;
+    }
+
     function fullReset() {
       searchInput.value = '';
       selectDepto.value = 'todos';
@@ -522,7 +536,6 @@
           renderMapFeatures();
         }
 
-        // Animación de Entrada Estilo Google Earth
         setTimeout(function() {
           map.flyTo([14.6, -87.8], 8, { duration: 3.2, easeLinearity: 0.25 });
         }, 200);
@@ -855,6 +868,7 @@
       users.push({ name, user, pass, role });
       localStorage.setItem('sig_users', JSON.stringify(users));
 
+      document.getElementById('new-name').value = '...'; // limpiar
       document.getElementById('new-name').value = '';
       document.getElementById('new-user').value = '';
       document.getElementById('new-pass').value = '';
