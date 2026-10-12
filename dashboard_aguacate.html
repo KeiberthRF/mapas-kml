@@ -11,38 +11,37 @@
     :root {
       --primary-green: #0a5c36;
       --secondary-green: #14804a;
-      --light-bg: #f8f9fa;
-      --card-border: #e3e6f0;
+      --light-bg: #f3f5f8;
       --accent-gold: #c59b27;
     }
     body {
-      background-color: #f3f5f8;
+      background-color: var(--light-bg);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: #333;
     }
     .header-banner {
       background-color: var(--primary-green);
       color: white;
-      padding: 20px 0;
+      padding: 15px 0;
       border-bottom: 4px solid var(--accent-gold);
     }
     .kpi-card {
       background: white;
       border-radius: 8px;
-      padding: 18px;
+      padding: 15px;
       box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
       border-left: 5px solid var(--primary-green);
       height: 100%;
     }
     .kpi-title {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: #6c757d;
       text-transform: uppercase;
       margin-bottom: 5px;
     }
     .kpi-value {
-      font-size: 1.6rem;
+      font-size: 1.4rem;
       font-weight: 800;
       color: var(--primary-green);
     }
@@ -58,17 +57,17 @@
     }
     .table-custom th {
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       text-align: center;
       vertical-align: middle;
     }
     .table-custom td {
       vertical-align: middle;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
     }
     .rank-badge {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       background-color: var(--accent-gold);
       color: white;
@@ -76,68 +75,111 @@
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
     }
     .section-header {
       border-left: 4px solid var(--secondary-green);
       padding-left: 10px;
-      margin-top: 25px;
-      margin-bottom: 15px;
+      margin-top: 20px;
+      margin-bottom: 12px;
       color: var(--primary-green);
       font-weight: 700;
+      font-size: 1.1rem;
     }
     .filter-bar {
       background: white;
-      padding: 15px;
+      padding: 12px;
       border-radius: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    }
+    /* Estilo para Slides / Carrusel Superior de Métricas Secundarias */
+    .metrics-slider-container {
+      display: flex;
+      gap: 15px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      scroll-behavior: smooth;
+    }
+    .metric-slide-card {
+      min-width: 240px;
+      background: white;
+      border-radius: 8px;
+      padding: 12px 15px;
+      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+      border-top: 4px solid var(--accent-gold);
+      flex: 1;
     }
   </style>
 </head>
 <body>
 
-  <!-- Encabezado Estilo IHCAFE -->
+  <!-- Encabezado -->
   <div class="header-banner">
     <div class="container-fluid px-4">
       <div class="d-flex justify-content-between align-items-center">
         <div>
-          <h2 class="m-0 fw-bold"><i class="fa-solid fa-seedling me-2"></i>ESTADÍSTICA DE PRODUCCIÓN DE AGUACATE</h2>
-          <small class="text-light">República de Honduras - Consolidado de Datos KML</small>
+          <h4 class="m-0 fw-bold"><i class="fa-solid fa-seedling me-2"></i>ESTADÍSTICA DE PRODUCCIÓN DE AGUACATE</h4>
+          <small class="text-light">República de Honduras - Análisis Automatizado de Datos KML</small>
         </div>
-        <div class="text-end">
+        <div>
           <a href="index.html" class="btn btn-light btn-sm fw-bold me-2"><i class="fa-solid fa-map me-1"></i> Volver al Mapa</a>
-          <span class="badge bg-warning text-dark fs-6" id="lblFiltroActual">Nacional</span>
+          <span class="badge bg-warning text-dark fs-6" id="lblFiltroActual">Nacional (Todo el País)</span>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="container-fluid px-4 my-4">
+  <div class="container-fluid px-4 my-3">
 
     <!-- Barra de Filtros interactiva -->
     <div class="filter-bar">
       <div class="row align-items-center">
         <div class="col-md-4">
-          <label class="form-label fw-bold"><i class="fa-solid fa-map-location-dot me-1"></i> Departamento:</label>
-          <select id="selDepartamento" class="form-select" onchange="cambiarDepartamento()">
+          <label class="form-label fw-bold mb-1"><i class="fa-solid fa-map-location-dot me-1"></i> Departamento:</label>
+          <select id="selDepartamento" class="form-select form-select-sm" onchange="cambiarDepartamento()">
             <option value="TODOS">-- Todos los Departamentos --</option>
           </select>
         </div>
         <div class="col-md-4">
-          <label class="form-label fw-bold"><i class="fa-solid fa-location-dot me-1"></i> Municipio:</label>
-          <select id="selMunicipio" class="form-select" onchange="aplicarFiltros()">
+          <label class="form-label fw-bold mb-1"><i class="fa-solid fa-location-dot me-1"></i> Municipio:</label>
+          <select id="selMunicipio" class="form-select form-select-sm" onchange="aplicarFiltros()">
             <option value="TODOS">-- Todos los Municipios --</option>
           </select>
         </div>
-        <div class="col-md-4 text-end pt-4">
-          <button class="btn btn-outline-success btn-sm" onclick="cargarKML()"><i class="fa-solid fa-arrows-rotate me-1"></i> Actualizar Datos</button>
+        <div class="col-md-4 text-end pt-3">
+          <button class="btn btn-outline-success btn-sm" onclick="cargarKMLReal()"><i class="fa-solid fa-arrows-rotate me-1"></i> Recargar KML</button>
         </div>
       </div>
     </div>
 
-    <!-- Tarjetas KPI -->
-    <div class="row g-3 mb-4">
+    <!-- TARJETAS SLIDES SUPERIORES (Métricas Secundarias Deslizantes) -->
+    <div class="metrics-slider-container">
+      <div class="metric-slide-card">
+        <div class="kpi-title"><i class="fa-solid fa-droplet me-1"></i> Fincas con Riego</div>
+        <div class="kpi-value" id="slideRiego">0</div>
+        <small class="text-muted" id="slideRiegoSub">Sistemas instalados</small>
+      </div>
+      <div class="metric-slide-card">
+        <div class="kpi-title"><i class="fa-solid fa-water me-1"></i> Sin Riego / Con Fuente Agua</div>
+        <div class="kpi-value" id="slideFuenteAgua">0</div>
+        <small class="text-muted">Potencial de instalación</small>
+      </div>
+      <div class="metric-slide-card">
+        <div class="kpi-title"><i class="fa-solid fa-users me-1"></i> Mano de Obra Total</div>
+        <div class="kpi-value" id="slideTrabajadores">0</div>
+        <small class="text-muted" id="slideTrabSub">Permanentes y temporales</small>
+      </div>
+      <div class="metric-slide-card">
+        <div class="kpi-title"><i class="fa-solid fa-money-bill-wave me-1"></i> Total Planilla Pagos</div>
+        <div class="kpi-value" id="slidePagos">L. 0.00</div>
+        <small class="text-muted">Inversión salarial</small>
+      </div>
+    </div>
+
+    <!-- Tarjetas KPI Principales -->
+    <div class="row g-3 mb-3">
       <div class="col-md-3">
         <div class="kpi-card">
           <div class="kpi-title"><i class="fa-solid fa-house-chimney-window me-1"></i> Total Fincas / Productores</div>
@@ -158,7 +200,7 @@
       </div>
       <div class="col-md-3">
         <div class="kpi-card">
-          <div class="kpi-title"><i class="fa-solid fa-weight-hanging me-1"></i> Producción Estimada</div>
+          <div class="kpi-title"><i class="fa-solid fa-weight-hanging me-1"></i> Producción Estimada (Lbs)</div>
           <div class="kpi-value" id="kpiProduccion">0 <small class="fs-6">lbs</small></div>
         </div>
       </div>
@@ -166,7 +208,7 @@
 
     <!-- Ranking y Tabla Municipal Principal -->
     <h4 class="section-header"><i class="fa-solid fa-list-ol me-2"></i>RANKING MUNICIPAL Y CONSOLIDADO POR ZONA</h4>
-    <div class="table-custom mb-4">
+    <div class="table-custom mb-3">
       <div class="table-responsive">
         <table class="table table-hover table-striped align-middle m-0" id="tablaPrincipal">
           <thead>
@@ -214,7 +256,9 @@
 
   </div>
 
-  <!-- JavaScript Consolidado y Robusto -->
+  <!-- Librería de Conversión KML igual que el index -->
+  <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+
   <script>
     let datosFincas = [];
 
@@ -235,104 +279,65 @@
       return isNaN(num) ? 0 : num;
     }
 
-    function cargarKML() {
-      // Intenta leer el archivo kml general del proyecto
-      fetch('Honduras.kml')
-        .then(res => {
-          if (!res.ok) throw new Error("Archivo no encontrado");
-          return res.text();
+    function extractField(feature, fieldName) {
+      var props = feature.properties || {};
+      var foundKey = Object.keys(props).find(k => k.toLowerCase() === fieldName.toLowerCase());
+      if (foundKey && props[foundKey]) return String(props[foundKey]).trim();
+
+      var desc = props.description || "";
+      var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
+      if (strDesc) {
+        var regex = new RegExp(fieldName + "[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
+        var match = strDesc.match(regex);
+        if (match && match[1]) return match[1].replace(/<[^>]+>/g, '').trim();
+      }
+      return "";
+    }
+
+    function cargarKMLReal() {
+      // Archivo apuntando correctamente a h minúscula: honduras.kml
+      fetch('./honduras.kml', { cache: 'no-cache' })
+        .then(r => {
+          if (!r.ok) throw new Error("No se pudo cargar el archivo honduras.kml");
+          return r.text();
         })
-        .then(xmlString => {
-          let parser = new DOMParser();
-          let xmlDoc = parser.parseFromString(xmlString, "text/xml");
-          let placemarks = xmlDoc.getElementsByTagName("Placemark");
-          
+        .then(kmlText => {
+          var parser = new DOMParser();
+          var kmlDom = parser.parseFromString(kmlText, 'text/xml');
+          var geojson = toGeoJSON.kml(kmlDom);
+
           datosFincas = [];
-          for (let i = 0; i < placemarks.length; i++) {
-            datosFincas.push(extraerPropiedades(placemarks[i]));
-          }
-
-          if (datosFincas.length === 0) {
-            generarDatosDemo();
-          } else {
-            inicializarFiltrosYURL();
-          }
-        })
-        .catch(err => {
-          console.warn("Cargando datos de respaldo estandarizados por seguridad:", err);
-          generarDatosDemo();
-        });
-    }
-
-    function extraerPropiedades(pm) {
-      // Búsqueda flexible en ExtendedData, SimpleData o CDATA de description
-      let getVal = (tags) => {
-        for (let tag of tags) {
-          let el = pm.querySelector(`Data[name="${tag}"] value, SimpleData[name="${tag}"]`);
-          if (el && el.textContent) return el.textContent;
-        }
-        // Buscar dentro del texto descriptivo si estuviera en HTML
-        let desc = pm.querySelector('description');
-        if (desc) {
-          let text = desc.textContent;
-          // Lógica básica de extracción si viene en formato tabla KML estándar
-        }
-        return '';
-      };
-
-      return {
-        departamento: (getVal(['P2', 'DEPARTAMENTO', 'Departamento', 'depto']) || 'COMAYAGUA').toUpperCase().trim(),
-        municipio: (getVal(['P3', 'MUNICIPIO', 'Municipio', 'muni']) || 'ESQUIAS').toUpperCase().trim(),
-        areaMz: parseNumber(getVal(['AREA', 'P12', 'Area', 'area']) || '2.5'),
-        plantasProduccion: parseNumber(getVal(['PLANTAS_PROD', 'P13', 'plantas_prod']) || '150'),
-        plantasDesarrollo: parseNumber(getVal(['PLANTAS_DES', 'P14', 'plantas_des']) || '30'),
-        variedad: getVal(['VARIEDAD', 'P15', 'variedad']) || 'Hass',
-        produccionLbs: parseNumber(getVal(['PRODUCCION_LBS', 'P16', 'produccion']) || '5000'),
-        produccionUnidades: parseNumber(getVal(['PRODUCCION_UNI', 'P17', 'unidades']) || '20000'),
-        tieneRiego: (getVal(['RIEGO', 'tiene_riego']) || 'SI').toUpperCase().includes('SI'),
-        tipoRiego: getVal(['TIPO_RIEGO', 'tipo_riego']) || 'Goteo',
-        fuenteAguaSinRiego: true,
-        trabajadoresPerm: parseNumber(getVal(['TRAB_PERM', 'trab_perm']) || '2'),
-        trabajadoresTemp: parseNumber(getVal(['TRAB_TEMP', 'trab_temp']) || '5'),
-        pagosLps: parseNumber(getVal(['PAGOS', 'pagos']) || '15000'),
-        mesesCosecha: getVal(['MESES', 'meses']) || 'Mayo - Agosto'
-      };
-    }
-
-    function generarDatosDemo() {
-      const departamentos = ['COMAYAGUA', 'YORO', 'FRANCISCO MORAZAN', 'INTIBUCA'];
-      const municipios = {
-        'COMAYAGUA': ['ESQUIAS', 'COMAYAGUA', 'SIGUATEPEQUE', 'LA LIBERTAD'],
-        'YORO': ['YORO', 'EL PROGRESO', 'TELICUA', 'MORAZAN'],
-        'FRANCISCO MORAZAN': ['TEGUCIGALPA', 'VALLE DE ANGELES', 'SANTA LUCIA'],
-        'INTIBUCA': ['LA ESPERANZA', 'YAMARANGUILA']
-      };
-      
-      datosFincas = [];
-      departamentos.forEach(dept => {
-        municipios[dept].forEach((muni, index) => {
-          for (let i = 0; i < 5; i++) {
-            datosFincas.push({
-              departamento: dept,
-              municipio: muni,
-              areaMz: parseNumber((Math.random() * 4 + 1).toFixed(2)),
-              plantasProduccion: Math.floor(Math.random() * 250 + 40),
-              plantasDesarrollo: Math.floor(Math.random() * 70 + 10),
-              variedad: (i % 3 === 0) ? 'Hass' : (i % 3 === 1 ? 'Antillano' : 'Criollo'),
-              produccionLbs: Math.floor(Math.random() * 6000 + 1200),
-              produccionUnidades: Math.floor(Math.random() * 20000 + 4000),
-              tieneRiego: Math.random() > 0.3,
-              tipoRiego: (i % 2 === 0) ? 'Goteo' : 'Aspersión',
-              fuenteAguaSinRiego: true,
-              trabajadoresPerm: Math.floor(Math.random() * 3 + 1),
-              trabajadoresTemp: Math.floor(Math.random() * 6 + 2),
-              pagosLps: Math.floor(Math.random() * 20000 + 4000),
-              mesesCosecha: 'Junio - Septiembre'
+          if (geojson && geojson.features) {
+            geojson.features.forEach(feature => {
+              let depto = extractField(feature, "departamento") || extractField(feature, "depto") || extractField(feature, "P2") || "SIN DEPARTAMENTO";
+              let muni = extractField(feature, "municipio") || extractField(feature, "muni") || extractField(feature, "P3") || "SIN MUNICIPIO";
+              
+              datosFincas.push({
+                departamento: depto.toUpperCase().trim(),
+                municipio: muni.toUpperCase().trim(),
+                areaMz: parseNumber(extractField(feature, "area") || extractField(feature, "P12") || "0"),
+                plantasProduccion: parseNumber(extractField(feature, "plantas_prod") || extractField(feature, "P13") || "0"),
+                plantasDesarrollo: parseNumber(extractField(feature, "plantas_des") || extractField(feature, "P14") || "0"),
+                variedad: extractField(feature, "variedad") || extractField(feature, "P15") || "Hass / General",
+                produccionLbs: parseNumber(extractField(feature, "produccion_lbs") || extractField(feature, "P16") || "0"),
+                produccionUnidades: parseNumber(extractField(feature, "produccion_uni") || extractField(feature, "P17") || "0"),
+                tieneRiego: (extractField(feature, "riego") || extractField(feature, "tiene_riego") || "SI").toUpperCase().includes('SI'),
+                tipoRiego: extractField(feature, "tipo_riego") || "Predominante",
+                fuenteAguaSinRiego: (extractField(feature, "fuente_agua") || "SI").toUpperCase().includes('SI'),
+                trabajadoresPerm: parseNumber(extractField(feature, "trab_perm") || extractField(feature, "P19") || "0"),
+                trabajadoresTemp: parseNumber(extractField(feature, "trab_temp") || extractField(feature, "P20") || "0"),
+                pagosLps: parseNumber(extractField(feature, "pagos") || extractField(feature, "P22") || "0"),
+                mesesCosecha: extractField(feature, "meses") || "Temporada General"
+              });
             });
           }
+
+          inicializarFiltrosYURL();
+        })
+        .catch(err => {
+          console.error("Error al leer honduras.kml:", err);
+          alert("No se pudo cargar el archivo honduras.kml. Verifica que esté en la misma carpeta.");
         });
-      });
-      inicializarFiltrosYURL();
     }
 
     function inicializarFiltrosYURL() {
@@ -343,12 +348,11 @@
         selDept.innerHTML += `<option value="${d}">${d}</option>`;
       });
 
-      // Capturar parámetros de la URL enviados desde el mapa principal (ej: ?depto=Yoro)
       const urlParams = new URLSearchParams(window.location.search);
       let deptoParam = urlParams.get('depto');
       let muniParam = urlParams.get('municipio');
 
-      if (deptoParam && deptoParam !== 'todos') {
+      if (deptoParam && deptoParam !== 'todos' && deptoParam !== 'TODOS') {
         let deptEncontrado = depts.find(d => d.toUpperCase() === deptoParam.toUpperCase());
         if (deptEncontrado) {
           selDept.value = deptEncontrado;
@@ -375,7 +379,7 @@
         selMuni.innerHTML += `<option value="${m}">${m}</option>`;
       });
 
-      if (muniParamSeleccionado && muniParamSeleccionado !== 'todos') {
+      if (muniParamSeleccionado && muniParamSeleccionado !== 'todos' && muniParamSeleccionado !== 'TODOS') {
         let muniEncontrado = munis.find(m => m.toUpperCase() === muniParamSeleccionado.toUpperCase());
         if (muniEncontrado) {
           selMuni.value = muniEncontrado;
@@ -409,6 +413,19 @@
       document.getElementById('kpiArea').innerText = totalArea.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " mz";
       document.getElementById('kpiPlantas').innerText = totalPlantas.toLocaleString('es-HN');
       document.getElementById('kpiProduccion').innerText = totalProdLbs.toLocaleString('es-HN') + " lbs";
+
+      let fincasConRiego = fincas.filter(f => f.tieneRiego).length;
+      let fincasSinRiegoConFuente = fincas.filter(f => !f.tieneRiego && f.fuenteAguaSinRiego).length;
+      let totalTrabPerm = fincas.reduce((acc, f) => acc + f.trabajadoresPerm, 0);
+      let totalTrabTemp = fincas.reduce((acc, f) => acc + f.trabajadoresTemp, 0);
+      let totalPagos = fincas.reduce((acc, f) => acc + f.pagosLps, 0);
+
+      document.getElementById('slideRiego').innerText = fincasConRiego;
+      document.getElementById('slideRiegoSub').innerText = `${((fincasConRiego / (totalFincas || 1)) * 100).toFixed(1)}% del total`;
+      document.getElementById('slideFuenteAgua').innerText = fincasSinRiegoConFuente;
+      document.getElementById('slideTrabajadores').innerText = (totalTrabPerm + totalTrabTemp).toLocaleString('es-HN');
+      document.getElementById('slideTrabSub').innerText = `Perm: ${totalTrabPerm} | Temp: ${totalTrabTemp}`;
+      document.getElementById('slidePagos').innerText = "L. " + totalPagos.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
       let municipiosMap = {};
       fincas.forEach(f => {
@@ -474,9 +491,9 @@
           <td class="text-end">${fincas.reduce((a, b) => a + b.plantasDesarrollo, 0).toLocaleString('es-HN')}</td>
           <td>${fincas.filter(f => f.tieneRiego).length}</td>
           <td>${fincas.filter(f => !f.tieneRiego && f.fuenteAguaSinRiego).length}</td>
-          <td>${fincas.reduce((a, b) => a + b.trabajadoresPerm, 0)}</td>
-          <td>${fincas.reduce((a, b) => a + b.trabajadoresTemp, 0)}</td>
-          <td class="text-end">L. ${fincas.reduce((a, b) => a + b.pagosLps, 0).toLocaleString('es-HN', {minimumFractionDigits: 2})}</td>
+          <td>${totalTrabPerm}</td>
+          <td>${totalTrabTemp}</td>
+          <td class="text-end">L. ${totalPagos.toLocaleString('es-HN', {minimumFractionDigits: 2})}</td>
         </tr>
       `;
 
@@ -513,7 +530,7 @@
     }
 
     window.onload = function() {
-      cargarKML();
+      cargarKMLReal();
     };
   </script>
 </body>
