@@ -1,1 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Estadístico - PNAH Honduras</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .header-pnah { background: linear-gradient(135deg, #064e3b, #047857); color: white; padding: 20px; border-radius: 0 0 15px 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .kpi-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); border-left: 5px solid #10b981; transition: transform 0.2s; }
+    .kpi-card:hover { transform: translateY(-3px); }
+    .kpi-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 22px; font-weight: 800; color: #f8fafc; margin-top: 5px; }
+    .slide-container { display: none; }
+    .slide-container.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .nav-pills .nav-link.active { background-color: #10b981; font-weight: bold; color: #fff; }
+    .nav-pills .nav-link { color: #38bdf8; font-weight: 600; background: #1e293b; border: 1px solid #334155; }
+    .card-custom { background: #1e293b; border: 1px solid #334155; border-radius: 12px; color: #fff; }
+    .table-pnah th { background-color: #064e3b; color: white; font-size: 12px; border-color: #334155; }
+    .table-pnah td { font-size: 12px; color: #cbd5e1; border-color: #334155; background: #1e293b; }
+    #status-loading { text-align: center; padding: 40px; font-size: 18px; color: #38bdf8; font-weight: bold; }
+  </style>
+</head>
+<body>
 
+  <div class="header-pnah container-fluid mb-4">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h3 class="mb-1 fw-bold"><i class="fas fa-chart-pie me-2"></i>ESTADÍSTICA DE PRODUCCIÓN AGUACATERA - PNAH</h3>
+        <p class="mb-0 text-light small" id="filtro-info">Cargando y procesando datos desde Honduras.kml...</p>
+      </div>
+      <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <button class="btn btn-outline-light fw-bold me-2 shadow-sm" onclick="window.close()">
+          <i class="fas fa-times me-1"></i> Cerrar Pestaña
+        </button>
+        <button class="btn btn-warning fw-bold text-dark shadow-sm" onclick="window.print()">
+          <i class="fas fa-file-pdf me-1"></i> Descargar / Imprimir PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="status-loading">
+    <div class="spinner-border text-success mb-2" role="status"></div>
+    <div>Analizando geometrías y registros del archivo Honduras.kml...</div>
+  </div>
+
+  <div class="container pb-5" id="dashboard-content" style="display:none;">
+    <!-- Pestañas de Navegación por Slides -->
+    <ul class="nav nav-pills justify-content-center mb-4 gap-2">
+      <li class="nav-item"><button class="nav-link active" onclick="switchSlide(1)">Slide 1: Resumen y KPIs</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="switchSlide(2)">Slide 2: Empleo e Infraestructura</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="switchSlide(3)">Slide 3: Variedades y Desglose</button></li>
+    </ul>
+
+    <!-- SLIDE 1: KPIs y Top Municipios -->
+    <div id="slide-1" class="slide-container active">
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-title">Total Productores</div>
+            <div class="kpi-value" id="kpi-prod">0</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="kpi-card" style="border-left-color: #38bdf8;">
+            <div class="kpi-title">Área en Producción</div>
+            <div class="kpi-value" id="kpi-area">0 mz</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="kpi-card" style="border-left-color: #f59e0b;">
+            <div class="kpi-title">Prod. Hass (Libras)</div>
+            <div class="kpi-value" id="kpi-hass">0 lbs</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="kpi-card" style="border-left-color: #a855f7;">
+            <div class="kpi-title">Prod. Antillana / Criollos</div>
+            <div class="kpi-value" id="kpi-criolla">0 unid</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-md-8">
+          <div class="card card-custom p-3 shadow-sm">
+            <h5 class="fw-bold text-success mb-3">Top 5 Municipios por Producción</h5>
+            <canvas id="topMunicipalChart" height="140"></canvas>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card card-custom p-3 shadow-sm text-center h-100 d-flex flex-column justify-content-center bg-dark">
+            <h6 class="text-info fw-bold">PROYECTO NACIONAL</h6>
+            <h3 class="text-success fw-bold mt-2">PNAH HONDURAS</h3>
+            <p class="small text-muted mt-2">Informes automatizados extraídos directamente de la capa cartográfica oficial del SIG.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Empleo e Infraestructura de Riego -->
+    <div id="slide-2" class="slide-container">
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <div class="kpi-card">
+            <div class="kpi-title">Trabajadores Permanentes</div>
+            <div class="kpi-value" id="kpi-tperm">0</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="kpi-card" style="border-left-color: #38bdf8;">
+            <div class="kpi-title">Trabajadores Temporales</div>
+            <div class="kpi-value" id="kpi-ttemp">0</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="kpi-card" style="border-left-color: #10b981;">
+            <div class="kpi-title">Inyección Salarial Temp. Est.</div>
+            <div class="kpi-value" id="kpi-pagotemp">L. 0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="card card-custom p-3 shadow-sm">
+            <h5 class="fw-bold text-success mb-3">Sistemas de Riego y Fuentes Hídricas</h5>
+            <canvas id="riegoChart" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card card-custom p-3 shadow-sm">
+            <h5 class="fw-bold text-success mb-3">Plantas Totales vs En Producción</h5>
+            <canvas id="plantasChart" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: Desglose Municipal Detallado -->
+    <div id="slide-3" class="slide-container">
+      <div class="card card-custom p-3 shadow-sm">
+        <h5 class="fw-bold text-success mb-3">Ranking y Desglose Detallado por Municipio</h5>
+        <div class="table-responsive" style="max-height: 450px;">
+          <table class="table table-striped table-hover table-pnah table-bordered">
+            <thead>
+              <tr>
+                <th>Departamento</th>
+                <th>Municipio</th>
+                <th>Productores</th>
+                <th>Área (mz)</th>
+                <th>Prod. Hass (Lbs)</th>
+                <th>Prod. Otras (Unid)</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-detallada-body">
+              <!-- Inyectado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Librería para convertir KML a GeoJSON en el navegador -->
+  <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+  <script>
+    // 1. Obtener parámetros de filtro de la URL enviados desde index.html
+    const urlParams = new URLSearchParams(window.location.search);
+    const deptoFiltro = (urlParams.get('depto') || 'todos').toLowerCase();
+    const muniFiltro = (urlParams.get('municipio') || 'todos').toLowerCase();
+
+    document.getElementById('filtro-info').innerText = `Filtro Activo — Departamento: ${deptoFiltro.toUpperCase()} | Municipio: ${muniFiltro.toUpperCase()}`;
+
+    function switchSlide(slideNum) {
+      document.querySelectorAll('.slide-container').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-pills .nav-link').forEach(el => el.classList.remove('active'));
+      document.getElementById(`slide-${slideNum}`).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function extractFieldFromDesc(desc, fieldName) {
+      if (!desc) return "";
+      var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
+      var regex = new RegExp(fieldName + "[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
+      var match = strDesc.match(regex);
+      if (match && match[1]) return match[1].replace(/<[^>]+>/g, '').trim();
+      return "";
+    }
+
+    function getProp(props, key) {
+      if (!props) return "";
+      var foundKey = Object.keys(props).find(k => k.toLowerCase() === key.toLowerCase());
+      return foundKey ? props[foundKey] : "";
+    }
+
+    // 2. Cargar y procesar el archivo Honduras.kml directamente
+    fetch('./honduras.kml', { cache: 'no-cache' })
+      .then(r => {
+        if (!r.ok) throw new Error("No se pudo cargar honduras.kml");
+        return r.text();
+      })
+      .then(kmlText => {
+        var parser = new DOMParser();
+        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
+        var geojson = toGeoJSON.kml(kmlDom);
+
+        let totalProductores = 0;
+        let areaTotalMz = 0;
+        let prodHassLibras = 0;
+        let prodOtrasUnidades = 0;
+        let totalPlantas = 0;
+        let plantasProd = 0;
+        let tPerm = 0;
+        let tTemp = 0;
+        let pagoTotalTemp = 0;
+
+        let riegoCon = 0, riegoSinFuente = 0, riegoSinNada = 0;
+        let municipalMap = {};
+
+        if (geojson && geojson.features) {
+          geojson.features.forEach(feat => {
+            var props = feat.properties || {};
+            var depto = (getProp(props, 'departamento') || getProp(props, 'depto') || extractFieldFromDesc(props.description, 'departamento') || "Sin Departamento").trim();
+            var muni = (getProp(props, 'municipio') || getProp(props, 'muni') || extractFieldFromDesc(props.description, 'municipio') || "Sin Municipio").trim();
+
+            // Aplicar filtros recibidos de la URL
+            if (deptoFiltro !== 'todos' && depto.toLowerCase() !== deptoFiltro) return;
+            if (muniFiltro !== 'todos' && muni.toLowerCase() !== muniFiltro) return;
+
+            totalProductores++;
+
+            // Área en MZ
+            var area = parseFloat(getProp(props, 'area en mz') || extractFieldFromDesc(props.description, 'AREA EN MZ') || 0) || 0;
+            areaTotalMz += area;
+
+            // Raza y Producción
+            var raza = (getProp(props, 'raza') || extractFieldFromDesc(props.description, 'RAZA') || "").toLowerCase();
+            if (raza.includes('hass')) {
+              prodHassLibras += parseFloat(getProp(props, 'libras cosechadas') || extractFieldFromDesc(props.description, 'LIBRAS COSECHADAS') || 0) || 0;
+            } else {
+              prodOtrasUnidades += parseInt(getProp(props, 'unidades cosechadas') || extractFieldFromDesc(props.description, 'UNIDADES COSECHADAS') || 0) || 0;
+            }
+
+            // Plantas
+            totalPlantas += parseInt(getProp(props, 'total plantas') || extractFieldFromDesc(props.description, 'TOTAL PLANTAS') || 0) || 0;
+            plantasProd += parseInt(getProp(props, 'plantas en produccion') || extractFieldFromDesc(props.description, 'PLANTAS EN PRODUCCION') || 0) || 0;
+
+            // Empleo
+            if ((getProp(props, 'trabajadores permanentes') || extractFieldFromDesc(props.description, 'TRABAJADORES PERMANENTES') || "").toLowerCase() === 'si') {
+              tPerm += parseInt(getProp(props, 'cuantos tp') || extractFieldFromDesc(props.description, 'CUANTOS TP') || 0) || 0;
+            }
+            var tempCount = parseInt(getProp(props, 'cuantos tt') || extractFieldFromDesc(props.description, 'CUANTOS TT') || 0) || 0;
+            tTemp += tempCount;
+            var salarioDia = parseFloat(getProp(props, 'salario por dia') || extractFieldFromDesc(props.description, 'SALARIO POR DIA') || 0) || 0;
+            pagoTotalTemp += tempCount * salarioDia * 30; // Estimado temporada
+
+            // Riego
+            var tieneRiego = (getProp(props, 'sistema de riego') || extractFieldFromDesc(props.description, 'SISTEMA DE RIEGO') || "").toLowerCase();
+            var fuenteAgua = (getProp(props, 'fuente de agua') || extractFieldFromDesc(props.description, 'FUENTE DE AGUA') || "").toLowerCase();
+            if (tieneRiego === 'si') riegoCon++;
+            else if (fuenteAgua === 'si') riegoSinFuente++;
+            else riegoSinNada++;
+
+            // Agrupación Municipal
+            var muniKey = `${depto}___${muni}`;
+            if (!municipalMap[muniKey]) {
+              municipalMap[muniKey] = { depto: depto, muni: muni, productores: 0, area: 0, prodHass: 0, prodUnid: 0 };
+            }
+            municipalMap[muniKey].productores++;
+            municipalMap[muniKey].area += area;
+            if (raza.includes('hass')) {
+              municipalMap[muniKey].prodHass += parseFloat(getProp(props, 'libras cosechadas') || extractFieldFromDesc(props.description, 'LIBRAS COSECHADAS') || 0) || 0;
+            } else {
+              municipalMap[muniKey].prodUnid += parseInt(getProp(props, 'unidades cosechadas') || extractFieldFromDesc(props.description, 'UNIDADES COSECHADAS') || 0) || 0;
+            }
+          });
+        }
+
+        // Renderizar KPIs
+        document.getElementById('kpi-prod').innerText = totalProductores.toLocaleString();
+        document.getElementById('kpi-area').innerText = areaTotalMz.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' mz';
+        document.getElementById('kpi-hass').innerText = prodHassLibras.toLocaleString() + ' lbs';
+        document.getElementById('kpi-criolla').innerText = prodOtrasUnidades.toLocaleString() + ' unid';
+
+        document.getElementById('kpi-tperm').innerText = tPerm.toLocaleString();
+        document.getElementById('kpi-ttemp').innerText = tTemp.toLocaleString();
+        document.getElementById('kpi-pagotemp').innerText = 'L. ' + pagoTotalTemp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        // Top Municipios
+        let muniArray = Object.values(municipalMap).sort((a, b) => (b.prodHass + b.prodUnid) - (a.prodHass + a.prodUnid));
+        let top5 = muniArray.slice(0, 5);
+
+        new Chart(document.getElementById('topMunicipalChart').getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: top5.map(m => m.muni),
+            datasets: [{
+              label: 'Producción General',
+              data: top5.map(m => m.prodHass > 0 ? m.prodHass : m.prodUnid),
+              backgroundColor: '#10b981',
+              borderRadius: 6
+            }]
+          },
+          options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        // Gráfico Riego
+        new Chart(document.getElementById('riegoChart').getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: ['Con Riego', 'Sin Riego (Con Fuente)', 'Sin Riego ni Fuente'],
+            datasets: [{
+              data: [riegoCon, riegoSinFuente, riegoSinNada],
+              backgroundColor: ['#38bdf8', '#f59e0b', '#ef4444']
+            }]
+          },
+          options: { responsive: true, plugins: { legend: { labels: { color: '#f8fafc' } } } }
+        });
+
+        // Gráfico Plantas
+        new Chart(document.getElementById('plantasChart').getContext('2d'), {
+          type: 'pie',
+          data: {
+            labels: ['En Producción', 'En Desarrollo / Jóvenes'],
+            datasets: [{
+              data: [plantasProd, Math.max(0, totalPlantas - plantasProd)],
+              backgroundColor: ['#10b981', '#64748b']
+            }]
+          },
+          options: { responsive: true, plugins: { legend: { labels: { color: '#f8fafc' } } } }
+        });
+
+        // Rellenar Tabla Municipal (Slide 3)
+        const tbody = document.getElementById('tabla-detallada-body');
+        tbody.innerHTML = '';
+        muniArray.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row.depto}</td>
+            <td><strong>${row.muni}</strong></td>
+            <td>${row.productores}</td>
+            <td>${row.area.toFixed(2)}</td>
+            <td>${row.prodHass.toLocaleString()}</td>
+            <td>${row.prodUnid.toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Mostrar dashboard y ocultar spinner de carga
+        document.getElementById('status-loading').style.display = 'none';
+        document.getElementById('dashboard-content').style.display = 'block';
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('status-loading').innerHTML = '<span class="text-danger">Error leyendo el archivo Honduras.kml para generar el dashboard. Verifica que esté en la misma carpeta.</span>';
+      });
+  </script>
+</body>
+</html>
