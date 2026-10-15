@@ -120,16 +120,6 @@
       position: relative;
       overflow: hidden;
     }
-    .metric-slide-card::after {
-      content: "";
-      position: absolute;
-      right: -10px;
-      bottom: -10px;
-      width: 60px;
-      height: 60px;
-      background: rgba(45, 106, 79, 0.06);
-      border-radius: 50%;
-    }
   </style>
 </head>
 <body>
@@ -173,7 +163,7 @@
       </div>
     </div>
 
-    <!-- Tarjetas Slides Superiores con nuevo diseño -->
+    <!-- Tarjetas Slides Superiores -->
     <div class="metrics-slider-container">
       <div class="metric-slide-card">
         <div class="kpi-title"><i class="fa-solid fa-droplet me-1 text-primary"></i> Fincas con Riego</div>
@@ -252,7 +242,7 @@
       </div>
     </div>
 
-    <!-- Desglose por Razas / Variedades (Hass, Antillano, Criollo) -->
+    <!-- Desglose por Razas / Variedades -->
     <h4 class="section-header"><i class="fa-solid fa-cubes me-2"></i>DESGLOSE POR RAZA Y VARIEDAD DE AGUACATE</h4>
     <div class="row mb-4">
       <div class="col-md-12">
@@ -298,42 +288,48 @@
       return isNaN(num) ? 0 : num;
     }
 
-    function extractField(feature, fieldName) {
+    function extractField(feature, fieldNames) {
       var props = feature.properties || {};
-      var foundKey = Object.keys(props).find(k => k.toLowerCase() === fieldName.toLowerCase());
-      if (foundKey && props[foundKey] !== undefined && props[foundKey] !== null && String(props[foundKey]).trim() !== "") {
-        return String(props[foundKey]).trim();
+      if (!Array.isArray(fieldNames)) fieldNames = [fieldNames];
+
+      for (let name of fieldNames) {
+        var foundKey = Object.keys(props).find(k => k.trim().toLowerCase() === name.trim().toLowerCase());
+        if (foundKey && props[foundKey] !== undefined && props[foundKey] !== null && String(props[foundKey]).trim() !== "") {
+          return String(props[foundKey]).trim();
+        }
       }
 
       var desc = props.description || "";
       var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
       if (strDesc) {
-        var regex = new RegExp(fieldName + "[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
-        var match = strDesc.match(regex);
-        if (match && match[1]) {
-          let val = match[1].replace(/<[^>]+>/g, '').trim();
-          if (val) return val;
-        }
+        for (let name of fieldNames) {
+          var regex = new RegExp(name + "\\s*[:]?\\s*[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
+          var match = strDesc.match(regex);
+          if (match && match[1]) {
+            let val = match[1].replace(/<[^>]+>/g, '').trim();
+            if (val) return val;
+          }
 
-        var regexPlain = new RegExp(fieldName + "[:\\s]+([^<\\n]+)", "i");
-        var matchPlain = strDesc.match(regexPlain);
-        if (matchPlain && matchPlain[1]) {
-          let val = matchPlain[1].replace(/<[^>]+>/g, '').trim();
-          if (val) return val;
+          var regexPlain = new RegExp(name + "\\s*[:\\s]+([^<\\n]+)", "i");
+          var matchPlain = strDesc.match(regexPlain);
+          if (matchPlain && matchPlain[1]) {
+            let val = matchPlain[1].replace(/<[^>]+>/g, '').trim();
+            if (val) return val;
+          }
         }
       }
       return "";
     }
 
-    // Normalizar razas estrictamente a: Hass, Antillano, Criollo
     function clasificarRaza(variedadStr) {
       let v = (variedadStr || "").toLowerCase();
       if (v.includes('hass')) return 'Hass';
       if (v.includes('antillano') || v.includes('antillana')) return 'Antillano';
-      return 'Criollo'; // Por defecto o si es criollo/otra variedad local
+      return 'Criollo';
     }
 
     function cargarKMLReal() {
+      // Apuntando correctamente al archivo honduras.kml
       fetch('./honduras.kml', { cache: 'no-cache' })
         .then(r => {
           if (!r.ok) throw new Error("No se pudo cargar el archivo honduras.kml");
@@ -347,26 +343,26 @@
           datosFincas = [];
           if (geojson && geojson.features) {
             geojson.features.forEach(feature => {
-              let depto = extractField(feature, "P2") || extractField(feature, "departamento") || extractField(feature, "depto") || "SIN DEPARTAMENTO";
-              let muni = extractField(feature, "P3") || extractField(feature, "municipio") || extractField(feature, "muni") || "SIN MUNICIPIO";
+              let depto = extractField(feature, ["DEPARTAMENTO", "Departamento", "depto"]) || "SIN DEPARTAMENTO";
+              let muni = extractField(feature, ["MUNICIPIO", "Municipio", "muni"]) || "SIN MUNICIPIO";
               
-              // Lectura correcta y robusta de campos del formulario
-              let area = parseNumber(extractField(feature, "P12") || extractField(feature, "area") || extractField(feature, "area_mz"));
-              let pProd = parseNumber(extractField(feature, "P13") || extractField(feature, "plantas_produccion") || extractField(feature, "plantas_prod"));
-              let pDes = parseNumber(extractField(feature, "P14") || extractField(feature, "plantas_desarrollo") || extractField(feature, "plantas_des"));
+              let area = parseNumber(extractField(feature, ["AREA EN MZ", "Área en mz", "area en mz"]));
+              let pProd = parseNumber(extractField(feature, ["PLANTAS EN PRODUCCION", "Plantas en produccion"]));
+              let totalPlantas = parseNumber(extractField(feature, ["TOTAL PLANTAS", "Total plantas"]));
+              let pDes = totalPlantas - pProd;
+              if (pDes < 0) pDes = 0;
               
-              let varCruda = extractField(feature, "P15") || extractField(feature, "variedad") || extractField(feature, "raza") || "Hass";
+              let varCruda = extractField(feature, ["VARIEDAD", "Variedad", "raza"]) || "Hass";
               let variedadLimpia = clasificarRaza(varCruda);
 
-              let prodLbs = parseNumber(extractField(feature, "P16") || extractField(feature, "produccion_lbs"));
-              let prodUni = parseNumber(extractField(feature, "P17") || extractField(feature, "produccion_unidades"));
+              let prodLbs = parseNumber(extractField(feature, ["LIBRAS COSECHADAS", "Libras cosechadas"]));
+              let prodUni = parseNumber(extractField(feature, ["UNIDADES COSECHADAS", "UNIDADES COSSECHADAS", "Unidades cosechadas"]));
 
-              // Validación correcta de Riego y Fuente de Agua Alternativa
-              let valRiego = extractField(feature, "P18") || extractField(feature, "tiene_riego") || "";
-              let tieneRiegoBool = valRiego.toLowerCase() === 'si' || valRiego === '1' || valRiego.toLowerCase() === 'true' || valRiego.toLowerCase() === 'cuenta con riego';
+              let valRiego = extractField(feature, ["SISTEMA DE RIEGO", "Sistema de riego"]);
+              let tieneRiegoBool = valRiego.toLowerCase() === 'si' || valRiego === '1' || valRiego.toLowerCase() === 'true';
 
-              let valFuente = extractField(feature, "P18_fuente") || extractField(feature, "fuente_agua") || extractField(feature, "posibilidad_agua") || "";
-              let tieneFuenteAguaBool = !tieneRiegoBool && (valFuente.toLowerCase() === 'si' || valFuente === '1' || valFuente.toLowerCase() === 'true' || valFuente.toLowerCase() === 'tiene fuente');
+              let valFuente = extractField(feature, ["FUENTE DE AGUA", "Fuente de agua"]);
+              let tieneFuenteAguaBool = !tieneRiegoBool && valFuente !== "" && valFuente.toLowerCase() !== 'ninguna' && valFuente.toLowerCase() !== 'no' && valFuente.toLowerCase() !== 'ninguno';
 
               datosFincas.push({
                 departamento: depto.toUpperCase().trim(),
@@ -378,12 +374,12 @@
                 produccionLbs: prodLbs,
                 produccionUnidades: prodUni,
                 tieneRiego: tieneRiegoBool,
-                tipoRiego: extractField(feature, "P18_tipo") || extractField(feature, "tipo_riego") || "Goteo",
+                tipoRiego: extractField(feature, ["TIPO DE SISTEMA", "Tipo de sistema"]) || "Goteo",
                 fuenteAguaSinRiego: tieneFuenteAguaBool,
-                trabajadoresPerm: parseNumber(extractField(feature, "P19") || extractField(feature, "trabajadores_perm")),
-                trabajadoresTemp: parseNumber(extractField(feature, "P20") || extractField(feature, "trabajadores_temp")),
-                pagosLps: parseNumber(extractField(feature, "P22") || extractField(feature, "pagos") || extractField(feature, "total_planilla")),
-                mesesCosecha: extractField(feature, "P21") || extractField(feature, "meses_cosecha") || "Junio - Agosto"
+                trabajadoresPerm: parseNumber(extractField(feature, ["CUANTOS TP", "Cuantos tp", "TRABAJADORES PERMANENTES"])),
+                trabajadoresTemp: parseNumber(extractField(feature, ["CUANTOS TT", "Cuantos tt", "TRANBAJADORES TEMPORALES"])),
+                pagosLps: parseNumber(extractField(feature, ["SALARIO POR DIA", "Salario por dia"])),
+                mesesCosecha: extractField(feature, ["MESES DE COSECHA", "Meses de cosecha"]) || "Temporada Normal"
               });
             });
           }
