@@ -6,28 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      margin: 0;
-      padding: 20px;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background-color: #0f172a;
-      color: #f8fafc;
+      margin: 0; padding: 20px; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: #0f172a; color: #f8fafc;
     }
     .container {
-      max-width: 950px;
-      margin: 0 auto;
-      background: #1e293b;
-      border: 1px solid #334155;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      max-width: 950px; margin: 0 auto; background: #1e293b; border: 1px solid #334155;
+      padding: 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 12px;
-      margin-bottom: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 20px;
     }
     h2 { color: #38bdf8; margin: 0; font-size: 20px; }
     .btn-regresar {
@@ -87,7 +75,6 @@
 </head>
 <body>
 
-  <!-- Validación de Seguridad para Administradores -->
   <script>
     const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
     if (!currentSession || (currentSession.role !== 'admin' && String(currentSession.role).toLowerCase() !== 'admin')) {
@@ -102,7 +89,7 @@
       <button class="btn-regresar" onclick="window.close()">Cerrar Módulo</button>
     </div>
 
-    <!-- Crear Usuario -->
+    <!-- Registrar Nuevo Usuario -->
     <div class="section-title" style="margin-top:0;">
       <h3>Registrar Nuevo Usuario</h3>
     </div>
@@ -117,7 +104,7 @@
       <button type="submit" class="btn-add-user">+ Registrar Usuario</button>
     </form>
 
-    <!-- Listado de Usuarios -->
+    <!-- Usuarios Registrados -->
     <div class="section-title">
       <h3>Usuarios Registrados en el Sistema</h3>
     </div>
@@ -134,7 +121,7 @@
       <tbody id="users-table-body"></tbody>
     </table>
 
-    <!-- Bitácora de Accesos -->
+    <!-- Bitácora Unificada -->
     <div class="section-title">
       <h3>Bitácora Unificada de Accesos y Sesiones</h3>
       <div class="btn-group-logs">
@@ -148,7 +135,7 @@
           <th>Usuario</th>
           <th>Fecha y Hora</th>
           <th>Resultado</th>
-          <th>Duración / Estado</th>
+          <th>Duración / Estado de Cierre</th>
         </tr>
       </thead>
       <tbody id="unified-logs-table-body"></tbody>
@@ -210,11 +197,14 @@
         return;
       }
 
-      // Mapear duraciones de sesiones finalizadas correctamente
-      const durationMap = {};
+      // Mapear los cierres de sesión guardados
+      const sessionMap = {};
       logs.forEach(l => {
         const key = `${l.user.toLowerCase()}_${l.login}`;
-        durationMap[key] = l.duration;
+        sessionMap[key] = {
+          duration: l.duration,
+          estadoCierre: l.estadoCierre || 'Cerrado Correctamente'
+        };
       });
 
       accessLogs.slice().reverse().forEach(log => {
@@ -223,26 +213,24 @@
         const badgeClass = isExitoso ? 'badge-exitoso' : 'badge-fallido';
         const statusText = isExitoso ? '✓ Exitoso' : '✕ Fallido';
 
-        const durKey = `${log.usuario.toLowerCase()}_${log.fechaHora}`;
-        let durationText = '-';
-        
+        const sesKey = `${log.usuario.toLowerCase()}_${log.fechaHora}`;
+        let detailsText = '-';
+
         if (isExitoso) {
-          // Si ya existe en durationMap, muestra el tiempo real registrado al cerrar sesión.
-          // Si no existe, evaluamos si fue hace mucho para evitar dejarlo "activo" por error.
-          if (durationMap[durKey]) {
-            durationText = durationMap[durKey];
+          if (sessionMap[sesKey]) {
+            detailsText = `⏱️ <strong>${sessionMap[sesKey].duration}</strong><br><span style="color:#4ade80; font-size:10px;">✓ ${sessionMap[sesKey].estadoCierre}</span>`;
           } else {
-            durationText = '<span style="color:#f59e0b;">Finalizada / Sin cierre explícito</span>';
+            detailsText = `<span style="color:#f59e0b;">Sesión finalizada sin botón de salida</span>`;
           }
         } else {
-          durationText = 'Intento fallido';
+          detailsText = `<span style="color:#fca5a5;">Intento de acceso incorrecto</span>`;
         }
 
         tr.innerHTML = `
           <td><strong>${log.usuario}</strong></td>
           <td>${log.fechaHora}</td>
           <td><span class="badge-status ${badgeClass}">${statusText}</span></td>
-          <td style="font-size:11px;">${durationText}</td>
+          <td style="font-size:11px; line-height: 1.4;">${detailsText}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -258,48 +246,35 @@
 
     function downloadLogsTXT() {
       const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
-      const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-      const visibleLogs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-      
-      let combinedSessions = [...masterLogs];
-      visibleLogs.forEach(v => {
-        if (!combinedSessions.some(m => m.user === v.user && m.login === v.login)) {
-          combinedSessions.push(v);
-        }
-      });
+      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
 
-      if (accessLogs.length === 0 && combinedSessions.length === 0) {
+      if (accessLogs.length === 0) {
         alert('No existen registros almacenados en la bitácora actualmente.');
         return;
       }
-
-      const durationMap = {};
-      combinedSessions.forEach(l => {
-        const key = `${l.user.toLowerCase()}_${l.login}`;
-        durationMap[key] = l.duration;
-      });
 
       let content = "=========================================================================================\n";
       content += "               BITÁCORA UNIFICADA DE ACCESOS Y SESIONES - SIG AGUACATE                  \n";
       content += "=========================================================================================\n";
       content += "Fecha de Reporte: " + new Date().toLocaleString('es-HN') + "\n\n";
 
-      content += String("USUARIO").padEnd(20) + String("FECHA Y HORA").padEnd(28) + String("RESULTADO").padEnd(15) + "DURACIÓN SESIÓN\n";
+      content += String("USUARIO").padEnd(20) + String("FECHA Y HORA").padEnd(28) + String("RESULTADO").padEnd(15) + "DURACIÓN / ESTADO\n";
       content += "-----------------------------------------------------------------------------------------\n";
+
+      const sessionMap = {};
+      logs.forEach(l => {
+        sessionMap[`${l.user.toLowerCase()}_${l.login}`] = l.duration;
+      });
 
       accessLogs.forEach(item => {
         const isExitoso = item.estado === 'Exitoso';
-        const durKey = `${item.usuario.toLowerCase()}_${item.fechaHora}`;
-        const duration = isExitoso ? (durationMap[durKey] || "Finalizada") : "Intento fallido";
+        const dur = isExitoso ? (sessionMap[`${item.usuario.toLowerCase()}_${item.fechaHora}`] || "Finalizada") : "Fallido";
 
         content += String(item.usuario).padEnd(20) + 
                    String(item.fechaHora).padEnd(28) + 
                    String(item.estado).padEnd(15) + 
-                   duration + "\n";
+                   dur + "\n";
       });
-
-      content += "-----------------------------------------------------------------------------------------\n";
-      content += "Total de registros procesados: " + accessLogs.length + "\n";
 
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -319,7 +294,7 @@
       const pass = document.getElementById('new-pass').value.trim();
       const role = document.getElementById('new-role').value;
 
-      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
       if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
         alert('El usuario ya existe. Por favor elige otro.');
         return;
@@ -327,11 +302,9 @@
 
       users.push({ name, user, pass, role });
       localStorage.setItem('sig_users', JSON.stringify(users));
-
       document.getElementById('new-name').value = '';
       document.getElementById('new-user').value = '';
       document.getElementById('new-pass').value = '';
-
       loadUsersTable();
       alert('Usuario registrado exitosamente');
     }
