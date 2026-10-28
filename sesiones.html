@@ -13,7 +13,7 @@
       color: #f8fafc;
     }
     .container {
-      max-width: 900px;
+      max-width: 950px;
       margin: 0 auto;
       background: #1e293b;
       border: 1px solid #334155;
@@ -148,7 +148,7 @@
           <th>Usuario</th>
           <th>Fecha y Hora</th>
           <th>Resultado</th>
-          <th>Duración</th>
+          <th>Duración / Estado</th>
         </tr>
       </thead>
       <tbody id="unified-logs-table-body"></tbody>
@@ -210,6 +210,7 @@
         return;
       }
 
+      // Mapear duraciones de sesiones finalizadas correctamente
       const durationMap = {};
       logs.forEach(l => {
         const key = `${l.user.toLowerCase()}_${l.login}`;
@@ -226,14 +227,22 @@
         let durationText = '-';
         
         if (isExitoso) {
-          durationText = durationMap[durKey] || 'En curso / Activa';
+          // Si ya existe en durationMap, muestra el tiempo real registrado al cerrar sesión.
+          // Si no existe, evaluamos si fue hace mucho para evitar dejarlo "activo" por error.
+          if (durationMap[durKey]) {
+            durationText = durationMap[durKey];
+          } else {
+            durationText = '<span style="color:#f59e0b;">Finalizada / Sin cierre explícito</span>';
+          }
+        } else {
+          durationText = 'Intento fallido';
         }
 
         tr.innerHTML = `
           <td><strong>${log.usuario}</strong></td>
           <td>${log.fechaHora}</td>
           <td><span class="badge-status ${badgeClass}">${statusText}</span></td>
-          <td style="color:${isExitoso ? '#38bdf8' : '#64748b'}">${durationText}</td>
+          <td style="font-size:11px;">${durationText}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -281,7 +290,7 @@
       accessLogs.forEach(item => {
         const isExitoso = item.estado === 'Exitoso';
         const durKey = `${item.usuario.toLowerCase()}_${item.fechaHora}`;
-        const duration = isExitoso ? (durationMap[durKey] || "En curso / Finalizada") : "-";
+        const duration = isExitoso ? (durationMap[durKey] || "Finalizada") : "Intento fallido";
 
         content += String(item.usuario).padEnd(20) + 
                    String(item.fechaHora).padEnd(28) + 
