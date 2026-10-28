@@ -35,9 +35,11 @@
       border-left: 5px solid var(--secondary-green);
       height: 100%;
       transition: transform 0.2s ease;
+      cursor: pointer;
     }
     .kpi-card:hover {
       transform: translateY(-3px);
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
     }
     .kpi-title {
       font-size: 0.75rem;
@@ -47,7 +49,7 @@
       margin-bottom: 5px;
     }
     .kpi-value {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 800;
       color: var(--primary-green);
     }
@@ -106,7 +108,7 @@
       gap: 15px;
       overflow-x: auto;
       padding-bottom: 10px;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
       scroll-behavior: smooth;
     }
     .metric-slide-card {
@@ -119,6 +121,21 @@
       flex: 1;
       position: relative;
       overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .metric-slide-card:hover {
+      transform: translateY(-2px);
+    }
+    .metric-slide-card::after {
+      content: "";
+      position: absolute;
+      right: -10px;
+      bottom: -10px;
+      width: 60px;
+      height: 60px;
+      background: rgba(45, 106, 79, 0.06);
+      border-radius: 50%;
     }
   </style>
 </head>
@@ -163,55 +180,57 @@
       </div>
     </div>
 
-    <!-- Tarjetas Slides Superiores -->
-    <div class="metrics-slider-container">
-      <div class="metric-slide-card">
-        <div class="kpi-title"><i class="fa-solid fa-droplet me-1 text-primary"></i> Fincas con Riego</div>
-        <div class="kpi-value" id="slideRiego">0</div>
-        <small class="text-muted" id="slideRiegoSub">Sistemas instalados</small>
-      </div>
-      <div class="metric-slide-card" style="border-top-color: var(--hass-ripe-gold);">
-        <div class="kpi-title"><i class="fa-solid fa-water me-1 text-warning"></i> Sin Riego / Con Fuente Agua</div>
-        <div class="kpi-value" id="slideFuenteAgua">0</div>
-        <small class="text-muted">Potencial de instalación</small>
-      </div>
-      <div class="metric-slide-card">
-        <div class="kpi-title"><i class="fa-solid fa-users me-1 text-success"></i> Mano de Obra Total</div>
-        <div class="kpi-value" id="slideTrabajadores">0</div>
-        <small class="text-muted" id="slideTrabSub">Permanentes y temporales</small>
-      </div>
-      <div class="metric-slide-card" style="border-top-color: #2b9348;">
-        <div class="kpi-title"><i class="fa-solid fa-money-bill-wave me-1 text-success"></i> Total Planilla Pagos</div>
-        <div class="kpi-value" id="slidePagos">L. 0.00</div>
-        <small class="text-muted">Inversión salarial</small>
-      </div>
-    </div>
-
-    <!-- Tarjetas KPI Principales -->
+    <!-- SECCIÓN 1: Tarjetas KPI Principales (Arriba) -->
     <div class="row g-3 mb-3">
       <div class="col-md-3">
-        <div class="kpi-card">
-          <div class="kpi-title"><i class="fa-solid fa-house-chimney-window me-1"></i> Total Fincas / Productores</div>
+        <div class="kpi-card" onclick="mostrarModalDetalle('fincas')">
+          <div class="kpi-title"><i class="fa-solid fa-house-chimney-window me-1"></i> Total Fincas / Productores <i class="fa-solid fa-circle-info float-end text-muted"></i></div>
           <div class="kpi-value" id="kpiFincas">0</div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="kpi-card">
-          <div class="kpi-title"><i class="fa-solid fa-vector-square me-1"></i> Área Total (Manzanas)</div>
-          <div class="kpi-value" id="kpiArea">0.00 <small class="fs-6">mz</small></div>
+        <div class="kpi-card" onclick="mostrarModalDetalle('area')">
+          <div class="kpi-title"><i class="fa-solid fa-vector-square me-1"></i> Área Total cultivada <i class="fa-solid fa-circle-info float-end text-muted"></i></div>
+          <div class="kpi-value" id="kpiArea">0.00 mz</div>
+          <small class="text-muted fw-bold" id="kpiAreaHa">0.00 ha</small>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="kpi-card">
-          <div class="kpi-title"><i class="fa-solid fa-tree me-1"></i> Total Plantas</div>
+        <div class="kpi-card" onclick="mostrarModalDetalle('plantas')">
+          <div class="kpi-title"><i class="fa-solid fa-tree me-1"></i> Total Plantas <i class="fa-solid fa-circle-info float-end text-muted"></i></div>
           <div class="kpi-value" id="kpiPlantas">0</div>
+          <small class="text-muted" id="kpiPlantasSub">Prod: 0 | Desarr: 0</small>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="kpi-card">
-          <div class="kpi-title"><i class="fa-solid fa-weight-hanging me-1"></i> Producción Estimada (Lbs)</div>
-          <div class="kpi-value" id="kpiProduccion">0 <small class="fs-6">lbs</small></div>
+        <div class="kpi-card" onclick="mostrarModalDetalle('produccion')">
+          <div class="kpi-title"><i class="fa-solid fa-weight-hanging me-1"></i> Producción Est. (Lbs) <i class="fa-solid fa-circle-info float-end text-muted"></i></div>
+          <div class="kpi-value" id="kpiProduccion">0 lbs</div>
         </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 2: Tarjetas Slides Secundarias (Abajo) -->
+    <div class="metrics-slider-container">
+      <div class="metric-slide-card" onclick="mostrarModalDetalle('riego')">
+        <div class="kpi-title"><i class="fa-solid fa-droplet me-1 text-primary"></i> Fincas con Riego <i class="fa-solid fa-arrow-up-right-from-square float-end text-muted"></i></div>
+        <div class="kpi-value" id="slideRiego">0</div>
+        <small class="text-muted" id="slideRiegoSub">Sistemas instalados</small>
+      </div>
+      <div class="metric-slide-card" style="border-top-color: var(--hass-ripe-gold);" onclick="mostrarModalDetalle('sin_riego_fuente')">
+        <div class="kpi-title"><i class="fa-solid fa-water me-1 text-warning"></i> Sin Riego / Con Fuente Agua <i class="fa-solid fa-arrow-up-right-from-square float-end text-muted"></i></div>
+        <div class="kpi-value" id="slideFuenteAgua">0</div>
+        <small class="text-muted">Potencial de instalación</small>
+      </div>
+      <div class="metric-slide-card" onclick="mostrarModalDetalle('mano_obra')">
+        <div class="kpi-title"><i class="fa-solid fa-users me-1 text-success"></i> Mano de Obra Total <i class="fa-solid fa-arrow-up-right-from-square float-end text-muted"></i></div>
+        <div class="kpi-value" id="slideTrabajadores">0</div>
+        <small class="text-muted" id="slideTrabSub">Permanentes y temporales</small>
+      </div>
+      <div class="metric-slide-card" style="border-top-color: #2b9348;" onclick="mostrarModalDetalle('planilla')">
+        <div class="kpi-title"><i class="fa-solid fa-money-bill-wave me-1 text-success"></i> Inversión Planilla Anual <i class="fa-solid fa-arrow-up-right-from-square float-end text-muted"></i></div>
+        <div class="kpi-value" id="slidePagos">L. 0.00</div>
+        <small class="text-muted">Estimación anual (265d perm / 75d temp)</small>
       </div>
     </div>
 
@@ -233,7 +252,7 @@
               <th>Fuente Agua (Sin Riego)</th>
               <th>Trab. Perm.</th>
               <th>Trab. Temp.</th>
-              <th>Total Pagos (Lps)</th>
+              <th>Planilla Anual (Lps)</th>
             </tr>
           </thead>
           <tbody id="tbodyRanking"></tbody>
@@ -242,7 +261,7 @@
       </div>
     </div>
 
-    <!-- Desglose por Razas / Variedades -->
+    <!-- Desglose por Razas / Variedades (Hass, Antillano, Criollo) -->
     <h4 class="section-header"><i class="fa-solid fa-cubes me-2"></i>DESGLOSE POR RAZA Y VARIEDAD DE AGUACATE</h4>
     <div class="row mb-4">
       <div class="col-md-12">
@@ -251,8 +270,8 @@
             <thead>
               <tr style="background-color: var(--secondary-green); color: white;">
                 <th>Raza / Variedad Principal</th>
-                <th>Producción (Libras)</th>
-                <th>Producción (Unidades)</th>
+                <th>Producción Estimada (Libras)</th>
+                <th>Producción Estimada (Unidades)</th>
                 <th>Sistemas de Riego Predominantes</th>
                 <th>Meses de Mayor Cosecha</th>
               </tr>
@@ -265,6 +284,33 @@
 
   </div>
 
+  <!-- Modal Genérico para Listados Emergentes -->
+  <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title fw-bold" id="modalTitulo">Detalle de Productores</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle" id="tablaModalDetalle">
+              <thead>
+                <tr id="modalEncabezadoTabla"></tr>
+              </thead>
+              <tbody id="modalCuerpoTabla"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Librería de Conversión KML -->
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
@@ -288,34 +334,28 @@
       return isNaN(num) ? 0 : num;
     }
 
-    function extractField(feature, fieldNames) {
+    function extractField(feature, fieldName) {
       var props = feature.properties || {};
-      if (!Array.isArray(fieldNames)) fieldNames = [fieldNames];
-
-      for (let name of fieldNames) {
-        var foundKey = Object.keys(props).find(k => k.trim().toLowerCase() === name.trim().toLowerCase());
-        if (foundKey && props[foundKey] !== undefined && props[foundKey] !== null && String(props[foundKey]).trim() !== "") {
-          return String(props[foundKey]).trim();
-        }
+      var foundKey = Object.keys(props).find(k => k.toLowerCase() === fieldName.toLowerCase());
+      if (foundKey && props[foundKey] !== undefined && props[foundKey] !== null && String(props[foundKey]).trim() !== "") {
+        return String(props[foundKey]).trim();
       }
 
       var desc = props.description || "";
       var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
       if (strDesc) {
-        for (let name of fieldNames) {
-          var regex = new RegExp(name + "\\s*[:]?\\s*[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
-          var match = strDesc.match(regex);
-          if (match && match[1]) {
-            let val = match[1].replace(/<[^>]+>/g, '').trim();
-            if (val) return val;
-          }
+        var regex = new RegExp(fieldName + "[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
+        var match = strDesc.match(regex);
+        if (match && match[1]) {
+          let val = match[1].replace(/<[^>]+>/g, '').trim();
+          if (val) return val;
+        }
 
-          var regexPlain = new RegExp(name + "\\s*[:\\s]+([^<\\n]+)", "i");
-          var matchPlain = strDesc.match(regexPlain);
-          if (matchPlain && matchPlain[1]) {
-            let val = matchPlain[1].replace(/<[^>]+>/g, '').trim();
-            if (val) return val;
-          }
+        var regexPlain = new RegExp(fieldName + "[:\\s]+([^<\\n]+)", "i");
+        var matchPlain = strDesc.match(regexPlain);
+        if (matchPlain && matchPlain[1]) {
+          let val = matchPlain[1].replace(/<[^>]+>/g, '').trim();
+          if (val) return val;
         }
       }
       return "";
@@ -329,7 +369,6 @@
     }
 
     function cargarKMLReal() {
-      // Apuntando correctamente al archivo honduras.kml
       fetch('./honduras.kml', { cache: 'no-cache' })
         .then(r => {
           if (!r.ok) throw new Error("No se pudo cargar el archivo honduras.kml");
@@ -343,28 +382,37 @@
           datosFincas = [];
           if (geojson && geojson.features) {
             geojson.features.forEach(feature => {
-              let depto = extractField(feature, ["DEPARTAMENTO", "Departamento", "depto"]) || "SIN DEPARTAMENTO";
-              let muni = extractField(feature, ["MUNICIPIO", "Municipio", "muni"]) || "SIN MUNICIPIO";
+              let nombreProductor = feature.properties.name || extractField(feature, "nombre") || "Productor sin nombre";
+              let depto = extractField(feature, "P2") || extractField(feature, "departamento") || extractField(feature, "depto") || "SIN DEPARTAMENTO";
+              let muni = extractField(feature, "P3") || extractField(feature, "municipio") || extractField(feature, "muni") || "SIN MUNICIPIO";
               
-              let area = parseNumber(extractField(feature, ["AREA EN MZ", "Área en mz", "area en mz"]));
-              let pProd = parseNumber(extractField(feature, ["PLANTAS EN PRODUCCION", "Plantas en produccion"]));
-              let totalPlantas = parseNumber(extractField(feature, ["TOTAL PLANTAS", "Total plantas"]));
-              let pDes = totalPlantas - pProd;
-              if (pDes < 0) pDes = 0;
+              let area = parseNumber(extractField(feature, "P12") || extractField(feature, "area") || extractField(feature, "area_mz"));
+              let pProd = parseNumber(extractField(feature, "P13") || extractField(feature, "plantas_produccion") || extractField(feature, "plantas_prod"));
+              let pDes = parseNumber(extractField(feature, "P14") || extractField(feature, "plantas_desarrollo") || extractField(feature, "plantas_des"));
               
-              let varCruda = extractField(feature, ["VARIEDAD", "Variedad", "raza"]) || "Hass";
+              let varCruda = extractField(feature, "P15") || extractField(feature, "variedad") || extractField(feature, "raza") || "Hass";
               let variedadLimpia = clasificarRaza(varCruda);
 
-              let prodLbs = parseNumber(extractField(feature, ["LIBRAS COSECHADAS", "Libras cosechadas"]));
-              let prodUni = parseNumber(extractField(feature, ["UNIDADES COSECHADAS", "UNIDADES COSSECHADAS", "Unidades cosechadas"]));
+              let prodLbs = parseNumber(extractField(feature, "P16") || extractField(feature, "produccion_lbs"));
+              let prodUni = parseNumber(extractField(feature, "P17") || extractField(feature, "produccion_unidades"));
 
-              let valRiego = extractField(feature, ["SISTEMA DE RIEGO", "Sistema de riego"]);
-              let tieneRiegoBool = valRiego.toLowerCase() === 'si' || valRiego === '1' || valRiego.toLowerCase() === 'true';
+              let valRiego = extractField(feature, "P18") || extractField(feature, "tiene_riego") || "";
+              let tieneRiegoBool = valRiego.toLowerCase() === 'si' || valRiego === '1' || valRiego.toLowerCase() === 'true' || valRiego.toLowerCase() === 'cuenta con riego';
 
-              let valFuente = extractField(feature, ["FUENTE DE AGUA", "Fuente de agua"]);
-              let tieneFuenteAguaBool = !tieneRiegoBool && valFuente !== "" && valFuente.toLowerCase() !== 'ninguna' && valFuente.toLowerCase() !== 'no' && valFuente.toLowerCase() !== 'ninguno';
+              let valFuente = extractField(feature, "P18_fuente") || extractField(feature, "fuente_agua") || extractField(feature, "posibilidad_agua") || "";
+              let tieneFuenteAguaBool = !tieneRiegoBool && (valFuente.toLowerCase() === 'si' || valFuente === '1' || valFuente.toLowerCase() === 'true' || valFuente.toLowerCase() === 'tiene fuente');
+
+              let perm = parseNumber(extractField(feature, "P19") || extractField(feature, "trabajadores_perm"));
+              let temp = parseNumber(extractField(feature, "P20") || extractField(feature, "trabajadores_temp"));
+
+              // Cálculo de Planilla Anual Realista: 
+              // Permanentes: 265 días laborables al año. Temporales: 75 días (aprox 3 meses). Salario diario estimado L. 350.00
+              let pagoPermAnual = perm * 265 * 350;
+              let pagoTempAnual = temp * 75 * 350;
+              let pagoTotalAnual = pagoPermAnual + pagoTempAnual;
 
               datosFincas.push({
+                nombre: nombreProductor,
                 departamento: depto.toUpperCase().trim(),
                 municipio: muni.toUpperCase().trim(),
                 areaMz: area,
@@ -374,12 +422,12 @@
                 produccionLbs: prodLbs,
                 produccionUnidades: prodUni,
                 tieneRiego: tieneRiegoBool,
-                tipoRiego: extractField(feature, ["TIPO DE SISTEMA", "Tipo de sistema"]) || "Goteo",
+                tipoRiego: extractField(feature, "P18_tipo") || extractField(feature, "tipo_riego") || "Goteo",
                 fuenteAguaSinRiego: tieneFuenteAguaBool,
-                trabajadoresPerm: parseNumber(extractField(feature, ["CUANTOS TP", "Cuantos tp", "TRABAJADORES PERMANENTES"])),
-                trabajadoresTemp: parseNumber(extractField(feature, ["CUANTOS TT", "Cuantos tt", "TRANBAJADORES TEMPORALES"])),
-                pagosLps: parseNumber(extractField(feature, ["SALARIO POR DIA", "Salario por dia"])),
-                mesesCosecha: extractField(feature, ["MESES DE COSECHA", "Meses de cosecha"]) || "Temporada Normal"
+                trabajadoresPerm: perm,
+                trabajadoresTemp: temp,
+                pagosLpsAnual: pagoTotalAnual,
+                mesesCosecha: extractField(feature, "P21") || extractField(feature, "meses_cosecha") || "Junio - Agosto"
               });
             });
           }
@@ -455,29 +503,50 @@
       renderizarDashboard(filtrados);
     }
 
+    function obtenerFincasFiltradasActuales() {
+      let deptSel = document.getElementById('selDepartamento').value;
+      let muniSel = document.getElementById('selMunicipio').value;
+      return datosFincas.filter(f => {
+        let condDept = (deptSel === 'TODOS' || f.departamento === deptSel);
+        let condMuni = (muniSel === 'TODOS' || f.municipio === muniSel);
+        return condDept && condMuni;
+      });
+    }
+
     function renderizarDashboard(fincas) {
       let totalFincas = fincas.length;
-      let totalArea = fincas.reduce((acc, f) => acc + f.areaMz, 0);
-      let totalPlantas = fincas.reduce((acc, f) => acc + f.plantasProduccion + f.plantasDesarrollo, 0);
+      let totalAreaMz = fincas.reduce((acc, f) => acc + f.areaMz, 0);
+      let totalAreaHa = totalAreaMz * 0.7028; // Conversión aproximada manzana a hectárea
+      let totalPlantasProd = fincas.reduce((acc, f) => acc + f.plantasProduccion, 0);
+      let totalPlantasDes = fincas.reduce((acc, f) => acc + f.plantasDesarrollo, 0);
+      let totalPlantas = totalPlantasProd + totalPlantasDes;
       let totalProdLbs = fincas.reduce((acc, f) => acc + f.produccionLbs, 0);
 
       document.getElementById('kpiFincas').innerText = totalFincas.toLocaleString('es-HN');
-      document.getElementById('kpiArea').innerText = totalArea.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " mz";
+      document.getElementById('kpiArea').innerText = totalAreaMz.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " mz";
+      document.getElementById('kpiAreaHa').innerText = totalAreaHa.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " ha";
+      
       document.getElementById('kpiPlantas').innerText = totalPlantas.toLocaleString('es-HN');
+      document.getElementById('kpiPlantasSub').innerText = `Prod: ${totalPlantasProd.toLocaleString('es-HN')} | Desarr: ${totalPlantasDes.toLocaleString('es-HN')}`;
+      
       document.getElementById('kpiProduccion').innerText = totalProdLbs.toLocaleString('es-HN') + " lbs";
 
       let fincasConRiego = fincas.filter(f => f.tieneRiego).length;
       let fincasSinRiegoConFuente = fincas.filter(f => !f.tieneRiego && f.fuenteAguaSinRiego).length;
+      let fincasSinRiegoSinFuente = fincas.filter(f => !f.tieneRiego && !f.fuenteAguaSinRiego).length;
+      
       let totalTrabPerm = fincas.reduce((acc, f) => acc + f.trabajadoresPerm, 0);
       let totalTrabTemp = fincas.reduce((acc, f) => acc + f.trabajadoresTemp, 0);
-      let totalPagos = fincas.reduce((acc, f) => acc + f.pagosLps, 0);
+      let totalPagosAnual = fincas.reduce((acc, f) => acc + f.pagosLpsAnual, 0);
 
       document.getElementById('slideRiego').innerText = fincasConRiego;
       document.getElementById('slideRiegoSub').innerText = `${((fincasConRiego / (totalFincas || 1)) * 100).toFixed(1)}% del total`;
+      
       document.getElementById('slideFuenteAgua').innerText = fincasSinRiegoConFuente;
       document.getElementById('slideTrabajadores').innerText = (totalTrabPerm + totalTrabTemp).toLocaleString('es-HN');
       document.getElementById('slideTrabSub').innerText = `Perm: ${totalTrabPerm} | Temp: ${totalTrabTemp}`;
-      document.getElementById('slidePagos').innerText = "L. " + totalPagos.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      
+      document.getElementById('slidePagos').innerText = "L. " + totalPagosAnual.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
       let municipiosMap = {};
       fincas.forEach(f => {
@@ -506,7 +575,7 @@
         else if (f.fuenteAguaSinRiego) m.sinRiegoConFuente++;
         m.trabPerm += f.trabajadoresPerm;
         m.trabTemp += f.trabajadoresTemp;
-        m.pagosLps += f.pagosLps;
+        m.pagosLps += f.pagosLpsAnual;
       });
 
       let listaMunicipios = Object.values(municipiosMap).sort((a, b) => b.areaMz - a.areaMz);
@@ -538,14 +607,14 @@
         <tr>
           <td colspan="3">TOTAL CONSOLIDADO</td>
           <td>${totalFincas.toLocaleString('es-HN')}</td>
-          <td class="text-end">${totalArea.toLocaleString('es-HN', {minimumFractionDigits: 2})} mz</td>
-          <td class="text-end">${fincas.reduce((a, b) => a + b.plantasProduccion, 0).toLocaleString('es-HN')}</td>
-          <td class="text-end">${fincas.reduce((a, b) => a + b.plantasDesarrollo, 0).toLocaleString('es-HN')}</td>
-          <td>${fincas.filter(f => f.tieneRiego).length}</td>
-          <td>${fincas.filter(f => !f.tieneRiego && f.fuenteAguaSinRiego).length}</td>
+          <td class="text-end">${totalAreaMz.toLocaleString('es-HN', {minimumFractionDigits: 2})} mz</td>
+          <td class="text-end">${totalPlantasProd.toLocaleString('es-HN')}</td>
+          <td class="text-end">${totalPlantasDes.toLocaleString('es-HN')}</td>
+          <td>${fincasConRiego}</td>
+          <td>${fincasSinRiegoConFuente}</td>
           <td>${totalTrabPerm}</td>
           <td>${totalTrabTemp}</td>
-          <td class="text-end">L. ${totalPagos.toLocaleString('es-HN', {minimumFractionDigits: 2})}</td>
+          <td class="text-end">L. ${totalPagosAnual.toLocaleString('es-HN', {minimumFractionDigits: 2})}</td>
         </tr>
       `;
 
@@ -577,11 +646,75 @@
           <tr>
             <td class="fw-bold text-start ps-3"><i class="fa-solid fa-seedling text-success me-2"></i>${v}</td>
             <td>${r.lbs.toLocaleString('es-HN')} lbs</td>
-            <td>${r.unidades.toLocaleString('es-HN')} uds</td>
+            <td>${r.unidades.toLocaleString('es-HN')} unidades</td>
             <td>${Array.from(r.riegos).join(', ') || 'N/A'}</td>
             <td>${Array.from(r.meses).join(', ') || 'Temporada Normal'}</td>
           </tr>
         `;
+      });
+    }
+
+    // Funcionalidad de Modales Emergentes Interactivos
+    function mostrarModalDetalle(tipo) {
+      let fincas = getFincasFiltered();
+      let titulo = "";
+      let encabezados = "";
+      let filasHtml = "";
+
+      if (tipo === 'fincas') {
+        titulo = "Listado General de Fincas y Productores";
+        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Área (mz)</th><th>Plantas Prod.</th>";
+        fincas.forEach(f => {
+          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>${f.areaMz.toFixed(2)}</td><td>${f.plantasProduccion}</td></tr>`;
+        });
+      } else if (tipo === 'riego') {
+        titulo = "Fincas con Sistema de Riego Instalado";
+        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Tipo de Riego</th><th>Área (mz)</th>";
+        fincas.filter(f => f.tieneRiego).forEach(f => {
+          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td><span class="badge bg-success">${f.tipoRiego}</span></td><td>${f.areaMz.toFixed(2)}</td></tr>`;
+        });
+      } else if (tipo === 'sin_riego_fuente') {
+        titulo = "Clasificación Fincas sin Riego (Con Fuente vs Sin Fuente)";
+        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Potencial de Riego (Fuente Agua)</th><th>Área (mz)</th>";
+        fincas.filter(f => !f.tieneRiego).forEach(f => {
+          let estadoFuente = f.fuenteAguaSinRiego ? '<span class="badge bg-warning text-dark">Con Fuente (Potencial)</span>' : '<span class="badge bg-secondary">Sin Fuente Registrada</span>';
+          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>${estadoFuente}</td><td>${f.areaMz.toFixed(2)}</td></tr>`;
+        });
+      } else if (tipo === 'mano_obra') {
+        titulo = "Detalle de Mano de Obra por Finca";
+        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Trab. Permanentes</th><th>Trab. Temporales</th>";
+        fincas.forEach(f => {
+          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>${f.trabajadoresPerm}</td><td>${f.trabajadoresTemp}</td></tr>`;
+        });
+      } else if (tipo === 'planilla') {
+        titulo = "Estimación de Inversión Salarial Anual";
+        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Perm. / Temp.</th><th>Inversión Planilla Anual</th>";
+        fincas.forEach(f => {
+          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>Perm: ${f.trabajadoresPerm} | Temp: ${f.trabajadoresTemp}</td><td class="fw-bold text-success">L. ${f.pagosLpsAnual.toLocaleString('es-HN', {minimumFractionDigits: 2})}</td></tr>`;
+        });
+      } else {
+        titulo = "Detalle Analítico";
+        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Área (mz)</th><th>Producción Lbs</th>";
+        fincas.forEach(f => {
+          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>${f.areaMz.toFixed(2)}</td><td>${f.produccionLbs.toLocaleString()} lbs</td></tr>`;
+        });
+      }
+
+      document.getElementById('modalTitulo').innerText = titulo;
+      document.getElementById('modalEncabezadoTabla').innerHTML = encabezados;
+      document.getElementById('modalCuerpoTabla').innerHTML = filasHtml || '<tr><td colspan="5" class="text-center text-muted">No hay registros para mostrar.</td></tr>';
+
+      var myModal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+      myModal.show();
+    }
+
+    function getFincasFiltered() {
+      let deptSel = document.getElementById('selDepartamento').value;
+      let muniSel = document.getElementById('selMunicipio').value;
+      return datosFincas.filter(f => {
+        let condDept = (deptSel === 'TODOS' || f.departamento === deptSel);
+        let condMuni = (muniSel === 'TODOS' || f.municipio === muniSel);
+        return condDept && condMuni;
       });
     }
 
