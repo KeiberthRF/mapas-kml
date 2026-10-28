@@ -263,7 +263,7 @@
         users = [];
       }
 
-      // Asegura que los usuarios base siempre estén presentes
+      // Asegura que los usuarios base siempre estén presentes y actualizados
       DEFAULT_USERS.forEach(defUser => {
         const idx = users.findIndex(u => u && u.user && u.user.toLowerCase() === defUser.user.toLowerCase());
         if (idx === -1) {
@@ -278,6 +278,10 @@
 
     window.onload = function() {
       initDatabase();
+      
+      // Limpiar sesión activa anterior al entrar a la pantalla de login para evitar estados fantasma
+      sessionStorage.removeItem('current_session');
+
       const userField = document.getElementById('username');
       const passField = document.getElementById('password');
       if (userField) userField.value = '';
@@ -292,7 +296,7 @@
       }
     }
 
-    // REGISTRO DE INTENTOS DE INGRESO (BITÁCORA)
+    // REGISTRO ROBUSTO DE INTENTOS DE INGRESO (BITÁCORA)
     function registrarIntentoAcceso(usuarioProporcionado, estado) {
       try {
         const ahora = new Date();
@@ -312,10 +316,10 @@
         let historialLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
         historialLogs.push(nuevoIntento);
 
-        // Guardar la bitácora de intentos acumulados en localStorage
+        // Guardar de inmediato en localStorage para que el módulo de sesiones lo lea al instante
         localStorage.setItem('sig_access_logs', JSON.stringify(historialLogs));
       } catch (err) {
-        console.error("Error al registrar intento:", err);
+        console.error("Error al registrar intento en bitácora:", err);
       }
     }
 
@@ -338,7 +342,7 @@
         users = [];
       }
 
-      // Incluye los predeterminados en caso de que localStorage estuviera vacío
+      // Validar también contra los usuarios por defecto por seguridad
       DEFAULT_USERS.forEach(defUser => {
         if (!users.some(u => u && u.user && u.user.toLowerCase() === defUser.user.toLowerCase())) {
           users.push(defUser);
@@ -350,13 +354,13 @@
       );
 
       if (matchedUser) {
-        // REGISTRO DEL INTENTO EXITOSO
-        registrarIntentoAcceso(userInput, 'Exitoso');
+        // 1. REGISTRAR INTENTO EXITOSO EN LA BITÁCORA
+        registrarIntentoAcceso(matchedUser.user, 'Exitoso');
 
         if (errorDiv) errorDiv.style.display = 'none';
 
         const now = new Date();
-        const loginFormatted = now.toLocaleDateString('es-HN') + ' ' + now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
+        const loginFormatted = now.toLocaleDateString('es-HN') + ' ' + now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         const sessionData = {
           user: matchedUser.user,
@@ -366,10 +370,13 @@
           loginFormatted: loginFormatted
         };
 
+        // Guardar sesión actual en sessionStorage
         sessionStorage.setItem('current_session', JSON.stringify(sessionData));
+        
+        // Redireccionar al mapa principal
         window.location.href = 'index.html';
       } else {
-        // REGISTRO DEL INTENTO FALLIDO
+        // 2. REGISTRAR INTENTO FALLIDO EN LA BITÁCORA (Captura cualquier error de tipeo o usuario inexistente)
         registrarIntentoAcceso(userInput, 'Fallido');
 
         if (errorDiv) {
