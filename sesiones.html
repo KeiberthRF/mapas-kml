@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <title>Módulo de Gestión de Sesiones y Usuarios - SIG Aguacate</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    h2 { color: #38bdf8; margin: 0; font-size: 20px; }
+    .btn-regresar {
+      background: #64748b; color: #fff; border: none; padding: 8px 14px;
+      border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;
+    }
+    .btn-regresar:hover { background: #475569; }
+
+    .section-title {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 6px;
+    }
+    .section-title h3 { color: #38bdf8; margin: 0; font-size: 14px; }
+
+    .form-create-user {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;
+    }
+    .form-create-user input, .form-create-user select {
+      padding: 8px 12px; border-radius: 6px; border: 1px solid #334155;
+      background: #1e293b; color: #fff; font-size: 13px; outline: none;
+    }
+    .btn-add-user {
+      grid-column: span 2; background: #16a34a; color: #fff; border: none;
+      padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;
+    }
+    .btn-add-user:hover { background: #15803d; }
+
+    .modal-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }
+    .modal-table th, .modal-table td { padding: 8px 10px; border-bottom: 1px solid #334155; text-align: left; }
+    .modal-table th { color: #94a3b8; }
+
+    .btn-delete-user {
+      background: #ef4444; color: #fff; border: none; padding: 4px 10px;
+      border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;
+    }
+    .btn-delete-user:hover { background: #dc2626; }
+
+    .btn-toggle-pass {
+      background: transparent; border: none; cursor: pointer; font-size: 14px; margin-left: 6px; vertical-align: middle;
+    }
+
+    .btn-group-logs { display: flex; gap: 8px; }
+    .btn-clear-logs {
+      background: #d97706; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;
+    }
+    .btn-clear-logs:hover { background: #b45309; }
+    .btn-download-logs {
+      background: #059669; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;
+    }
+    .btn-download-logs:hover { background: #047857; }
+
+    .badge-status { padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; }
+    .badge-exitoso { background: rgba(22, 163, 74, 0.2); color: #4ade80; border: 1px solid #16a34a; }
+    .badge-fallido { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
+  </style>
+</head>
+<body>
+
+  <!-- Validación de Seguridad para Administradores -->
+  <script>
+    const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
+    if (!currentSession || (currentSession.role !== 'admin' && String(currentSession.role).toLowerCase() !== 'admin')) {
+      alert('Acceso restringido únicamente para administradores.');
+      window.location.href = 'index.html';
+    }
+  </script>
+
+  <div class="container">
+    <div class="header-top">
+      <h2>Módulo de Administración: Usuarios y Bitácora</h2>
+      <button class="btn-regresar" onclick="window.close()">Cerrar Módulo</button>
+    </div>
+
+    <!-- Crear Usuario -->
+    <div class="section-title" style="margin-top:0;">
+      <h3>Registrar Nuevo Usuario</h3>
+    </div>
+    <form class="form-create-user" onsubmit="addUser(event)">
+      <input type="text" id="new-name" placeholder="Nombre completo" required>
+      <input type="text" id="new-user" placeholder="Usuario" required>
+      <input type="password" id="new-pass" placeholder="Contraseña" required>
+      <select id="new-role">
+        <option value="invitado">Invitado</option>
+        <option value="admin">Administrador</option>
+      </select>
+      <button type="submit" class="btn-add-user">+ Registrar Usuario</button>
+    </form>
+
+    <!-- Listado de Usuarios -->
+    <div class="section-title">
+      <h3>Usuarios Registrados en el Sistema</h3>
+    </div>
+    <table class="modal-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Usuario</th>
+          <th>Contraseña</th>
+          <th>Rol</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="users-table-body"></tbody>
+    </table>
+
+    <!-- Bitácora de Accesos -->
+    <div class="section-title">
+      <h3>Bitácora Unificada de Accesos y Sesiones</h3>
+      <div class="btn-group-logs">
+        <button class="btn-download-logs" onclick="downloadLogsTXT()">📥 Descargar Historial (.txt)</button>
+        <button class="btn-clear-logs" onclick="clearLogsScreen()">🧹 Limpiar Registros</button>
+      </div>
+    </div>
+    <table class="modal-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Fecha y Hora</th>
+          <th>Resultado</th>
+          <th>Duración</th>
+        </tr>
+      </thead>
+      <tbody id="unified-logs-table-body"></tbody>
+    </table>
+  </div>
+
+  <script>
+    window.onload = function() {
+      loadUsersTable();
+      loadUnifiedLogsTable();
+    };
+
+    function loadUsersTable() {
+      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = '';
+      users.forEach((u, index) => {
+        const tr = document.createElement('tr');
+        const isMainAdmin = u.user.toLowerCase() === 'admin';
+        const passVal = u.pass || '***';
+        
+        tr.innerHTML = `
+          <td>${u.name}</td>
+          <td>${u.user}</td>
+          <td>
+            <span id="pass-text-${index}">••••••••</span>
+            <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility(${index}, '${passVal}')" title="Mostrar/Ocultar Contraseña">👁️</button>
+          </td>
+          <td><strong style="color:${u.role === 'admin' ? '#38bdf8' : '#cbd5e1'}">${u.role}</strong></td>
+          <td>
+            ${isMainAdmin ? '<span style="color:#64748b; font-size:11px;">Protegido</span>' : `<button class="btn-delete-user" onclick="deleteUser('${u.user}')">🗑️ Eliminar</button>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function togglePassVisibility(index, realPass) {
+      const elem = document.getElementById(`pass-text-${index}`);
+      if (elem.innerText === '••••••••') {
+        elem.innerText = realPass;
+        elem.style.color = '#38bdf8';
+        elem.style.fontFamily = 'monospace';
+      } else {
+        elem.innerText = '••••••••';
+        elem.style.color = '#fff';
+        elem.style.fontFamily = 'inherit';
+      }
+    }
+
+    function loadUnifiedLogsTable() {
+      const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
+      const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      const tbody = document.getElementById('unified-logs-table-body');
+      tbody.innerHTML = '';
+
+      if (accessLogs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; font-style:italic;">No hay actividad registrada en la bitácora.</td></tr>';
+        return;
+      }
+
+      const durationMap = {};
+      logs.forEach(l => {
+        const key = `${l.user.toLowerCase()}_${l.login}`;
+        durationMap[key] = l.duration;
+      });
+
+      accessLogs.slice().reverse().forEach(log => {
+        const tr = document.createElement('tr');
+        const isExitoso = log.estado === 'Exitoso';
+        const badgeClass = isExitoso ? 'badge-exitoso' : 'badge-fallido';
+        const statusText = isExitoso ? '✓ Exitoso' : '✕ Fallido';
+
+        const durKey = `${log.usuario.toLowerCase()}_${log.fechaHora}`;
+        let durationText = '-';
+        
+        if (isExitoso) {
+          durationText = durationMap[durKey] || 'En curso / Activa';
+        }
+
+        tr.innerHTML = `
+          <td><strong>${log.usuario}</strong></td>
+          <td>${log.fechaHora}</td>
+          <td><span class="badge-status ${badgeClass}">${statusText}</span></td>
+          <td style="color:${isExitoso ? '#38bdf8' : '#64748b'}">${durationText}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function clearLogsScreen() {
+      if (confirm('¿Deseas limpiar los registros visuales de la bitácora?')) {
+        localStorage.setItem('sig_logs', JSON.stringify([]));
+        localStorage.setItem('sig_access_logs', JSON.stringify([]));
+        loadUnifiedLogsTable();
+      }
+    }
+
+    function downloadLogsTXT() {
+      const accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
+      const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
+      const visibleLogs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      
+      let combinedSessions = [...masterLogs];
+      visibleLogs.forEach(v => {
+        if (!combinedSessions.some(m => m.user === v.user && m.login === v.login)) {
+          combinedSessions.push(v);
+        }
+      });
+
+      if (accessLogs.length === 0 && combinedSessions.length === 0) {
+        alert('No existen registros almacenados en la bitácora actualmente.');
+        return;
+      }
+
+      const durationMap = {};
+      combinedSessions.forEach(l => {
+        const key = `${l.user.toLowerCase()}_${l.login}`;
+        durationMap[key] = l.duration;
+      });
+
+      let content = "=========================================================================================\n";
+      content += "               BITÁCORA UNIFICADA DE ACCESOS Y SESIONES - SIG AGUACATE                  \n";
+      content += "=========================================================================================\n";
+      content += "Fecha de Reporte: " + new Date().toLocaleString('es-HN') + "\n\n";
+
+      content += String("USUARIO").padEnd(20) + String("FECHA Y HORA").padEnd(28) + String("RESULTADO").padEnd(15) + "DURACIÓN SESIÓN\n";
+      content += "-----------------------------------------------------------------------------------------\n";
+
+      accessLogs.forEach(item => {
+        const isExitoso = item.estado === 'Exitoso';
+        const durKey = `${item.usuario.toLowerCase()}_${item.fechaHora}`;
+        const duration = isExitoso ? (durationMap[durKey] || "En curso / Finalizada") : "-";
+
+        content += String(item.usuario).padEnd(20) + 
+                   String(item.fechaHora).padEnd(28) + 
+                   String(item.estado).padEnd(15) + 
+                   duration + "\n";
+      });
+
+      content += "-----------------------------------------------------------------------------------------\n";
+      content += "Total de registros procesados: " + accessLogs.length + "\n";
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bitacora_unificada_sig_${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function addUser(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-name').value.trim();
+      const user = document.getElementById('new-user').value.trim();
+      const pass = document.getElementById('new-pass').value.trim();
+      const role = document.getElementById('new-role').value;
+
+      const users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+      if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
+        alert('El usuario ya existe. Por favor elige otro.');
+        return;
+      }
+
+      users.push({ name, user, pass, role });
+      localStorage.setItem('sig_users', JSON.stringify(users));
+
+      document.getElementById('new-name').value = '';
+      document.getElementById('new-user').value = '';
+      document.getElementById('new-pass').value = '';
+
+      loadUsersTable();
+      alert('Usuario registrado exitosamente');
+    }
+
+    function deleteUser(username) {
+      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
+        let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
+        localStorage.setItem('sig_users', JSON.stringify(users));
+        loadUsersTable();
+      }
+    }
+  </script>
+</body>
+</html>
