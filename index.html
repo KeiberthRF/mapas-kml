@@ -555,26 +555,29 @@
       renderMapFeatures();
     });
 
+    // FUNCIÓN DE CIERRE DE SESIÓN VINCULADA CORRECTAMENTE
     function logout() {
       if (currentSession) {
-        const loginTime = new Date(currentSession.loginTime);
+        const loginTime = Number(currentSession.loginTime) || new Date().getTime();
         const now = new Date();
-        const durationMinutes = Math.max(1, Math.round((now - loginTime) / 60000));
+        const durationMinutes = Math.max(1, Math.round((now.getTime() - loginTime) / 60000));
 
-        const newLogEntry = {
+        const sessionRecord = {
           user: currentSession.user,
           login: currentSession.loginFormatted,
-          duration: durationMinutes + ' min'
+          duration: durationMinutes + ' min',
+          estadoCierre: 'Cerrado Correctamente'
         };
 
-        const logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-        logs.push(newLogEntry);
+        let logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+        logs.push(sessionRecord);
         localStorage.setItem('sig_logs', JSON.stringify(logs));
 
-        const masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-        masterLogs.push(newLogEntry);
+        let masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
+        masterLogs.push(sessionRecord);
         localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
       }
+      
       sessionStorage.removeItem('current_session');
       window.location.href = 'login.html';
     }
