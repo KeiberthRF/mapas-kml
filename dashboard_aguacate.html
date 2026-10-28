@@ -114,7 +114,6 @@
       border-top: 4px solid var(--secondary-green);
       flex: 1;
     }
-    /* Estilo exclusivo e interactivo únicamente para la tarjeta de Sin Riego / Con Fuente Agua */
     .metric-slide-card-clickable {
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s;
@@ -204,7 +203,7 @@
         <div class="kpi-value" id="slideRiego">0</div>
         <small class="text-muted" id="slideRiegoSub">Sistemas instalados</small>
       </div>
-      <div class="metric-slide-card metric-slide-card-clickable" style="border-top-color: var(--hass-ripe-gold);" onclick="mostrarModalSinRiegoDetalle()" title="Hacer clic para ver listado detallado">
+      <div class="metric-slide-card metric-slide-card-clickable" style="border-top-color: var(--hass-ripe-gold);" onclick="mostrarModalSinRiegoDetalle()" title="Hacer clic para ver listado detallado alfabético">
         <div class="kpi-title"><i class="fa-solid fa-water me-1 text-warning"></i> Sin Riego / Con Fuente Agua <i class="fa-solid fa-circle-info float-end text-warning"></i></div>
         <div class="kpi-value" id="slideFuenteAgua">0</div>
         <small class="text-muted">Potencial de instalación (Clic aquí)</small>
@@ -271,12 +270,12 @@
 
   </div>
 
-  <!-- Modal Exclusivo para Fincas Sin Riego (Con Fuente vs Sin Fuente) -->
+  <!-- Modal Exclusivo Ordenado Alfabéticamente para Fincas Sin Riego -->
   <div class="modal fade" id="modalDetalleSinRiego" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-water me-2"></i>Detalle de Fincas Sin Riego - Potencial Hídrico</h5>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-water me-2"></i>Detalle de Fincas Sin Riego - Potencial Hídrico (Orden Alfabético)</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -329,20 +328,11 @@
 
     function extractField(feature, fieldName) {
       var props = feature.properties || {};
-      
-      // 1. Búsqueda directa por clave exacta o insensible a mayúsculas
       var foundKey = Object.keys(props).find(k => k.toLowerCase() === fieldName.toLowerCase());
       if (foundKey && props[foundKey] !== undefined && props[foundKey] !== null && String(props[foundKey]).trim() !== "") {
         return String(props[foundKey]).trim();
       }
 
-      // 2. Búsqueda flexible parcial en las propiedades
-      var partialKey = Object.keys(props).find(k => k.toLowerCase().includes(fieldName.toLowerCase()));
-      if (partialKey && props[partialKey] !== undefined && props[partialKey] !== null && String(props[partialKey]).trim() !== "") {
-        return String(props[partialKey]).trim();
-      }
-
-      // 3. Extracción desde la descripción HTML (KoboToolbox / Google Earth)
       var desc = props.description || "";
       var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
       if (strDesc) {
@@ -384,29 +374,31 @@
           datosFincas = [];
           if (geojson && geojson.features) {
             geojson.features.forEach(feature => {
-              let nombreProductor = feature.properties.name || extractField(feature, "nombre") || extractField(feature, "productor") || "Productor sin nombre";
+              let nombreProductor = feature.properties.name || extractField(feature, "nombre") || "Productor sin nombre";
               let depto = extractField(feature, "P2") || extractField(feature, "departamento") || extractField(feature, "depto") || "SIN DEPARTAMENTO";
               let muni = extractField(feature, "P3") || extractField(feature, "municipio") || extractField(feature, "muni") || "SIN MUNICIPIO";
               
-              let area = parseNumber(extractField(feature, "P12") || extractField(feature, "area") || extractField(feature, "area_mz") || extractField(feature, "superficie"));
-              let pProd = parseNumber(extractField(feature, "P13") || extractField(feature, "plantas_produccion") || extractField(feature, "plantas_prod") || extractField(feature, "en_produccion"));
-              let pDes = parseNumber(extractField(feature, "P14") || extractField(feature, "plantas_desarrollo") || extractField(feature, "plantas_des") || extractField(feature, "en_desarrollo"));
+              let area = parseNumber(extractField(feature, "P12") || extractField(feature, "area") || extractField(feature, "area_mz"));
+              let pProd = parseNumber(extractField(feature, "P13") || extractField(feature, "plantas_produccion") || extractField(feature, "plantas_prod"));
+              let pDes = parseNumber(extractField(feature, "P14") || extractField(feature, "plantas_desarrollo") || extractField(feature, "plantas_des"));
               
               let varCruda = extractField(feature, "P15") || extractField(feature, "variedad") || extractField(feature, "raza") || "Hass";
               let variedadLimpia = clasificarRaza(varCruda);
 
-              let prodLbs = parseNumber(extractField(feature, "P16") || extractField(feature, "produccion_lbs") || extractField(feature, "libras"));
-              let prodUni = parseNumber(extractField(feature, "P17") || extractField(feature, "produccion_unidades") || extractField(feature, "unidades"));
+              let prodLbs = parseNumber(extractField(feature, "P16") || extractField(feature, "produccion_lbs"));
+              let prodUni = parseNumber(extractField(feature, "P17") || extractField(feature, "produccion_unidades"));
 
-              let valRiego = extractField(feature, "P18") || extractField(feature, "tiene_riego") || extractField(feature, "riego") || "";
-              let tieneRiegoBool = valRiego.toLowerCase() === 'si' || valRiego === '1' || valRiego.toLowerCase() === 'true' || valRiego.toLowerCase() === 'cuenta con riego' || valRiego.toLowerCase() === 'tiene';
+              let valRiego = extractField(feature, "P18") || extractField(feature, "tiene_riego") || "";
+              let tieneRiegoBool = valRiego.toLowerCase() === 'si' || valRiego === '1' || valRiego.toLowerCase() === 'true' || valRiego.toLowerCase() === 'cuenta con riego';
 
-              let valFuente = extractField(feature, "P18_fuente") || extractField(feature, "fuente_agua") || extractField(feature, "posibilidad_agua") || extractField(feature, "fuente") || "";
+              let valFuente = extractField(feature, "P18_fuente") || extractField(feature, "fuente_agua") || extractField(feature, "posibilidad_agua") || "";
               let tieneFuenteAguaBool = !tieneRiegoBool && (valFuente.toLowerCase() === 'si' || valFuente === '1' || valFuente.toLowerCase() === 'true' || valFuente.toLowerCase() === 'tiene fuente' || valFuente.toLowerCase() === 'cuenta con fuente' || valFuente.toLowerCase() === 'rio' || valFuente.toLowerCase() === 'quebrada' || valFuente.toLowerCase() === 'pozo');
 
-              let perm = parseNumber(extractField(feature, "P19") || extractField(feature, "trabajadores_perm") || extractField(feature, "permanentes"));
-              let temp = parseNumber(extractField(feature, "P20") || extractField(feature, "trabajadores_temp") || extractField(feature, "temporales"));
+              let perm = parseNumber(extractField(feature, "P19") || extractField(feature, "trabajadores_perm"));
+              let temp = parseNumber(extractField(feature, "P20") || extractField(feature, "trabajadores_temp"));
 
+              // Cálculo de Planilla Anual Realista: 
+              // Permanentes: 265 días laborables al año. Temporales: 75 días (aprox 3 meses). Salario diario estimado L. 350.00
               let pagoPermAnual = perm * 265 * 350;
               let pagoTempAnual = temp * 75 * 350;
               let pagoTotalAnual = pagoPermAnual + pagoTempAnual;
@@ -643,7 +635,7 @@
       });
     }
 
-    // Modal interactivo exclusivo para Fincas Sin Riego
+    // Modal interactivo exclusivo para Fincas Sin Riego (Ordenado Alfabéticamente)
     function mostrarModalSinRiegoDetalle() {
       let deptSel = document.getElementById('selDepartamento').value;
       let muniSel = document.getElementById('selMunicipio').value;
@@ -652,6 +644,9 @@
         let condMuni = (muniSel === 'TODOS' || f.municipio === muniSel);
         return condDept && condMuni && !f.tieneRiego;
       });
+
+      // Ordenar alfabéticamente por nombre del productor
+      fincas.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
       let filasHtml = "";
       fincas.forEach(f => {
