@@ -34,12 +34,6 @@
       box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
       border-left: 5px solid var(--secondary-green);
       height: 100%;
-      transition: transform 0.2s ease;
-      cursor: pointer;
-    }
-    .kpi-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
     }
     .kpi-title {
       font-size: 0.75rem;
@@ -113,29 +107,22 @@
     }
     .metric-slide-card {
       min-width: 250px;
-      background: linear-gradient(to bottom right, #ffffff, #f9fbf9);
+      background: #ffffff;
       border-radius: 10px;
       padding: 15px;
       box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
       border-top: 4px solid var(--secondary-green);
       flex: 1;
-      position: relative;
-      overflow: hidden;
+    }
+    /* Estilo exclusivo e interactivo únicamente para la tarjeta de Sin Riego / Con Fuente Agua */
+    .metric-slide-card-clickable {
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .metric-slide-card:hover {
+    .metric-slide-card-clickable:hover {
       transform: translateY(-2px);
-    }
-    .metric-slide-card::after {
-      content: "";
-      position: absolute;
-      right: -10px;
-      bottom: -10px;
-      width: 60px;
-      height: 60px;
-      background: rgba(45, 106, 79, 0.06);
-      border-radius: 50%;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+      background: #f9fbf9;
     }
   </style>
 </head>
@@ -183,28 +170,28 @@
     <!-- SECCIÓN 1: Tarjetas KPI Principales (Arriba) -->
     <div class="row g-3 mb-3">
       <div class="col-md-3">
-        <div class="kpi-card" onclick="mostrarModalDetalle('fincas')">
-          <div class="kpi-title"><i class="fa-solid fa-house-chimney-window me-1"></i> Total Fincas / Productores <i class="fa-solid fa-circle-info float-end text-muted"></i></div>
+        <div class="kpi-card">
+          <div class="kpi-title"><i class="fa-solid fa-house-chimney-window me-1"></i> Total Fincas / Productores</div>
           <div class="kpi-value" id="kpiFincas">0</div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="kpi-card" onclick="mostrarModalDetalle('area')">
-          <div class="kpi-title"><i class="fa-solid fa-vector-square me-1"></i> Área Total cultivada <i class="fa-solid fa-circle-info float-end text-muted"></i></div>
+        <div class="kpi-card">
+          <div class="kpi-title"><i class="fa-solid fa-vector-square me-1"></i> Área Total cultivada</div>
           <div class="kpi-value" id="kpiArea">0.00 mz</div>
           <small class="text-muted fw-bold" id="kpiAreaHa">0.00 ha</small>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="kpi-card" onclick="mostrarModalDetalle('plantas')">
-          <div class="kpi-title"><i class="fa-solid fa-tree me-1"></i> Total Plantas <i class="fa-solid fa-circle-info float-end text-muted"></i></div>
+        <div class="kpi-card">
+          <div class="kpi-title"><i class="fa-solid fa-tree me-1"></i> Total Plantas</div>
           <div class="kpi-value" id="kpiPlantas">0</div>
           <small class="text-muted" id="kpiPlantasSub">Prod: 0 | Desarr: 0</small>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="kpi-card" onclick="mostrarModalDetalle('produccion')">
-          <div class="kpi-title"><i class="fa-solid fa-weight-hanging me-1"></i> Producción Est. (Lbs) <i class="fa-solid fa-circle-info float-end text-muted"></i></div>
+        <div class="kpi-card">
+          <div class="kpi-title"><i class="fa-solid fa-weight-hanging me-1"></i> Producción Est. (Lbs)</div>
           <div class="kpi-value" id="kpiProduccion">0 lbs</div>
         </div>
       </div>
@@ -212,23 +199,23 @@
 
     <!-- SECCIÓN 2: Tarjetas Slides Secundarias (Abajo) -->
     <div class="metrics-slider-container">
-      <div class="metric-slide-card" onclick="mostrarModalDetalle('riego')">
-        <div class="kpi-title"><i class="fa-solid fa-droplet me-1 text-primary"></i> Fincas con Riego <i class="fa-solid fa-arrow-up-right-from-square float-end text-muted"></i></div>
+      <div class="metric-slide-card">
+        <div class="kpi-title"><i class="fa-solid fa-droplet me-1 text-primary"></i> Fincas con Riego</div>
         <div class="kpi-value" id="slideRiego">0</div>
         <small class="text-muted" id="slideRiegoSub">Sistemas instalados</small>
       </div>
-      <div class="metric-slide-card" style="border-top-color: var(--hass-ripe-gold);" onclick="mostrarModalDetalle('sin_riego_fuente')">
-        <div class="kpi-title"><i class="fa-solid fa-water me-1 text-warning"></i> Sin Riego / Con Fuente Agua <i class="fa-solid fa-arrow-up-right-from-square float-end text-muted"></i></div>
+      <div class="metric-slide-card metric-slide-card-clickable" style="border-top-color: var(--hass-ripe-gold);" onclick="mostrarModalSinRiegoDetalle()" title="Hacer clic para ver listado detallado">
+        <div class="kpi-title"><i class="fa-solid fa-water me-1 text-warning"></i> Sin Riego / Con Fuente Agua <i class="fa-solid fa-circle-info float-end text-warning"></i></div>
         <div class="kpi-value" id="slideFuenteAgua">0</div>
-        <small class="text-muted">Potencial de instalación</small>
+        <small class="text-muted">Potencial de instalación (Clic aquí)</small>
       </div>
-      <div class="metric-slide-card" onclick="mostrarModalDetalle('mano_obra')">
-        <div class="kpi-title"><i class="fa-solid fa-users me-1 text-success"></i> Mano de Obra Total <i class="fa-solid fa-arrow-up-right-from-square float-end text-muted"></i></div>
+      <div class="metric-slide-card">
+        <div class="kpi-title"><i class="fa-solid fa-users me-1 text-success"></i> Mano de Obra Total</div>
         <div class="kpi-value" id="slideTrabajadores">0</div>
         <small class="text-muted" id="slideTrabSub">Permanentes y temporales</small>
       </div>
-      <div class="metric-slide-card" style="border-top-color: #2b9348;" onclick="mostrarModalDetalle('planilla')">
-        <div class="kpi-title"><i class="fa-solid fa-money-bill-wave me-1 text-success"></i> Inversión Planilla Anual <i class="fa-solid fa-arrow-up-right-from-square float-end text-muted"></i></div>
+      <div class="metric-slide-card" style="border-top-color: #2b9348;">
+        <div class="kpi-title"><i class="fa-solid fa-money-bill-wave me-1 text-success"></i> Inversión Planilla Anual</div>
         <div class="kpi-value" id="slidePagos">L. 0.00</div>
         <small class="text-muted">Estimación anual (265d perm / 75d temp)</small>
       </div>
@@ -284,21 +271,27 @@
 
   </div>
 
-  <!-- Modal Genérico para Listados Emergentes -->
-  <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+  <!-- Modal Exclusivo para Fincas Sin Riego (Con Fuente vs Sin Fuente) -->
+  <div class="modal fade" id="modalDetalleSinRiego" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
-        <div class="modal-header bg-success text-white">
-          <h5 class="modal-title fw-bold" id="modalTitulo">Detalle de Productores</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-water me-2"></i>Detalle de Fincas Sin Riego - Potencial Hídrico</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="table-responsive">
-            <table class="table table-sm table-striped align-middle" id="tablaModalDetalle">
+            <table class="table table-sm table-striped align-middle">
               <thead>
-                <tr id="modalEncabezadoTabla"></tr>
+                <tr>
+                  <th>Productor</th>
+                  <th>Departamento</th>
+                  <th>Municipio</th>
+                  <th>Estado de Fuente de Agua</th>
+                  <th>Área (mz)</th>
+                </tr>
               </thead>
-              <tbody id="modalCuerpoTabla"></tbody>
+              <tbody id="modalCuerpoSinRiego"></tbody>
             </table>
           </div>
         </div>
@@ -336,11 +329,20 @@
 
     function extractField(feature, fieldName) {
       var props = feature.properties || {};
+      
+      // 1. Búsqueda directa por clave exacta o insensible a mayúsculas
       var foundKey = Object.keys(props).find(k => k.toLowerCase() === fieldName.toLowerCase());
       if (foundKey && props[foundKey] !== undefined && props[foundKey] !== null && String(props[foundKey]).trim() !== "") {
         return String(props[foundKey]).trim();
       }
 
+      // 2. Búsqueda flexible parcial en las propiedades
+      var partialKey = Object.keys(props).find(k => k.toLowerCase().includes(fieldName.toLowerCase()));
+      if (partialKey && props[partialKey] !== undefined && props[partialKey] !== null && String(props[partialKey]).trim() !== "") {
+        return String(props[partialKey]).trim();
+      }
+
+      // 3. Extracción desde la descripción HTML (KoboToolbox / Google Earth)
       var desc = props.description || "";
       var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
       if (strDesc) {
@@ -382,31 +384,29 @@
           datosFincas = [];
           if (geojson && geojson.features) {
             geojson.features.forEach(feature => {
-              let nombreProductor = feature.properties.name || extractField(feature, "nombre") || "Productor sin nombre";
+              let nombreProductor = feature.properties.name || extractField(feature, "nombre") || extractField(feature, "productor") || "Productor sin nombre";
               let depto = extractField(feature, "P2") || extractField(feature, "departamento") || extractField(feature, "depto") || "SIN DEPARTAMENTO";
               let muni = extractField(feature, "P3") || extractField(feature, "municipio") || extractField(feature, "muni") || "SIN MUNICIPIO";
               
-              let area = parseNumber(extractField(feature, "P12") || extractField(feature, "area") || extractField(feature, "area_mz"));
-              let pProd = parseNumber(extractField(feature, "P13") || extractField(feature, "plantas_produccion") || extractField(feature, "plantas_prod"));
-              let pDes = parseNumber(extractField(feature, "P14") || extractField(feature, "plantas_desarrollo") || extractField(feature, "plantas_des"));
+              let area = parseNumber(extractField(feature, "P12") || extractField(feature, "area") || extractField(feature, "area_mz") || extractField(feature, "superficie"));
+              let pProd = parseNumber(extractField(feature, "P13") || extractField(feature, "plantas_produccion") || extractField(feature, "plantas_prod") || extractField(feature, "en_produccion"));
+              let pDes = parseNumber(extractField(feature, "P14") || extractField(feature, "plantas_desarrollo") || extractField(feature, "plantas_des") || extractField(feature, "en_desarrollo"));
               
               let varCruda = extractField(feature, "P15") || extractField(feature, "variedad") || extractField(feature, "raza") || "Hass";
               let variedadLimpia = clasificarRaza(varCruda);
 
-              let prodLbs = parseNumber(extractField(feature, "P16") || extractField(feature, "produccion_lbs"));
-              let prodUni = parseNumber(extractField(feature, "P17") || extractField(feature, "produccion_unidades"));
+              let prodLbs = parseNumber(extractField(feature, "P16") || extractField(feature, "produccion_lbs") || extractField(feature, "libras"));
+              let prodUni = parseNumber(extractField(feature, "P17") || extractField(feature, "produccion_unidades") || extractField(feature, "unidades"));
 
-              let valRiego = extractField(feature, "P18") || extractField(feature, "tiene_riego") || "";
-              let tieneRiegoBool = valRiego.toLowerCase() === 'si' || valRiego === '1' || valRiego.toLowerCase() === 'true' || valRiego.toLowerCase() === 'cuenta con riego';
+              let valRiego = extractField(feature, "P18") || extractField(feature, "tiene_riego") || extractField(feature, "riego") || "";
+              let tieneRiegoBool = valRiego.toLowerCase() === 'si' || valRiego === '1' || valRiego.toLowerCase() === 'true' || valRiego.toLowerCase() === 'cuenta con riego' || valRiego.toLowerCase() === 'tiene';
 
-              let valFuente = extractField(feature, "P18_fuente") || extractField(feature, "fuente_agua") || extractField(feature, "posibilidad_agua") || "";
-              let tieneFuenteAguaBool = !tieneRiegoBool && (valFuente.toLowerCase() === 'si' || valFuente === '1' || valFuente.toLowerCase() === 'true' || valFuente.toLowerCase() === 'tiene fuente');
+              let valFuente = extractField(feature, "P18_fuente") || extractField(feature, "fuente_agua") || extractField(feature, "posibilidad_agua") || extractField(feature, "fuente") || "";
+              let tieneFuenteAguaBool = !tieneRiegoBool && (valFuente.toLowerCase() === 'si' || valFuente === '1' || valFuente.toLowerCase() === 'true' || valFuente.toLowerCase() === 'tiene fuente' || valFuente.toLowerCase() === 'cuenta con fuente' || valFuente.toLowerCase() === 'rio' || valFuente.toLowerCase() === 'quebrada' || valFuente.toLowerCase() === 'pozo');
 
-              let perm = parseNumber(extractField(feature, "P19") || extractField(feature, "trabajadores_perm"));
-              let temp = parseNumber(extractField(feature, "P20") || extractField(feature, "trabajadores_temp"));
+              let perm = parseNumber(extractField(feature, "P19") || extractField(feature, "trabajadores_perm") || extractField(feature, "permanentes"));
+              let temp = parseNumber(extractField(feature, "P20") || extractField(feature, "trabajadores_temp") || extractField(feature, "temporales"));
 
-              // Cálculo de Planilla Anual Realista: 
-              // Permanentes: 265 días laborables al año. Temporales: 75 días (aprox 3 meses). Salario diario estimado L. 350.00
               let pagoPermAnual = perm * 265 * 350;
               let pagoTempAnual = temp * 75 * 350;
               let pagoTotalAnual = pagoPermAnual + pagoTempAnual;
@@ -503,20 +503,10 @@
       renderizarDashboard(filtrados);
     }
 
-    function obtenerFincasFiltradasActuales() {
-      let deptSel = document.getElementById('selDepartamento').value;
-      let muniSel = document.getElementById('selMunicipio').value;
-      return datosFincas.filter(f => {
-        let condDept = (deptSel === 'TODOS' || f.departamento === deptSel);
-        let condMuni = (muniSel === 'TODOS' || f.municipio === muniSel);
-        return condDept && condMuni;
-      });
-    }
-
     function renderizarDashboard(fincas) {
       let totalFincas = fincas.length;
       let totalAreaMz = fincas.reduce((acc, f) => acc + f.areaMz, 0);
-      let totalAreaHa = totalAreaMz * 0.7028; // Conversión aproximada manzana a hectárea
+      let totalAreaHa = totalAreaMz * 0.7028;
       let totalPlantasProd = fincas.reduce((acc, f) => acc + f.plantasProduccion, 0);
       let totalPlantasDes = fincas.reduce((acc, f) => acc + f.plantasDesarrollo, 0);
       let totalPlantas = totalPlantasProd + totalPlantasDes;
@@ -533,7 +523,6 @@
 
       let fincasConRiego = fincas.filter(f => f.tieneRiego).length;
       let fincasSinRiegoConFuente = fincas.filter(f => !f.tieneRiego && f.fuenteAguaSinRiego).length;
-      let fincasSinRiegoSinFuente = fincas.filter(f => !f.tieneRiego && !f.fuenteAguaSinRiego).length;
       
       let totalTrabPerm = fincas.reduce((acc, f) => acc + f.trabajadoresPerm, 0);
       let totalTrabTemp = fincas.reduce((acc, f) => acc + f.trabajadoresTemp, 0);
@@ -654,68 +643,26 @@
       });
     }
 
-    // Funcionalidad de Modales Emergentes Interactivos
-    function mostrarModalDetalle(tipo) {
-      let fincas = getFincasFiltered();
-      let titulo = "";
-      let encabezados = "";
-      let filasHtml = "";
-
-      if (tipo === 'fincas') {
-        titulo = "Listado General de Fincas y Productores";
-        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Área (mz)</th><th>Plantas Prod.</th>";
-        fincas.forEach(f => {
-          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>${f.areaMz.toFixed(2)}</td><td>${f.plantasProduccion}</td></tr>`;
-        });
-      } else if (tipo === 'riego') {
-        titulo = "Fincas con Sistema de Riego Instalado";
-        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Tipo de Riego</th><th>Área (mz)</th>";
-        fincas.filter(f => f.tieneRiego).forEach(f => {
-          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td><span class="badge bg-success">${f.tipoRiego}</span></td><td>${f.areaMz.toFixed(2)}</td></tr>`;
-        });
-      } else if (tipo === 'sin_riego_fuente') {
-        titulo = "Clasificación Fincas sin Riego (Con Fuente vs Sin Fuente)";
-        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Potencial de Riego (Fuente Agua)</th><th>Área (mz)</th>";
-        fincas.filter(f => !f.tieneRiego).forEach(f => {
-          let estadoFuente = f.fuenteAguaSinRiego ? '<span class="badge bg-warning text-dark">Con Fuente (Potencial)</span>' : '<span class="badge bg-secondary">Sin Fuente Registrada</span>';
-          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>${estadoFuente}</td><td>${f.areaMz.toFixed(2)}</td></tr>`;
-        });
-      } else if (tipo === 'mano_obra') {
-        titulo = "Detalle de Mano de Obra por Finca";
-        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Trab. Permanentes</th><th>Trab. Temporales</th>";
-        fincas.forEach(f => {
-          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>${f.trabajadoresPerm}</td><td>${f.trabajadoresTemp}</td></tr>`;
-        });
-      } else if (tipo === 'planilla') {
-        titulo = "Estimación de Inversión Salarial Anual";
-        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Perm. / Temp.</th><th>Inversión Planilla Anual</th>";
-        fincas.forEach(f => {
-          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>Perm: ${f.trabajadoresPerm} | Temp: ${f.trabajadoresTemp}</td><td class="fw-bold text-success">L. ${f.pagosLpsAnual.toLocaleString('es-HN', {minimumFractionDigits: 2})}</td></tr>`;
-        });
-      } else {
-        titulo = "Detalle Analítico";
-        encabezados = "<th>Productor</th><th>Departamento</th><th>Municipio</th><th>Área (mz)</th><th>Producción Lbs</th>";
-        fincas.forEach(f => {
-          filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>${f.areaMz.toFixed(2)}</td><td>${f.produccionLbs.toLocaleString()} lbs</td></tr>`;
-        });
-      }
-
-      document.getElementById('modalTitulo').innerText = titulo;
-      document.getElementById('modalEncabezadoTabla').innerHTML = encabezados;
-      document.getElementById('modalCuerpoTabla').innerHTML = filasHtml || '<tr><td colspan="5" class="text-center text-muted">No hay registros para mostrar.</td></tr>';
-
-      var myModal = new bootstrap.Modal(document.getElementById('modalDetalle'));
-      myModal.show();
-    }
-
-    function getFincasFiltered() {
+    // Modal interactivo exclusivo para Fincas Sin Riego
+    function mostrarModalSinRiegoDetalle() {
       let deptSel = document.getElementById('selDepartamento').value;
       let muniSel = document.getElementById('selMunicipio').value;
-      return datosFincas.filter(f => {
+      let fincas = datosFincas.filter(f => {
         let condDept = (deptSel === 'TODOS' || f.departamento === deptSel);
         let condMuni = (muniSel === 'TODOS' || f.municipio === muniSel);
-        return condDept && condMuni;
+        return condDept && condMuni && !f.tieneRiego;
       });
+
+      let filasHtml = "";
+      fincas.forEach(f => {
+        let estadoFuente = f.fuenteAguaSinRiego ? '<span class="badge bg-warning text-dark">Con Fuente (Potencial)</span>' : '<span class="badge bg-secondary">Sin Fuente Registrada</span>';
+        filasHtml += `<tr><td>${f.nombre}</td><td>${f.departamento}</td><td>${f.municipio}</td><td>${estadoFuente}</td><td>${f.areaMz.toFixed(2)} mz</td></tr>`;
+      });
+
+      document.getElementById('modalCuerpoSinRiego').innerHTML = filasHtml || '<tr><td colspan="5" class="text-center text-muted">No hay registros sin riego para mostrar.</td></tr>';
+
+      var myModal = new bootstrap.Modal(document.getElementById('modalDetalleSinRiego'));
+      myModal.show();
     }
 
     window.onload = function() {
