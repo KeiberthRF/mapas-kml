@@ -136,7 +136,8 @@
           <small class="text-light opacity-8">República de Honduras - Análisis Automatizado de Datos KML</small>
         </div>
         <div>
-          <a href="index.html" class="btn btn-light btn-sm fw-bold me-2 shadow-sm"><i class="fa-solid fa-map me-1 text-success"></i> Volver al Mapa</a>
+          <!-- Botón actualizado para cerrar el módulo de manera inteligente -->
+          <button onclick="cerrarDashboard()" class="btn btn-light btn-sm fw-bold me-2 shadow-sm"><i class="fa-solid fa-map me-1 text-success"></i> Volver al Mapa</button>
           <span class="badge bg-warning text-dark fs-6 shadow-sm" id="lblFiltroActual">Nacional (Todo el País)</span>
         </div>
       </div>
@@ -309,6 +310,15 @@
   <script>
     let datosFincas = [];
 
+    // Función para cerrar el dashboard limpiamente y regresar al mapa
+    function cerrarDashboard() {
+      if (window.opener) {
+        window.close();
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+
     function parseNumber(value) {
       if (value === null || value === undefined) return 0;
       let str = String(value).trim();
@@ -375,7 +385,6 @@
           datosFincas = [];
           if (geojson && geojson.features) {
             geojson.features.forEach(feature => {
-              // Nombres reales de columnas extraídos del archivo CSV del Censo
               let nombreProductor = feature.properties.name || extractField(feature, "PRODUCTOR(A)") || extractField(feature, "productor") || "Productor sin nombre";
               let depto = extractField(feature, "DEPARTAMENTO") || extractField(feature, "depto") || "SIN DEPARTAMENTO";
               let muni = extractField(feature, "MUNICIPIO") || extractField(feature, "muni") || "SIN MUNICIPIO";
@@ -401,7 +410,7 @@
               let permStr = extractField(feature, "CUANTOS TP");
               let perm = parseNumber(permStr);
               if (perm === 0 && extractField(feature, "TRABAJADORES PERMANENTES").toLowerCase() === 'si') {
-                perm = 1; // Por defecto si indicó que tiene pero no puso el número
+                perm = 1; 
               }
 
               let tempStr = extractField(feature, "CUANTOS TT");
@@ -411,10 +420,8 @@
               }
 
               let salarioDia = parseNumber(extractField(feature, "SALARIO POR DIA"));
-              if (salarioDia <= 0) salarioDia = 250; // Salario base estándar si viene vacío
+              if (salarioDia <= 0) salarioDia = 250; 
 
-              // Cálculo de Planilla Anual Realista: 
-              // Permanentes: 265 días laborables al año. Temporales: 75 días (aprox 3 meses).
               let pagoPermAnual = perm * 265 * salarioDia;
               let pagoTempAnual = temp * 75 * salarioDia;
               let pagoTotalAnual = pagoPermAnual + pagoTempAnual;
@@ -661,7 +668,6 @@
         return condDept && condMuni && !f.tieneRiego;
       });
 
-      // Ordenar alfabéticamente por nombre del productor
       fincas.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
       let filasHtml = "";
