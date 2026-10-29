@@ -224,11 +224,18 @@
 </head>
 <body>
 
-  <!-- Validación de Sesión -->
+  <!-- Validación estricta y protección contra caché (Botón Atrás) -->
   <script>
+    window.addEventListener('pageshow', function(event) {
+      const activeSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
+      if (!activeSession) {
+        window.location.replace('login.html');
+      }
+    });
+
     const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
     if (!currentSession) {
-      window.location.href = 'login.html';
+      window.location.replace('login.html');
     }
   </script>
 
@@ -292,7 +299,6 @@
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    // Variable global para evitar registros duplicados de salida
     let sesionCerrada = false;
 
     // Verificar visibilidad de opción Administrador
@@ -312,7 +318,6 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    // Referencias para controlar pestañas abiertas (Dashboard y Sesiones)
     let dashboardWindow = null;
     let sesionesWindow = null;
 
@@ -321,12 +326,12 @@
       const muniSeleccionado = selectMuni.value;
       const urlDashboard = `dashboard_aguacate.html?depto=${encodeURIComponent(deptoSeleccionado)}&municipio=${encodeURIComponent(muniSeleccionado)}`;
       dashboardWindow = window.open(urlDashboard, '_blank');
-      resetInactivityTimer(); // Reiniciar inactividad al interactuar
+      resetInactivityTimer();
     }
 
     function abrirModuloSesiones() {
       sesionesWindow = window.open('sesiones.html', '_blank');
-      resetInactivityTimer(); // Reiniciar inactividad al interactuar
+      resetInactivityTimer();
     }
 
     function fullReset() {
@@ -563,7 +568,7 @@
       renderMapFeatures();
     });
 
-    // FUNCIÓN CENTRALIZADA DE CIERRE DE SESIÓN
+    // Función centralizada de cierre de sesión
     function registrarCierre(estadoMotivo = 'Cerrado Correctamente') {
       if (sesionCerrada || !currentSession) return;
       sesionCerrada = true;
@@ -592,43 +597,37 @@
 
     function logout() {
       registrarCierre('Cerrado Correctamente');
-      window.location.href = 'login.html';
+      window.location.replace('login.html');
     }
 
-    // 1. CAPTURAR CIERRE DE PESTAÑA / VENTANA CON LA "X"
+    // Capturar cierre de pestaña / ventana con la "X"
     window.addEventListener('pagehide', function() {
       registrarCierre('Cerrado por Cierre de Pestaña');
     });
 
-    // 2. CONTROL DE INACTIVIDAD DE 3 MINUTOS (180,000 ms)
+    // Control de inactividad de 3 minutos directo al login (sin alertas)
     let inactivityTimer;
 
     function resetInactivityTimer() {
       clearTimeout(inactivityTimer);
       
       inactivityTimer = setTimeout(() => {
-        // Verificar si las ventanas secundarias (Dashboard o Bitácora) siguen abiertas activamente
         const dashboardOpen = dashboardWindow && !dashboardWindow.closed;
         const sesionesOpen = sesionesWindow && !sesionesWindow.closed;
 
         if (dashboardOpen || sesionesOpen) {
-          // Si el usuario está activo en los módulos auxiliares, reiniciamos el temporizador
           resetInactivityTimer();
         } else {
-          // Si pasaron 3 minutos sin interacción y sin módulos abiertos, cerramos por inactividad
-          alert('Su sesión ha expirado por 3 minutos de inactividad.');
           registrarCierre('Cerrado por Inactividad (3 min)');
-          window.location.href = 'login.html';
+          window.location.replace('login.html');
         }
       }, 3 * 60 * 1000); // 3 minutos
     }
 
-    // Escuchar eventos de interacción del usuario en el mapa para mantener activa la sesión
     ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
       window.addEventListener(evt, resetInactivityTimer, { passive: true });
     });
 
-    // Iniciar el temporizador al cargar la página
     resetInactivityTimer();
   </script>
 </body>
