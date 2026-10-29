@@ -292,6 +292,9 @@
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
+    // Variable global para evitar registros duplicados de salida
+    let sesionCerrada = false;
+
     // Verificar visibilidad de opción Administrador
     if (currentSession && (currentSession.role === 'admin' || String(currentSession.role).toLowerCase() === 'admin')) {
       document.getElementById('btn-logs').style.display = 'block';
@@ -309,16 +312,21 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
+    // Referencias para controlar pestañas abiertas (Dashboard y Sesiones)
+    let dashboardWindow = null;
+    let sesionesWindow = null;
+
     function abrirDashboardFiltrado() {
       const deptoSeleccionado = selectDepto.value;
       const muniSeleccionado = selectMuni.value;
       const urlDashboard = `dashboard_aguacate.html?depto=${encodeURIComponent(deptoSeleccionado)}&municipio=${encodeURIComponent(muniSeleccionado)}`;
-      window.open(urlDashboard, '_blank');
+      dashboardWindow = window.open(urlDashboard, '_blank');
+      resetInactivityTimer(); // Reiniciar inactividad al interactuar
     }
 
-    // Nueva función para abrir el módulo independiente de sesiones/usuarios
     function abrirModuloSesiones() {
-      window.open('sesiones.html', '_blank');
+      sesionesWindow = window.open('sesiones.html', '_blank');
+      resetInactivityTimer(); // Reiniciar inactividad al interactuar
     }
 
     function fullReset() {
@@ -555,32 +563,73 @@
       renderMapFeatures();
     });
 
-    // FUNCIÓN DE CIERRE DE SESIÓN VINCULADA CORRECTAMENTE
-    function logout() {
-      if (currentSession) {
-        const loginTime = Number(currentSession.loginTime) || new Date().getTime();
-        const now = new Date();
-        const durationMinutes = Math.max(1, Math.round((now.getTime() - loginTime) / 60000));
+    // FUNCIÓN CENTRALIZADA DE CIERRE DE SESIÓN
+    function registrarCierre(estadoMotivo = 'Cerrado Correctamente') {
+      if (sesionCerrada || !currentSession) return;
+      sesionCerrada = true;
 
-        const sessionRecord = {
-          user: currentSession.user,
-          login: currentSession.loginFormatted,
-          duration: durationMinutes + ' min',
-          estadoCierre: 'Cerrado Correctamente'
-        };
+      const loginTime = Number(currentSession.loginTime) || new Date().getTime();
+      const now = new Date();
+      const durationMinutes = Math.max(1, Math.round((now.getTime() - loginTime) / 60000));
 
-        let logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-        logs.push(sessionRecord);
-        localStorage.setItem('sig_logs', JSON.stringify(logs));
+      const sessionRecord = {
+        user: currentSession.user,
+        login: currentSession.loginFormatted,
+        duration: durationMinutes + ' min',
+        estadoCierre: estadoMotivo
+      };
 
-        let masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-        masterLogs.push(sessionRecord);
-        localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
-      }
+      let logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+      logs.push(sessionRecord);
+      localStorage.setItem('sig_logs', JSON.stringify(logs));
+
+      let masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
+      masterLogs.push(sessionRecord);
+      localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
       
       sessionStorage.removeItem('current_session');
+    }
+
+    function logout() {
+      registrarCierre('Cerrado Correctamente');
       window.location.href = 'login.html';
     }
+
+    // 1. CAPTURAR CIERRE DE PESTAÑA / VENTANA CON LA "X"
+    window.addEventListener('pagehide', function() {
+      registrarCierre('Cerrado por Cierre de Pestaña');
+    });
+
+    // 2. CONTROL DE INACTIVIDAD DE 3 MINUTOS (180,000 ms)
+    let inactivityTimer;
+
+    function resetInactivityTimer() {
+      clearTimeout(inactivityTimer);
+      
+      inactivityTimer = setTimeout(() => {
+        // Verificar si las ventanas secundarias (Dashboard o Bitácora) siguen abiertas activamente
+        const dashboardOpen = dashboardWindow && !dashboardWindow.closed;
+        const sesionesOpen = sesionesWindow && !sesionesWindow.closed;
+
+        if (dashboardOpen || sesionesOpen) {
+          // Si el usuario está activo en los módulos auxiliares, reiniciamos el temporizador
+          resetInactivityTimer();
+        } else {
+          // Si pasaron 3 minutos sin interacción y sin módulos abiertos, cerramos por inactividad
+          alert('Su sesión ha expirado por 3 minutos de inactividad.');
+          registrarCierre('Cerrado por Inactividad (3 min)');
+          window.location.href = 'login.html';
+        }
+      }, 3 * 60 * 1000); // 3 minutos
+    }
+
+    // Escuchar eventos de interacción del usuario en el mapa para mantener activa la sesión
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+      window.addEventListener(evt, resetInactivityTimer, { passive: true });
+    });
+
+    // Iniciar el temporizador al cargar la página
+    resetInactivityTimer();
   </script>
 </body>
 </html>
