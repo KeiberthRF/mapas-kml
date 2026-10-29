@@ -86,7 +86,8 @@
   <div class="container">
     <div class="header-top">
       <h2>Módulo de Administración: Usuarios y Bitácora</h2>
-      <button class="btn-regresar" onclick="window.close()">Cerrar Módulo</button>
+      <!-- Modificado para regresar al mapa principal (index.html) en la misma pestaña -->
+      <button class="btn-regresar" onclick="window.location.href='index.html'">Volver al Mapa</button>
     </div>
 
     <!-- Registrar Nuevo Usuario -->
@@ -197,7 +198,6 @@
         return;
       }
 
-      // Mapear los cierres de sesión guardados
       const sessionMap = {};
       logs.forEach(l => {
         const key = `${l.user.toLowerCase()}_${l.login}`;
