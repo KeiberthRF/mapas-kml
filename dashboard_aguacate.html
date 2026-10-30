@@ -7,6 +7,9 @@
   <!-- Bootstrap 5 CSS & FontAwesome Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Chart.js para gráficos elegantes -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <style>
     :root {
       --primary-green: #1b4d3e;
@@ -34,6 +37,15 @@
       box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
       border-left: 5px solid var(--secondary-green);
       height: 100%;
+    }
+    .kpi-card-clickable {
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card-clickable:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12);
+      background-color: #f9fbf9;
     }
     .kpi-title {
       font-size: 0.75rem;
@@ -123,6 +135,10 @@
       box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
       background: #f9fbf9;
     }
+    .modal-header-custom {
+      background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -136,7 +152,6 @@
           <small class="text-light opacity-8">República de Honduras - Análisis Automatizado de Datos KML</small>
         </div>
         <div>
-          <!-- Botón actualizado para cerrar el módulo de manera inteligente -->
           <button onclick="cerrarDashboard()" class="btn btn-light btn-sm fw-bold me-2 shadow-sm"><i class="fa-solid fa-map me-1 text-success"></i> Volver al Mapa</button>
           <span class="badge bg-warning text-dark fs-6 shadow-sm" id="lblFiltroActual">Nacional (Todo el País)</span>
         </div>
@@ -169,55 +184,75 @@
 
     <!-- SECCIÓN 1: Tarjetas KPI Principales (Arriba) -->
     <div class="row g-3 mb-3">
+      <!-- KPI Total Fincas -->
       <div class="col-md-3">
-        <div class="kpi-card">
-          <div class="kpi-title"><i class="fa-solid fa-house-chimney-window me-1"></i> Total Fincas / Productores</div>
+        <div class="kpi-card kpi-card-clickable" onclick="mostrarModalFincasRazas()" title="Ver distribución de fincas por razas">
+          <div class="kpi-title"><i class="fa-solid fa-house-chimney-window me-1"></i> Total Fincas / Productores <i class="fa-solid fa-circle-info float-end text-success"></i></div>
           <div class="kpi-value" id="kpiFincas">0</div>
+          <small class="text-muted fw-bold">Clic para ver desglose por razas</small>
         </div>
       </div>
+      
+      <!-- KPI Área Total Cultivada (Mismo tamaño para Mz y Ha) -->
       <div class="col-md-3">
-        <div class="kpi-card">
-          <div class="kpi-title"><i class="fa-solid fa-vector-square me-1"></i> Área Total cultivada</div>
-          <div class="kpi-value" id="kpiArea">0.00 mz</div>
-          <small class="text-muted fw-bold" id="kpiAreaHa">0.00 ha</small>
+        <div class="kpi-card kpi-card-clickable" onclick="mostrarModalAreaRazas()" title="Ver desglose de área y plantas por razas">
+          <div class="kpi-title"><i class="fa-solid fa-vector-square me-1"></i> Área Total cultivada <i class="fa-solid fa-circle-info float-end text-success"></i></div>
+          <div class="d-flex align-items-baseline gap-2">
+            <span class="kpi-value" id="kpiArea">0.00 mz</span>
+            <span class="text-muted fs-6">|</span>
+            <span class="kpi-value" id="kpiAreaHa">0.00 ha</span>
+          </div>
+          <small class="text-muted fw-bold">Clic para ver desglose por raza</small>
         </div>
       </div>
+
+      <!-- KPI Total Plantas -->
       <div class="col-md-3">
-        <div class="kpi-card">
-          <div class="kpi-title"><i class="fa-solid fa-tree me-1"></i> Total Plantas</div>
+        <div class="kpi-card kpi-card-clickable" onclick="mostrarModalPlantasDetalle()" title="Ver gráfico de desarrollo vegetal">
+          <div class="kpi-title"><i class="fa-solid fa-tree me-1"></i> Total Plantas <i class="fa-solid fa-circle-info float-end text-success"></i></div>
           <div class="kpi-value" id="kpiPlantas">0</div>
-          <small class="text-muted" id="kpiPlantasSub">Prod: 0 | Desarr: 0</small>
+          <div class="text-muted" style="font-size:0.75rem;" id="kpiPlantasSub">En Producción: 0 | En Desarrollo: 0</div>
         </div>
       </div>
+
+      <!-- KPI Producción Estimada -->
       <div class="col-md-3">
-        <div class="kpi-card">
-          <div class="kpi-title"><i class="fa-solid fa-weight-hanging me-1"></i> Producción Est. (Lbs)</div>
+        <div class="kpi-card kpi-card-clickable" onclick="mostrarModalProduccionRazas()" title="Ver producción por razas (Lbs y Unidades)">
+          <div class="kpi-title"><i class="fa-solid fa-weight-hanging me-1"></i> Producción Est. (Lbs) <i class="fa-solid fa-circle-info float-end text-success"></i></div>
           <div class="kpi-value" id="kpiProduccion">0 lbs</div>
+          <small class="text-success fw-bold d-block"><i class="fa-solid fa-calendar-check me-1"></i>Producción año 2025 (Hass)</small>
         </div>
       </div>
     </div>
 
     <!-- SECCIÓN 2: Tarjetas Slides Secundarias (Abajo) -->
     <div class="metrics-slider-container">
-      <div class="metric-slide-card">
-        <div class="kpi-title"><i class="fa-solid fa-droplet me-1 text-primary"></i> Fincas con Riego</div>
+      <!-- Slide Fincas Con Riego -->
+      <div class="metric-slide-card metric-slide-card-clickable" onclick="mostrarModalConRiegoDetalle()" title="Ver listado de fincas con riego">
+        <div class="kpi-title"><i class="fa-solid fa-droplet me-1 text-primary"></i> Fincas con Riego <i class="fa-solid fa-circle-info float-end text-primary"></i></div>
         <div class="kpi-value" id="slideRiego">0</div>
         <small class="text-muted" id="slideRiegoSub">Sistemas instalados</small>
       </div>
-      <div class="metric-slide-card metric-slide-card-clickable" style="border-top-color: var(--hass-ripe-gold);" onclick="mostrarModalSinRiegoDetalle()" title="Hacer clic para ver listado detallado alfabético">
-        <div class="kpi-title"><i class="fa-solid fa-water me-1 text-warning"></i> Sin Riego / Con Fuente Agua <i class="fa-solid fa-circle-info float-end text-warning"></i></div>
-        <div class="kpi-value" id="slideFuenteAgua">0</div>
-        <small class="text-muted">Potencial de instalación (Clic aquí)</small>
+
+      <!-- Slide Sin Riego / Potencial -->
+      <div class="metric-slide-card metric-slide-card-clickable" style="border-top-color: var(--hass-ripe-gold);" onclick="mostrarModalSinRiegoDetalle()" title="Ver listado detallado alfabético">
+        <div class="kpi-title"><i class="fa-solid fa-water me-1 text-warning"></i> Fincas Sin Riego <i class="fa-solid fa-circle-info float-end text-warning"></i></div>
+        <div class="kpi-value" id="slideSinRiegoTotal">92</div>
+        <small class="text-dark fw-bold d-block" id="slideFuenteAguaSub">55 con potencial de instalación de riego</small>
       </div>
-      <div class="metric-slide-card">
-        <div class="kpi-title"><i class="fa-solid fa-users me-1 text-success"></i> Mano de Obra Total</div>
+
+      <!-- Slide Mano de Obra -->
+      <div class="metric-slide-card metric-slide-card-clickable" onclick="mostrarModalManoObraDetalle()" title="Ver análisis económico de mano de obra">
+        <div class="kpi-title"><i class="fa-solid fa-users me-1 text-success"></i> Mano de Obra Total <i class="fa-solid fa-circle-info float-end text-success"></i></div>
         <div class="kpi-value" id="slideTrabajadores">0</div>
-        <small class="text-muted" id="slideTrabSub">Permanentes y temporales</small>
+        <small class="text-muted" id="slideTrabSub">Trabajadores PERMANENTES: 0 | Trabajadores TEMPORALES: 0</small>
       </div>
-      <div class="metric-slide-card" style="border-top-color: #2b9348;">
-        <div class="kpi-title"><i class="fa-solid fa-money-bill-wave me-1 text-success"></i> Inversión Planilla Anual</div>
+
+      <!-- Slide Inversión Planilla Anual -->
+      <div class="metric-slide-card metric-slide-card-clickable" style="border-top-color: #2b9348;" onclick="mostrarModalPlanillaDetalle()" title="Ver desglose por departamento y municipio">
+        <div class="kpi-title"><i class="fa-solid fa-money-bill-wave me-1 text-success"></i> Inversión Planilla Anual <i class="fa-solid fa-circle-info float-end text-success"></i></div>
         <div class="kpi-value" id="slidePagos">L. 0.00</div>
-        <small class="text-muted">Estimación anual (265d perm / 75d temp)</small>
+        <small class="text-muted">(Calculado: 300d perm / 75d temp)</small>
       </div>
     </div>
 
@@ -271,12 +306,167 @@
 
   </div>
 
-  <!-- Modal Exclusivo Ordenado Alfabéticamente para Fincas Sin Riego -->
+  <!-- MODALES EMERGENTES -->
+
+  <!-- 1. Modal Área Cultivada y Plantas por Raza -->
+  <div class="modal fade" id="modalAreaRazas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-chart-pie me-2"></i>Desglose de Área y Plantas por Raza Cultivada</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle text-center">
+                  <thead class="table-dark">
+                    <tr>
+                      <th>Raza</th>
+                      <th>Área (mz)</th>
+                      <th>Total Plantas</th>
+                      <th>En Prod.</th>
+                      <th>En Desarr.</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyModalAreaRazas"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div style="max-height: 250px;">
+                <canvas id="chartAreaRazas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Modal Fincas por Raza -->
+  <div class="modal fade" id="modalFincasRazas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-house-circle-check me-2"></i>Distribución de Fincas por Raza</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <div class="row mb-3" id="cardsFincasRazas"></div>
+          <div style="max-height: 220px;" class="d-flex justify-content-center">
+            <canvas id="chartFincasRazas"></canvas>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Modal Total Plantas Desarrollo -->
+  <div class="modal fade" id="modalPlantasDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-tree me-2"></i>Estado Vegetativo de las Plantas</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div class="p-2 border rounded bg-light">
+                <span class="d-block text-muted small fw-bold">EN PRODUCCIÓN</span>
+                <span class="fs-5 fw-bold text-success" id="lblPlantasProdModal">0</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 border rounded bg-light">
+                <span class="d-block text-muted small fw-bold">EN DESARROLLO</span>
+                <span class="fs-5 fw-bold text-warning" id="lblPlantasDesModal">0</span>
+              </div>
+            </div>
+          </div>
+          <div style="max-height: 220px;">
+            <canvas id="chartPlantasEstado"></canvas>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Modal Producción por Razas (Lbs y Unidades) -->
+  <div class="modal fade" id="modalProduccionRazas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-boxes-packing me-2"></i>Consolidado de Producción por Raza</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table table-bordered align-middle text-center">
+            <thead class="table-dark">
+              <tr>
+                <th>Raza / Variedad</th>
+                <th>Producción 2025 (Libras)</th>
+                <th>Producción (Unidades Cosechadas)</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyProduccionRazas"></tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Modal Fincas CON Riego -->
+  <div class="modal fade" id="modalDetalleConRiego" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-droplet me-2"></i>Fincas con Sistema de Riego Instalado</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>Productor</th>
+                  <th>Departamento</th>
+                  <th>Municipio</th>
+                  <th>Área (mz)</th>
+                  <th>Tipo de Riego</th>
+                </tr>
+              </thead>
+              <tbody id="modalCuerpoConRiego"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Modal Fincas SIN Riego -->
   <div class="modal fade" id="modalDetalleSinRiego" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-water me-2"></i>Detalle de Fincas Sin Riego - Potencial Hídrico (Orden Alfabético)</h5>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-water me-2"></i>Fincas Sin Riego - Potencial Hídrico (Orden Alfabético)</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -302,6 +492,108 @@
     </div>
   </div>
 
+  <!-- 7. Modal Mano de Obra Económica -->
+  <div class="modal fade" id="modalManoObraDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-users-gear me-2"></i>Análisis Económico de Mano de Obra</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <div class="card p-3 shadow-sm border-0 bg-light mb-2">
+                <h6 class="fw-bold text-success"><i class="fa-solid fa-user-check me-1"></i> Trabajadores Permanentes</h6>
+                <div class="d-flex justify-content-between">
+                  <span>Cantidad:</span> <strong id="lblMoPermCant">0</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span>Días laborados/año:</span> <strong>300 días</strong>
+                </div>
+                <div class="d-flex justify-content-between text-success">
+                  <span>Inversión Anual:</span> <strong id="lblMoPermMonto">L. 0.00</strong>
+                </div>
+              </div>
+              <div class="card p-3 shadow-sm border-0 bg-light">
+                <h6 class="fw-bold text-warning"><i class="fa-solid fa-user-clock me-1"></i> Trabajadores Temporales</h6>
+                <div class="d-flex justify-content-between">
+                  <span>Cantidad:</span> <strong id="lblMoTempCant">0</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span>Días laborados/año:</span> <strong>75 días</strong>
+                </div>
+                <div class="d-flex justify-content-between text-warning">
+                  <span>Inversión Anual:</span> <strong id="lblMoTempMonto">L. 0.00</strong>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div style="max-height: 220px;">
+                <canvas id="chartManoObra"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Modal Inversión Planilla (Por Depto / Municipio) -->
+  <div class="modal fade" id="modalPlanillaDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-money-check-dollar me-2"></i>Inversión de Planilla en Mano de Obra</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <nav>
+            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+              <button class="nav-link active fw-bold" id="nav-depto-tab" data-bs-toggle="tab" data-bs-target="#nav-depto" type="button" role="tab">Por Departamento</button>
+              <button class="nav-link fw-bold" id="nav-muni-tab" data-bs-toggle="tab" data-bs-target="#nav-muni" type="button" role="tab">Por Municipio</button>
+            </div>
+          </nav>
+          <div class="tab-content pt-3" id="nav-tabContent">
+            <div class="tab-pane fade show active" id="nav-depto" role="tabpanel">
+              <table class="table table-sm table-striped align-middle">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Departamento</th>
+                    <th class="text-center">Trab. Perm.</th>
+                    <th class="text-center">Trab. Temp.</th>
+                    <th class="text-end">Monto Total Anual (Lps)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyPlanillaDepto"></tbody>
+              </table>
+            </div>
+            <div class="tab-pane fade" id="nav-muni" role="tabpanel">
+              <table class="table table-sm table-striped align-middle">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Departamento</th>
+                    <th>Municipio</th>
+                    <th class="text-center">Trab. Perm.</th>
+                    <th class="text-center">Trab. Temp.</th>
+                    <th class="text-end">Monto Total Anual (Lps)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyPlanillaMuni"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap 5 JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Librería de Conversión KML -->
@@ -309,8 +601,14 @@
 
   <script>
     let datosFincas = [];
+    let fincasFiltradasActuales = [];
 
-    // Función para cerrar el dashboard limpiamente y regresar al mapa
+    // Variables de referencias a gráficos Chart.js
+    let chartAreaInst = null;
+    let chartFincasInst = null;
+    let chartPlantasInst = null;
+    let chartMoInst = null;
+
     function cerrarDashboard() {
       if (window.opener) {
         window.close();
@@ -422,7 +720,8 @@
               let salarioDia = parseNumber(extractField(feature, "SALARIO POR DIA"));
               if (salarioDia <= 0) salarioDia = 250; 
 
-              let pagoPermAnual = perm * 265 * salarioDia;
+              // CÁLCULO AJUSTADO: 300 días para Permanentes / 75 días para Temporales
+              let pagoPermAnual = perm * 300 * salarioDia;
               let pagoTempAnual = temp * 75 * salarioDia;
               let pagoTotalAnual = pagoPermAnual + pagoTempAnual;
 
@@ -441,6 +740,8 @@
                 fuenteAguaSinRiego: tieneFuenteAguaBool,
                 trabajadoresPerm: perm,
                 trabajadoresTemp: temp,
+                pagoPermAnual: pagoPermAnual,
+                pagoTempAnual: pagoTempAnual,
                 pagosLpsAnual: pagoTotalAnual,
                 mesesCosecha: extractField(feature, "MESES DE COSECHA") || "Junio - Agosto"
               });
@@ -506,7 +807,7 @@
       let deptSel = document.getElementById('selDepartamento').value;
       let muniSel = document.getElementById('selMunicipio').value;
 
-      let filtrados = datosFincas.filter(f => {
+      fincasFiltradasActuales = datosFincas.filter(f => {
         let condDept = (deptSel === 'TODOS' || f.departamento === deptSel);
         let condMuni = (muniSel === 'TODOS' || f.municipio === muniSel);
         return condDept && condMuni;
@@ -515,7 +816,7 @@
       document.getElementById('lblFiltroActual').innerText = 
         deptSel === 'TODOS' ? 'Nacional (Todo el País)' : `${deptSel} ${muniSel !== 'TODOS' ? '/ ' + muniSel : ''}`;
 
-      renderizarDashboard(filtrados);
+      renderizarDashboard(fincasFiltradasActuales);
     }
 
     function renderizarDashboard(fincas) {
@@ -531,12 +832,18 @@
       document.getElementById('kpiArea').innerText = totalAreaMz.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " mz";
       document.getElementById('kpiAreaHa').innerText = totalAreaHa.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " ha";
       
+      let pctProd = totalPlantas > 0 ? ((totalPlantasProd / totalPlantas) * 100).toFixed(1) : "0";
+      let pctDes = totalPlantas > 0 ? ((totalPlantasDes / totalPlantas) * 100).toFixed(1) : "0";
+
       document.getElementById('kpiPlantas').innerText = totalPlantas.toLocaleString('es-HN');
-      document.getElementById('kpiPlantasSub').innerText = `Prod: ${totalPlantasProd.toLocaleString('es-HN')} | Desarr: ${totalPlantasDes.toLocaleString('es-HN')}`;
+      document.getElementById('kpiPlantasSub').innerText = `En Producción: ${totalPlantasProd.toLocaleString('es-HN')} (${pctProd}%) | En Desarrollo: ${totalPlantasDes.toLocaleString('es-HN')} (${pctDes}%)`;
       
       document.getElementById('kpiProduccion').innerText = totalProdLbs.toLocaleString('es-HN') + " lbs";
 
       let fincasConRiego = fincas.filter(f => f.tieneRiego).length;
+      
+      // Ajuste de Fincas Sin Riego
+      let fincasSinRiegoTotal = fincas.filter(f => !f.tieneRiego).length;
       let fincasSinRiegoConFuente = fincas.filter(f => !f.tieneRiego && f.fuenteAguaSinRiego).length;
       
       let totalTrabPerm = fincas.reduce((acc, f) => acc + f.trabajadoresPerm, 0);
@@ -546,9 +853,11 @@
       document.getElementById('slideRiego').innerText = fincasConRiego;
       document.getElementById('slideRiegoSub').innerText = `${((fincasConRiego / (totalFincas || 1)) * 100).toFixed(1)}% del total`;
       
-      document.getElementById('slideFuenteAgua').innerText = fincasSinRiegoConFuente;
+      document.getElementById('slideSinRiegoTotal').innerText = fincasSinRiegoTotal;
+      document.getElementById('slideFuenteAguaSub').innerText = `${fincasSinRiegoConFuente} con potencial de instalación de riego`;
+
       document.getElementById('slideTrabajadores').innerText = (totalTrabPerm + totalTrabTemp).toLocaleString('es-HN');
-      document.getElementById('slideTrabSub').innerText = `Perm: ${totalTrabPerm} | Temp: ${totalTrabTemp}`;
+      document.getElementById('slideTrabSub').innerText = `Trabajadores PERMANENTES: ${totalTrabPerm} | Trabajadores TEMPORALES: ${totalTrabTemp}`;
       
       document.getElementById('slidePagos').innerText = "L. " + totalPagosAnual.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
@@ -658,16 +967,202 @@
       });
     }
 
-    // Modal interactivo exclusivo para Fincas Sin Riego (Ordenado Alfabéticamente)
-    function mostrarModalSinRiegoDetalle() {
-      let deptSel = document.getElementById('selDepartamento').value;
-      let muniSel = document.getElementById('selMunicipio').value;
-      let fincas = datosFincas.filter(f => {
-        let condDept = (deptSel === 'TODOS' || f.departamento === deptSel);
-        let condMuni = (muniSel === 'TODOS' || f.municipio === muniSel);
-        return condDept && condMuni && !f.tieneRiego;
+    // --- FUNCIONES Y EVENTOS PARA MODALES EMERGENTES Y GRÁFICOS ---
+
+    // 1. Modal Área y Plantas por Razas
+    function mostrarModalAreaRazas() {
+      let razas = {
+        'Hass': { area: 0, plantas: 0, prod: 0, des: 0 },
+        'Antillano': { area: 0, plantas: 0, prod: 0, des: 0 },
+        'Criollo': { area: 0, plantas: 0, prod: 0, des: 0 }
+      };
+
+      fincasFiltradasActuales.forEach(f => {
+        let r = f.variedad;
+        if (!razas[r]) r = 'Criollo';
+        razas[r].area += f.areaMz;
+        razas[r].plantas += (f.plantasProduccion + f.plantasDesarrollo);
+        razas[r].prod += f.plantasProduccion;
+        razas[r].des += f.plantasDesarrollo;
       });
 
+      let tbody = document.getElementById('tbodyModalAreaRazas');
+      tbody.innerHTML = '';
+      let labels = [];
+      let dataPlantas = [];
+
+      Object.keys(razas).forEach(r => {
+        let item = razas[r];
+        labels.push(r);
+        dataPlantas.push(item.plantas);
+        tbody.innerHTML += `
+          <tr>
+            <td class="fw-bold text-start">${r}</td>
+            <td>${item.area.toFixed(2)}</td>
+            <td class="fw-bold">${item.plantas.toLocaleString('es-HN')}</td>
+            <td class="text-success">${item.prod.toLocaleString('es-HN')}</td>
+            <td class="text-warning">${item.des.toLocaleString('es-HN')}</td>
+          </tr>
+        `;
+      });
+
+      if (chartAreaInst) chartAreaInst.destroy();
+      let ctx = document.getElementById('chartAreaRazas').getContext('2d');
+      chartAreaInst = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: dataPlantas,
+            backgroundColor: ['#2d6a4f', '#d4a373', '#588157']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Distribución de Plantas Totales por Raza' },
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+
+      var modal = new bootstrap.Modal(document.getElementById('modalAreaRazas'));
+      modal.show();
+    }
+
+    // 2. Modal Fincas por Raza
+    function mostrarModalFincasRazas() {
+      let fincasRaza = { 'Hass': 0, 'Antillano': 0, 'Criollo': 0 };
+      fincasFiltradasActuales.forEach(f => {
+        let r = f.variedad;
+        if (!fincasRaza[r]) r = 'Criollo';
+        fincasRaza[r]++;
+      });
+
+      let cardsDiv = document.getElementById('cardsFincasRazas');
+      cardsDiv.innerHTML = '';
+      Object.keys(fincasRaza).forEach(r => {
+        cardsDiv.innerHTML += `
+          <div class="col-4">
+            <div class="p-2 border rounded bg-light">
+              <span class="d-block small text-muted fw-bold">${r.toUpperCase()}</span>
+              <span class="fs-4 fw-bold text-success">${fincasRaza[r]}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      if (chartFincasInst) chartFincasInst.destroy();
+      let ctx = document.getElementById('chartFincasRazas').getContext('2d');
+      chartFincasInst = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(fincasRaza),
+          datasets: [{
+            data: Object.values(fincasRaza),
+            backgroundColor: ['#1b4d3e', '#d4a373', '#588157']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+
+      var modal = new bootstrap.Modal(document.getElementById('modalFincasRazas'));
+      modal.show();
+    }
+
+    // 3. Modal Total Plantas Desarrollo
+    function mostrarModalPlantasDetalle() {
+      let prod = fincasFiltradasActuales.reduce((acc, f) => acc + f.plantasProduccion, 0);
+      let des = fincasFiltradasActuales.reduce((acc, f) => acc + f.plantasDesarrollo, 0);
+
+      document.getElementById('lblPlantasProdModal').innerText = prod.toLocaleString('es-HN');
+      document.getElementById('lblPlantasDesModal').innerText = des.toLocaleString('es-HN');
+
+      if (chartPlantasInst) chartPlantasInst.destroy();
+      let ctx = document.getElementById('chartPlantasEstado').getContext('2d');
+      chartPlantasInst = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['En Producción', 'En Desarrollo'],
+          datasets: [{
+            label: 'Cantidad de Plantas',
+            data: [prod, des],
+            backgroundColor: ['#2d6a4f', '#ffb703']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      var modal = new bootstrap.Modal(document.getElementById('modalPlantasDetalle'));
+      modal.show();
+    }
+
+    // 4. Modal Producción por Razas (Lbs y Unidades)
+    function mostrarModalProduccionRazas() {
+      let res = {
+        'Hass': { lbs: 0, unidades: 0 },
+        'Antillano': { lbs: 0, unidades: 0 },
+        'Criollo': { lbs: 0, unidades: 0 }
+      };
+
+      fincasFiltradasActuales.forEach(f => {
+        let r = f.variedad;
+        if (!res[r]) r = 'Criollo';
+        res[r].lbs += f.produccionLbs;
+        res[r].unidades += f.produccionUnidades;
+      });
+
+      let tbody = document.getElementById('tbodyProduccionRazas');
+      tbody.innerHTML = '';
+      Object.keys(res).forEach(r => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="fw-bold text-start ps-3">${r}</td>
+            <td class="text-success fw-bold">${res[r].lbs.toLocaleString('es-HN')} lbs</td>
+            <td class="text-primary fw-bold">${res[r].unidades.toLocaleString('es-HN')} unidades</td>
+          </tr>
+        `;
+      });
+
+      var modal = new bootstrap.Modal(document.getElementById('modalProduccionRazas'));
+      modal.show();
+    }
+
+    // 5. Modal Fincas CON Riego
+    function mostrarModalConRiegoDetalle() {
+      let fincasConRiego = fincasFiltradasActuales.filter(f => f.tieneRiego);
+      fincasConRiego.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+      let html = '';
+      fincasConRiego.forEach(f => {
+        html += `
+          <tr>
+            <td><strong>${f.nombre}</strong></td>
+            <td>${f.departamento}</td>
+            <td>${f.municipio}</td>
+            <td>${f.areaMz.toFixed(2)} mz</td>
+            <td><span class="badge bg-info text-dark">${f.tipoRiego}</span></td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('modalCuerpoConRiego').innerHTML = html || '<tr><td colspan="5" class="text-center text-muted">No hay fincas con riego registradas.</td></tr>';
+      var modal = new bootstrap.Modal(document.getElementById('modalDetalleConRiego'));
+      modal.show();
+    }
+
+    // 6. Modal Fincas SIN Riego (Potencial)
+    function mostrarModalSinRiegoDetalle() {
+      let fincas = fincasFiltradasActuales.filter(f => !f.tieneRiego);
       fincas.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
       let filasHtml = "";
@@ -677,9 +1172,101 @@
       });
 
       document.getElementById('modalCuerpoSinRiego').innerHTML = filasHtml || '<tr><td colspan="5" class="text-center text-muted">No hay registros sin riego para mostrar.</td></tr>';
-
       var myModal = new bootstrap.Modal(document.getElementById('modalDetalleSinRiego'));
       myModal.show();
+    }
+
+    // 7. Modal Mano de Obra Económica
+    function mostrarModalManoObraDetalle() {
+      let perm = fincasFiltradasActuales.reduce((acc, f) => acc + f.trabajadoresPerm, 0);
+      let temp = fincasFiltradasActuales.reduce((acc, f) => acc + f.trabajadoresTemp, 0);
+      let montoPerm = fincasFiltradasActuales.reduce((acc, f) => acc + f.pagoPermAnual, 0);
+      let montoTemp = fincasFiltradasActuales.reduce((acc, f) => acc + f.pagoTempAnual, 0);
+
+      document.getElementById('lblMoPermCant').innerText = perm;
+      document.getElementById('lblMoPermMonto').innerText = "L. " + montoPerm.toLocaleString('es-HN', {minimumFractionDigits: 2});
+      document.getElementById('lblMoTempCant').innerText = temp;
+      document.getElementById('lblMoTempMonto').innerText = "L. " + montoTemp.toLocaleString('es-HN', {minimumFractionDigits: 2});
+
+      if (chartMoInst) chartMoInst.destroy();
+      let ctx = document.getElementById('chartManoObra').getContext('2d');
+      chartMoInst = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Permanentes', 'Temporales'],
+          datasets: [{
+            label: 'Inversión Anual (Lps)',
+            data: [montoPerm, montoTemp],
+            backgroundColor: ['#2d6a4f', '#ffb703']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      var modal = new bootstrap.Modal(document.getElementById('modalManoObraDetalle'));
+      modal.show();
+    }
+
+    // 8. Modal Planilla por Departamento y Municipio
+    function mostrarModalPlanillaDetalle() {
+      let deptosMap = {};
+      let munisMap = {};
+
+      fincasFiltradasActuales.forEach(f => {
+        // Depto
+        if (!deptosMap[f.departamento]) {
+          deptosMap[f.departamento] = { perm: 0, temp: 0, monto: 0 };
+        }
+        deptosMap[f.departamento].perm += f.trabajadoresPerm;
+        deptosMap[f.departamento].temp += f.trabajadoresTemp;
+        deptosMap[f.departamento].monto += f.pagosLpsAnual;
+
+        // Muni
+        let mKey = `${f.departamento}|${f.municipio}`;
+        if (!munisMap[mKey]) {
+          munisMap[mKey] = { depto: f.departamento, muni: f.municipio, perm: 0, temp: 0, monto: 0 };
+        }
+        munisMap[mKey].perm += f.trabajadoresPerm;
+        munisMap[mKey].temp += f.trabajadoresTemp;
+        munisMap[mKey].monto += f.pagosLpsAnual;
+      });
+
+      // Llenar Tabla Depto
+      let tbodyD = document.getElementById('tbodyPlanillaDepto');
+      tbodyD.innerHTML = '';
+      Object.keys(deptosMap).sort().forEach(d => {
+        let item = deptosMap[d];
+        tbodyD.innerHTML += `
+          <tr>
+            <td><strong>${d}</strong></td>
+            <td class="text-center">${item.perm}</td>
+            <td class="text-center">${item.temp}</td>
+            <td class="text-end fw-bold">L. ${item.monto.toLocaleString('es-HN', {minimumFractionDigits: 2})}</td>
+          </tr>
+        `;
+      });
+
+      // Llenar Tabla Muni
+      let tbodyM = document.getElementById('tbodyPlanillaMuni');
+      tbodyM.innerHTML = '';
+      Object.values(munisMap).sort((a,b) => b.monto - a.monto).forEach(item => {
+        tbodyM.innerHTML += `
+          <tr>
+            <td>${item.depto}</td>
+            <td><strong>${item.muni}</strong></td>
+            <td class="text-center">${item.perm}</td>
+            <td class="text-center">${item.temp}</td>
+            <td class="text-end fw-bold">L. ${item.monto.toLocaleString('es-HN', {minimumFractionDigits: 2})}</td>
+          </tr>
+        `;
+      });
+
+      var modal = new bootstrap.Modal(document.getElementById('modalPlanillaDetalle'));
+      modal.show();
     }
 
     window.onload = function() {
