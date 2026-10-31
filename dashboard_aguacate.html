@@ -373,7 +373,7 @@
     </div>
   </div>
 
-  <!-- 3. Modal Total Plantas Desarrollo (Con etiquetas de valor y porcentaje dentro del gráfico) -->
+  <!-- 3. Modal Total Plantas Desarrollo -->
   <div class="modal fade" id="modalPlantasDetalle" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
       <div class="modal-content shadow">
@@ -963,26 +963,29 @@
 
     // --- MODALES Y GRÁFICOS ---
 
-    // 1. Modal Fincas por Raza (KPI 1) - Corregido completamente el conteo por raza y el gráfico
+    // 1. Modal Fincas por Raza (KPI 1) - Toma exactamente los mismos datos del subtítulo del KPI
     function mostrarModalFincasRazas() {
-      let fincasRaza = { 'Hass': 0, 'Antillano': 0, 'Criollo': 0 };
+      let conteoHass = fincasFiltradasActuales.filter(f => f.variedad === 'Hass').length;
+      let conteoAntillano = fincasFiltradasActuales.filter(f => f.variedad === 'Antillano').length;
+      let conteoCriollo = fincasFiltradasActuales.filter(f => f.variedad === 'Criollo').length;
       let totalActual = fincasFiltradasActuales.length;
 
-      fincasFiltradasActuales.forEach(f => {
-        let r = f.variedad;
-        if (!fincasRaza[r]) r = 'Criollo';
-        fincasRaza[r]++;
-      });
+      let fincasRaza = {
+        'Hass': conteoHass,
+        'Antillano': conteoAntillano,
+        'Criollo': conteoCriollo
+      };
 
       let cardsDiv = document.getElementById('cardsFincasRazas');
       cardsDiv.innerHTML = '';
       Object.keys(fincasRaza).forEach(r => {
-        let pct = totalActual > 0 ? ((fincasRaza[r] / totalActual) * 100).toFixed(1) : "0";
+        let val = fincasRaza[r];
+        let pct = totalActual > 0 ? ((val / totalActual) * 100).toFixed(1) : "0";
         cardsDiv.innerHTML += `
           <div class="col-4">
             <div class="p-2 border rounded bg-light shadow-sm">
               <span class="d-block small text-muted fw-bold text-uppercase">${r}</span>
-              <span class="fs-4 fw-bold text-success">${fincasRaza[r]}</span>
+              <span class="fs-4 fw-bold text-success">${val}</span>
               <small class="text-muted d-block" style="font-size:0.7rem;">(${pct}%)</small>
             </div>
           </div>
@@ -1026,7 +1029,7 @@
           scales: {
             x: {
               beginAtZero: true,
-              grace: '15%',
+              grace: '20%',
               ticks: { precision: 0 }
             }
           }
@@ -1104,7 +1107,7 @@
       modal.show();
     }
 
-    // 3. Modal Total Plantas Desarrollo (Número y Porcentaje visibles directamente en las barras)
+    // 3. Modal Total Plantas Desarrollo
     function mostrarModalPlantasDetalle() {
       let prod = fincasFiltradasActuales.reduce((acc, f) => acc + f.plantasProduccion, 0);
       let des = fincasFiltradasActuales.reduce((acc, f) => acc + f.plantasDesarrollo, 0);
