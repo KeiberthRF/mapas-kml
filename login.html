@@ -138,25 +138,24 @@
     function registrarIntentoAccesoCloud(usuarioProporcionado, estado) {
       const ahora = new Date();
       const fechaHora = ahora.toLocaleDateString('es-HN') + ' ' + ahora.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const detalleTexto = estado === 'Exitoso' ? 'Acceso Correcto' : 'Intento Fallido';
 
-      // Guardar respaldo local siempre
+      // 1. Guardado de respaldo local
       try {
-        const nuevoIntento = { usuario: usuarioProporcionado || '(Vacío)', estado: estado, fechaHora: fechaHora, timestamp: ahora.getTime(), detalle: estado === 'Exitoso' ? 'Acceso Correcto' : 'Intento Fallido' };
         let historialLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
-        historialLogs.push(nuevoIntento);
+        historialLogs.push({ usuario: usuarioProporcionado || '(Vacío)', estado: estado, fechaHora: fechaHora, detalle: detalleTexto });
         localStorage.setItem('sig_access_logs', JSON.stringify(historialLogs));
       } catch (err) {}
 
-      // Envío ultra robusto mediante objeto Image (ignora bloqueos CORS y redirecciones 302 de Google)
+      // 2. Envío a Google Sheets mediante fetch con no-cors (envía el dato seguro a la nube sin bloqueos)
       if (WEB_APP_URL) {
-        const urlParams = new URLSearchParams({
+        const params = new URLSearchParams({
           usuario: usuarioProporcionado || '(Vacío)',
           fechaHora: fechaHora,
           estado: estado,
-          detalle: estado === 'Exitoso' ? 'Acceso Correcto' : 'Intento Fallido'
+          detalle: detalleTexto
         });
-        const img = new Image();
-        img.src = `${WEB_APP_URL}?${urlParams.toString()}`;
+        fetch(`${WEB_APP_URL}?${params.toString()}`, { method: 'GET', mode: 'no-cors' }).catch(e => {});
       }
     }
 
