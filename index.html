@@ -224,18 +224,14 @@
 </head>
 <body>
 
-  <!-- Validación estricta y protección contra caché (Botón Atrás) -->
+  <!-- Validación de Sesión Robusta (Usando localStorage para persistencia celular y entre pestañas) -->
   <script>
-    window.addEventListener('pageshow', function(event) {
-      const activeSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
-      if (!activeSession) {
-        window.location.replace('login.html');
-      }
-    });
-
-    const currentSession = JSON.parse(sessionStorage.getItem('current_session') || 'null');
+    const currentSession = JSON.parse(localStorage.getItem('current_session') || sessionStorage.getItem('current_session') || 'null');
     if (!currentSession) {
-      window.location.replace('login.html');
+      window.location.href = 'login.html';
+    } else {
+      // Asegurar sincronización en localStorage para evitar expulsiones falsas en móviles
+      localStorage.setItem('current_session', JSON.stringify(currentSession));
     }
   </script>
 
@@ -294,12 +290,22 @@
 
   <div id="map"></div>
 
+  <!-- Formulario oculto para enviar el reporte de tiempo exacto a Google Sheets al salir -->
+  <iframe name="hidden_iframe_logout" id="hidden_iframe_logout" style="display:none;"></iframe>
+  <form id="logout-cloud-form" action="https://script.google.com/macros/s/AKfycbyhyE9eQDA66Gq8IkIjxXbOmNz9KypQ_RH0G7wvyOoYalTJ0pfbP3KPPmOojijhe8MjRQ/exec" method="POST" target="hidden_iframe_logout" style="display:none;">
+    <input type="text" name="usuario" id="out_usuario">
+    <input type="text" name="fechaHora" id="out_fechaHora">
+    <input type="text" name="estado" id="out_estado">
+    <input type="text" name="detalle" id="out_detalle">
+    <input type="text" name="permanencia" id="out_permanencia">
+  </form>
+
   <!-- Librerías Leaflet y Conversor KML -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    let sesionCerrada = false;
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyhyE9eQDA66Gq8IkIjxXbOmNz9KypQ_RH0G7wvyOoYalTJ0pfbP3KPPmOojijhe8MjRQ/exec';
 
     // Verificar visibilidad de opción Administrador
     if (currentSession && (currentSession.role === 'admin' || String(currentSession.role).toLowerCase() === 'admin')) {
@@ -318,20 +324,15 @@
     function closePanel() { sidePanel.classList.add('hidden'); }
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
-    let dashboardWindow = null;
-    let sesionesWindow = null;
-
     function abrirDashboardFiltrado() {
       const deptoSeleccionado = selectDepto.value;
       const muniSeleccionado = selectMuni.value;
       const urlDashboard = `dashboard_aguacate.html?depto=${encodeURIComponent(deptoSeleccionado)}&municipio=${encodeURIComponent(muniSeleccionado)}`;
-      dashboardWindow = window.open(urlDashboard, '_blank');
-      resetInactivityTimer();
+      window.open(urlDashboard, '_blank');
     }
 
     function abrirModuloSesiones() {
-      sesionesWindow = window.open('sesiones.html', '_blank');
-      resetInactivityTimer();
+      window.open('sesiones.html', '_blank');
     }
 
     function fullReset() {
@@ -568,67 +569,67 @@
       renderMapFeatures();
     });
 
-    // Función centralizada de cierre de sesión
-    function registrarCierre(estadoMotivo = 'Cerrado Correctamente') {
-      if (sesionCerrada || !currentSession) return;
-      sesionCerrada = true;
+    // FUNCIÓN DE CIERRE DE SESIÓN Y CÁLCULO EXACTO DE TIEMPO
+    function registrarSalidaSesion(tipoCierre) {
+      if (currentSession) {
+        const loginTime = Number(currentSession.loginTime) || (new Date().getTime() - 60000);
+        const now = new Date();
+        // Redondeo inteligente: si estuvo aunque sea unos segundos, cuenta al menos 1 minuto
+        const diffMs = now.getTime() - loginTime;
+        const durationMinutes = Math.max(1, Math.round(diffMs / 60000));
 
-      const loginTime = Number(currentSession.loginTime) || new Date().getTime();
-      const now = new Date();
-      const durationMinutes = Math.max(1, Math.round((now.getTime() - loginTime) / 60000));
+        const fechaHoraSalida = now.toLocaleDateString('es-HN') + ' ' + now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-      const sessionRecord = {
-        user: currentSession.user,
-        login: currentSession.loginFormatted,
-        duration: durationMinutes + ' min',
-        estadoCierre: estadoMotivo
-      };
+        const sessionRecord = {
+          user: currentSession.user,
+          login: currentSession.loginFormatted,
+          duration: durationMinutes + ' min',
+          estadoCierre: tipoCierre
+        };
 
-      let logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
-      logs.push(sessionRecord);
-      localStorage.setItem('sig_logs', JSON.stringify(logs));
+        // Guardado local de respaldo
+        let logs = JSON.parse(localStorage.getItem('sig_logs') || '[]');
+        logs.push(sessionRecord);
+        localStorage.setItem('sig_logs', JSON.stringify(logs));
 
-      let masterLogs = JSON.parse(localStorage.getItem('sig_master_logs') || '[]');
-      masterLogs.push(sessionRecord);
-      localStorage.setItem('sig_master_logs', JSON.stringify(masterLogs));
-      
-      sessionStorage.removeItem('current_session');
+        // Registro detallado en formato unificado para la bitácora
+        let accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
+        accessLogs.push({
+          usuario: currentSession.user,
+          fechaHora: fechaHoraSalida,
+          estado: 'Exitoso',
+          detalle: `Sesión Finalizada (${tipoCierre})`,
+          permanencia: `${durationMinutes} min`
+        });
+        localStorage.setItem('sig_access_logs', JSON.stringify(accessLogs));
+
+        // Envío directo al Google Sheets en la nube
+        try {
+          document.getElementById('out_usuario').value = currentSession.user;
+          document.getElementById('out_fechaHora').value = fechaHoraSalida;
+          document.getElementById('out_estado').value = 'Exitoso';
+          document.getElementById('out_detalle').value = `Sesión Finalizada (${tipoCierre})`;
+          document.getElementById('out_permanencia').value = `${durationMinutes} min`;
+          document.getElementById('logout-cloud-form').submit();
+        } catch (e) {}
+      }
     }
 
     function logout() {
-      registrarCierre('Cerrado Correctamente');
-      window.location.replace('login.html');
+      registrarSalidaSesion('Cerrado Correctamente');
+      localStorage.removeItem('current_session');
+      sessionStorage.removeItem('current_session');
+      setTimeout(function() {
+        window.location.href = 'login.html';
+      }, 400);
     }
 
-    // Capturar cierre de pestaña / ventana con la "X"
-    window.addEventListener('pagehide', function() {
-      registrarCierre('Cerrado por Cierre de Pestaña');
+    // Capturar cierre de pestaña, navegador o recarga accidental
+    window.addEventListener('beforeunload', function() {
+      if (currentSession) {
+        registrarSalidaSesion('Cierre de Pestaña / Navegador');
+      }
     });
-
-    // Control de inactividad de 3 minutos directo al login (sin alertas)
-    let inactivityTimer;
-
-    function resetInactivityTimer() {
-      clearTimeout(inactivityTimer);
-      
-      inactivityTimer = setTimeout(() => {
-        const dashboardOpen = dashboardWindow && !dashboardWindow.closed;
-        const sesionesOpen = sesionesWindow && !sesionesWindow.closed;
-
-        if (dashboardOpen || sesionesOpen) {
-          resetInactivityTimer();
-        } else {
-          registrarCierre('Cerrado por Inactividad (3 min)');
-          window.location.replace('login.html');
-        }
-      }, 3 * 60 * 1000); // 3 minutos
-    }
-
-    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
-      window.addEventListener(evt, resetInactivityTimer, { passive: true });
-    });
-
-    resetInactivityTimer();
   </script>
 </body>
 </html>
