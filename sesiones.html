@@ -85,8 +85,9 @@
     <div class="section-title">
       <h3>Bitácora Unificada de Accesos y Sesiones</h3>
       <div class="btn-group-logs">
-        <button class="btn-download-logs" onclick="downloadLogsTXT()">📥 Descargar Historial (.txt)</button>
-        <button class="btn-clear-logs" onclick="loadUnifiedLogs()">🔄 Sincronizar / Refrescar</button>
+        <button class="btn-download-logs" onclick="downloadLogsTXT()">📥 Descargar (.txt)</button>
+        <button class="btn-clear-logs" onclick="clearScreenLogs()" title="Limpia solo esta vista local sin tocar Google Sheets">🧹 Limpiar Vista</button>
+        <button class="btn-clear-logs" style="background:#0284c7;" onclick="loadUnifiedLogs()">🔄 Recargar</button>
       </div>
     </div>
     <table class="modal-table">
@@ -95,7 +96,7 @@
           <th>Usuario</th>
           <th>Fecha y Hora</th>
           <th>Resultado</th>
-          <th>Detalle / Origen</th>
+          <th>Permanencia / Detalle</th>
         </tr>
       </thead>
       <tbody id="unified-logs-table-body">
@@ -171,14 +172,30 @@
         const badgeClass = isExitoso ? 'badge-exitoso' : 'badge-fallido';
         const statusText = isExitoso ? '✓ Exitoso' : '✕ Fallido';
 
+        // Calcular minutos de permanencia si el log contiene marcas de tiempo de entrada y salida
+        let permanenciaTexto = log.detalle || (isExitoso ? 'Acceso Correcto' : 'Intento Fallido');
+        if (log.duracionMinutos !== undefined && log.duracionMinutos !== null) {
+          permanenciaTexto = `⏱️ Permanencia: <strong>${log.duracionMinutos} min</strong> (${log.detalle || 'Acceso Correcto'})`;
+        } else if (isExitoso) {
+          permanenciaTexto = `⏱️ Sesión activa / Registrada`;
+        }
+
         tr.innerHTML = `
           <td><strong>${log.usuario}</strong></td>
           <td>${log.fechaHora}</td>
           <td><span class="badge-status ${badgeClass}">${statusText}</span></td>
-          <td style="font-size:11px; color:#94a3b8;">${log.detalle || (isExitoso ? 'Acceso Correcto' : 'Intento Fallido')}</td>
+          <td style="font-size:11px; color:#94a3b8;">${permanenciaTexto}</td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // Función para limpiar únicamente la vista local sin alterar Google Sheets
+    function clearScreenLogs() {
+      if (confirm('¿Deseas limpiar la lista visual de esta pantalla? (Los registros en Google Sheets se mantendrán intactos).')) {
+        localStorage.setItem('sig_access_logs', JSON.stringify([]));
+        loadUnifiedLogs();
+      }
     }
 
     function downloadLogsTXT() {
@@ -194,7 +211,7 @@
       content += "=========================================================================================\n";
       content += "Fecha de Reporte: " + new Date().toLocaleString('es-HN') + "\n\n";
 
-      content += String("USUARIO").padEnd(20) + String("FECHA Y HORA").padEnd(28) + String("RESULTADO").padEnd(15) + "DETALLE / ORIGEN\n";
+      content += String("USUARIO").padEnd(20) + String("FECHA Y HORA").padEnd(28) + String("RESULTADO").padEnd(15) + "DETALLE / PERMANENCIA\n";
       content += "-----------------------------------------------------------------------------------------\n";
 
       accessLogs.forEach(item => {
