@@ -105,8 +105,6 @@
   </div>
 
   <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyhyE9eQDA66Gq8IkIjxXbOmNz9KypQ_RH0G7wvyOoYalTJ0pfbP3KPPmOojijhe8MjRQ/exec';
-
     window.onload = function() {
       loadUsersTable();
       loadUnifiedLogs();
@@ -150,18 +148,18 @@
       }
     }
 
-    // Función callback global para recibir los datos de Google Sheets saltando CORS mediante JSONP
-    window.processCloudLogs = function(data) {
+    function loadUnifiedLogs() {
       const tbody = document.getElementById('unified-logs-table-body');
-      tbody.innerHTML = '';
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#38bdf8; font-style:italic;">Cargando registros...</td></tr>';
 
       let accessLogs = [];
-      if (Array.isArray(data) && data.length > 0) {
-        accessLogs = data;
-      } else {
+      try {
         accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
+      } catch (e) {
+        accessLogs = [];
       }
 
+      tbody.innerHTML = '';
       if (accessLogs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; font-style:italic;">No hay actividad registrada aún.</td></tr>';
         return;
@@ -181,31 +179,12 @@
         `;
         tbody.appendChild(tr);
       });
-    };
-
-    function loadUnifiedLogs() {
-      const tbody = document.getElementById('unified-logs-table-body');
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#38bdf8; font-style:italic;">Sincronizando registros desde la nube...</td></tr>';
-
-      // Eliminar script anterior si existe
-      const oldScript = document.getElementById('jsonp-script');
-      if (oldScript) oldScript.remove();
-
-      // Crear petición JSONP inyectando un script (evita bloqueos CORS de los navegadores)
-      const script = document.createElement('script');
-      script.id = 'jsonp-script';
-      script.src = `${WEB_APP_URL}?callback=processCloudLogs`;
-      script.onerror = function() {
-        // Fallback a localStorage si hay problemas de red
-        window.processCloudLogs([]);
-      };
-      document.body.appendChild(script);
     }
 
-    async function downloadLogsTXT() {
+    function downloadLogsTXT() {
       let accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
-      
-      if (accessLogs.length === 0) {
+
+      if (!accessLogs || accessLogs.length === 0) {
         alert('No existen registros almacenados actualmente.');
         return;
       }
