@@ -139,20 +139,24 @@
       const ahora = new Date();
       const fechaHora = ahora.toLocaleDateString('es-HN') + ' ' + ahora.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
+      // Guardar respaldo local siempre
       try {
-        const nuevoIntento = { usuario: usuarioProporcionado || '(Vacío)', estado: estado, fechaHora: fechaHora, timestamp: ahora.getTime() };
+        const nuevoIntento = { usuario: usuarioProporcionado || '(Vacío)', estado: estado, fechaHora: fechaHora, timestamp: ahora.getTime(), detalle: estado === 'Exitoso' ? 'Acceso Correcto' : 'Intento Fallido' };
         let historialLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
         historialLogs.push(nuevoIntento);
         localStorage.setItem('sig_access_logs', JSON.stringify(historialLogs));
       } catch (err) {}
 
+      // Envío ultra robusto mediante objeto Image (ignora bloqueos CORS y redirecciones 302 de Google)
       if (WEB_APP_URL) {
-        fetch(WEB_APP_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario: usuarioProporcionado || '(Vacío)', fechaHora: fechaHora, estado: estado })
-        }).catch(err => console.log('Error cloud log:', err));
+        const urlParams = new URLSearchParams({
+          usuario: usuarioProporcionado || '(Vacío)',
+          fechaHora: fechaHora,
+          estado: estado,
+          detalle: estado === 'Exitoso' ? 'Acceso Correcto' : 'Intento Fallido'
+        });
+        const img = new Image();
+        img.src = `${WEB_APP_URL}?${urlParams.toString()}`;
       }
     }
 
