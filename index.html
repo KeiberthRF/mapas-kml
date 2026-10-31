@@ -569,7 +569,7 @@
       renderMapFeatures();
     });
 
-    // --- CONTROL DE INACTIVIDAD ROBUSTO BASADO EN MARCA DE TIEMPO (Inmune a suspensión móvil) ---
+    // --- CONTROL DE INACTIVIDAD MULTI-PESTAÑA CORREGIDO ---
     const INACTIVITY_LIMIT = 3 * 60 * 1000; // 3 minutos en milisegundos
 
     function registrarActividadGlobal() {
@@ -581,7 +581,15 @@
       registrarActividadGlobal();
     }
 
-    // Verificador continuo cada 5 segundos (funciona perfecto en móviles y escritorio)
+    // Sincronización entre pestañas: Si el usuario interactúa en dashboard_aguacate.html u otra pestaña,
+    // el evento 'storage' capturará el cambio y mantendrá activa la pestaña del mapa.
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'sig_last_active_time') {
+        // La actividad cambió en otra pestaña (ej. dashboard_aguacate.html)
+      }
+    });
+
+    // Verificador continuo cada 3 segundos
     setInterval(function() {
       if (!currentSession) return;
       
@@ -593,10 +601,10 @@
         alert('Sesión cerrada automáticamente por 3 minutos de inactividad.');
         logout('Inactividad (3 min)');
       }
-    }, 5000);
+    }, 3000);
 
-    // Registrar interacciones del usuario en el mapa
-    ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(eventType => {
+    // Registrar interacciones directas en la ventana actual con fase de captura
+    ['mousemove', 'keydown', 'click', 'touchstart', 'touchmove', 'scroll', 'visibilitychange'].forEach(eventType => {
       window.addEventListener(eventType, registrarActividadGlobal, true);
     });
 
