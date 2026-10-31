@@ -94,7 +94,7 @@
       vertical-align: middle;
       font-size: 0.85rem;
     }
-    /* Estética optimizada para tablas en modales (productores en una sola línea sin recortes) */
+    /* Estética optimizada para tablas en modales */
     .table-modal-fixed td, .table-modal-fixed th {
       white-space: nowrap;
       font-size: 0.8rem;
@@ -173,10 +173,8 @@
       <div class="d-flex justify-content-between align-items-center">
         <div>
           <h4 class="m-0 fw-bold"><i class="fa-solid fa-seedling me-2"></i>ESTADÍSTICA Y ANÁLISIS DE PRODUCCIÓN DE AGUACATE</h4>
-          <div class="d-flex align-items-center gap-3 mt-1">
-            <small class="text-light opacity-9">República de Honduras - Sistema de Información Geográfica Automatizado</small>
-            <small class="text-warning fw-bold"><i class="fa-solid fa-code me-1"></i> Ing. KeiberthRF | <i class="fa-solid fa-envelope me-1"></i> keiberth.fuentes@gmail.com</small>
-          </div>
+          <small class="text-light opacity-9 d-block">República de Honduras - Sistema de Información Geográfica Automatizado</small>
+          <small class="text-warning fw-bold d-block mt-1"><i class="fa-solid fa-code me-1"></i> KeiberthRF | <i class="fa-solid fa-envelope me-1"></i> keiberth.fuentes@gmail.com</small>
         </div>
         <div>
           <button onclick="cerrarDashboard()" class="btn btn-light btn-sm fw-bold me-2 shadow-sm"><i class="fa-solid fa-map me-1 text-success"></i> Volver al Mapa</button>
@@ -216,7 +214,7 @@
         <div class="kpi-card kpi-card-clickable" onclick="mostrarModalFincasRazas()" title="Ver distribución detallada de fincas por razas">
           <div class="kpi-title"><i class="fa-solid fa-house-chimney-window me-1"></i> Total Fincas / Productores <i class="fa-solid fa-circle-info float-end text-success"></i></div>
           <div class="kpi-value" id="kpiFincas">0</div>
-          <span class="kpi-subtitle-style" id="kpiFincasSub"><i class="fa-solid fa-arrow-pointer me-1 text-success"></i>Hacer clic para ver detalle por raza</span>
+          <span class="kpi-subtitle-style" id="kpiFincasSub"><i class="fa-solid fa-chart-pie me-1 text-success"></i>Hass: 0 | Antillano: 0 | Criollo: 0</span>
         </div>
       </div>
       
@@ -238,7 +236,7 @@
         <div class="kpi-card kpi-card-clickable" onclick="mostrarModalPlantasDetalle()" title="Ver gráfico de desarrollo vegetal">
           <div class="kpi-title"><i class="fa-solid fa-tree me-1"></i> Total Plantas <i class="fa-solid fa-circle-info float-end text-success"></i></div>
           <div class="kpi-value" id="kpiPlantas">0</div>
-          <span class="kpi-subtitle-style"><i class="fa-solid fa-arrow-pointer me-1 text-success"></i>Hacer clic para ver detalle</span>
+          <span class="kpi-subtitle-style" id="kpiPlantasSub"><i class="fa-solid fa-seedling me-1 text-success"></i>En Producción: 0 | En Desarrollo: 0</span>
         </div>
       </div>
 
@@ -258,22 +256,22 @@
       <div class="metric-slide-card metric-slide-card-clickable" onclick="mostrarModalConRiegoDetalle()" title="Ver listado de fincas con riego">
         <div class="kpi-title"><i class="fa-solid fa-droplet me-1 text-primary"></i> Fincas con Riego <i class="fa-solid fa-circle-info float-end text-primary"></i></div>
         <div class="kpi-value" id="slideRiego">0</div>
-        <span class="kpi-subtitle-style"><i class="fa-solid fa-arrow-pointer me-1 text-primary"></i>Hacer clic para ver listado</span>
+        <span class="kpi-subtitle-style" id="slideRiegoSub"><i class="fa-solid fa-arrow-pointer me-1 text-primary"></i>0.0% con sistema</span>
       </div>
 
       <!-- Slide Sin Riego / Potencial -->
       <div class="metric-slide-card metric-slide-card-clickable" style="border-top-color: var(--hass-ripe-gold);" onclick="mostrarModalSinRiegoDetalle()" title="Ver listado detallado alfabético">
         <div class="kpi-title"><i class="fa-solid fa-water me-1 text-warning"></i> Fincas Sin Riego <i class="fa-solid fa-circle-info float-end text-warning"></i></div>
         <div class="kpi-value" id="slideSinRiegoTotal">0</div>
-        <span class="kpi-subtitle-style text-dark fw-bold">Fincas con fuente de agua para riego</span>
+        <span class="kpi-subtitle-style text-dark fw-bold" id="slideFuenteAguaSub">0 fincas con fuente de agua para riego</span>
       </div>
 
       <!-- Slide Mano de Obra -->
       <div class="metric-slide-card metric-slide-card-clickable" onclick="mostrarModalManoObraDetalle()" title="Ver análisis económico de mano de obra">
         <div class="kpi-title"><i class="fa-solid fa-users me-1 text-success"></i> Mano de Obra Total <i class="fa-solid fa-circle-info float-end text-success"></i></div>
         <div class="kpi-value" id="slideTrabajadores">0</div>
-        <span class="kpi-subtitle-style d-block" id="slideTrabPerm">Permanentes: 0</span>
-        <span class="kpi-subtitle-style d-block" id="slideTrabTemp">Temporales: 0</span>
+        <span class="kpi-subtitle-style d-block" id="slideTrabPerm">Trabajadores Permanentes: 0</span>
+        <span class="kpi-subtitle-style d-block" id="slideTrabTemp">Trabajadores Temporales: 0</span>
       </div>
 
       <!-- Slide Inversión Planilla Anual -->
@@ -559,7 +557,7 @@
     </div>
   </div>
 
-  <!-- 8. Modal Inversión Planilla (Estilo Tabla Dinámica) -->
+  <!-- 8. Modal Inversión Planilla -->
   <div class="modal fade" id="modalPlanillaDetalle" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content shadow">
@@ -705,7 +703,6 @@
           datosFincas = [];
           if (geojson && geojson.features) {
             geojson.features.forEach(feature => {
-              // Obtener nombre completo del productor de la propiedad name o de los metadatos
               let nombreProductor = feature.properties.name || extractField(feature, "PRODUCTOR(A)") || extractField(feature, "productor") || "Productor sin nombre";
               let depto = extractField(feature, "DEPARTAMENTO") || extractField(feature, "depto") || "SIN DEPARTAMENTO";
               let muni = extractField(feature, "MUNICIPIO") || extractField(feature, "muni") || "SIN MUNICIPIO";
@@ -844,6 +841,10 @@
     function renderizarDashboard(fincas) {
       let totalFincas = fincas.length;
       
+      let conteoHass = fincas.filter(f => f.variedad === 'Hass').length;
+      let conteoAntillano = fincas.filter(f => f.variedad === 'Antillano').length;
+      let conteoCriollo = fincas.filter(f => f.variedad === 'Criollo').length;
+
       let totalAreaMz = fincas.reduce((acc, f) => acc + f.areaMz, 0);
       let totalAreaHa = totalAreaMz * 0.7028;
       let totalPlantasProd = fincas.reduce((acc, f) => acc + f.plantasProduccion, 0);
@@ -852,11 +853,16 @@
       let totalProdLbs = fincas.reduce((acc, f) => acc + f.produccionLbs, 0);
 
       document.getElementById('kpiFincas').innerText = totalFincas.toLocaleString('es-HN');
+      document.getElementById('kpiFincasSub').innerHTML = `<i class="fa-solid fa-chart-pie me-1 text-success"></i>Hass: ${conteoHass} | Antillano: ${conteoAntillano} | Criollo: ${conteoCriollo}`;
 
       document.getElementById('kpiArea').innerText = totalAreaMz.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " mz";
       document.getElementById('kpiAreaHa').innerText = totalAreaHa.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " ha";
       
+      let pctProd = totalPlantas > 0 ? ((totalPlantasProd / totalPlantas) * 100).toFixed(1) : "0";
+      let pctDes = totalPlantas > 0 ? ((totalPlantasDes / totalPlantas) * 100).toFixed(1) : "0";
+
       document.getElementById('kpiPlantas').innerText = totalPlantas.toLocaleString('es-HN');
+      document.getElementById('kpiPlantasSub').innerHTML = `<i class="fa-solid fa-seedling me-1 text-success"></i>En Producción: ${totalPlantasProd.toLocaleString('es-HN')} (${pctProd}%) | En Desarrollo: ${totalPlantasDes.toLocaleString('es-HN')} (${pctDes}%)`;
       
       document.getElementById('kpiProduccion').innerText = totalProdLbs.toLocaleString('es-HN') + " lbs";
 
@@ -868,13 +874,16 @@
       let totalTrabTemp = fincas.reduce((acc, f) => acc + f.trabajadoresTemp, 0);
       let totalPagosAnual = fincas.reduce((acc, f) => acc + f.pagosLpsAnual, 0);
 
+      let pctRiego = totalFincas > 0 ? ((fincasConRiego / totalFincas) * 100).toFixed(1) : "0";
       document.getElementById('slideRiego').innerText = fincasConRiego;
+      document.getElementById('slideRiegoSub').innerHTML = `<i class="fa-solid fa-arrow-pointer me-1 text-primary"></i>${pctRiego}% con sistema`;
       
       document.getElementById('slideSinRiegoTotal').innerText = fincasSinRiegoTotal;
+      document.getElementById('slideFuenteAguaSub').innerText = `${fincasSinRiegoConFuente} fincas con fuente de agua para riego`;
 
       document.getElementById('slideTrabajadores').innerText = (totalTrabPerm + totalTrabTemp).toLocaleString('es-HN');
-      document.getElementById('slideTrabPerm').innerText = `Permanentes: ${totalTrabPerm}`;
-      document.getElementById('slideTrabTemp').innerText = `Temporales: ${totalTrabTemp}`;
+      document.getElementById('slideTrabPerm').innerText = `Trabajadores Permanentes: ${totalTrabPerm}`;
+      document.getElementById('slideTrabTemp').innerText = `Trabajadores Temporales: ${totalTrabTemp}`;
       
       document.getElementById('slidePagos').innerText = "L. " + totalPagosAnual.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
@@ -1163,7 +1172,7 @@
       modal.show();
     }
 
-    // 6. Modal Fincas SIN Riego (Nombre completo en una línea)
+    // 6. Modal Fincas SIN Riego
     function mostrarModalSinRiegoDetalle() {
       let fincas = fincasFiltradasActuales.filter(f => !f.tieneRiego);
       fincas.sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -1179,7 +1188,7 @@
       myModal.show();
     }
 
-    // 7. Modal Mano de Obra Económica con porcentajes en texto y gráfico
+    // 7. Modal Mano de Obra Económica
     function mostrarModalManoObraDetalle() {
       let montoPerm = fincasFiltradasActuales.reduce((acc, f) => acc + f.pagoPermAnual, 0);
       let montoTemp = fincasFiltradasActuales.reduce((acc, f) => acc + f.pagoTempAnual, 0);
@@ -1219,7 +1228,7 @@
       modal.show();
     }
 
-    // 8. Modal Planilla por Departamento y Municipio (Estilo Tabla Dinámica)
+    // 8. Modal Planilla por Departamento y Municipio
     function mostrarModalPlanillaDetalle() {
       let deptosMap = {};
       let munisMap = {};
