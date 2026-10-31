@@ -224,7 +224,7 @@
 </head>
 <body>
 
-  <!-- Validación de Sesión Híbrida: Persistente entre pestañas y celulares -->
+  <!-- Validación de Sesión Híbrida -->
   <script>
     let currentSession = JSON.parse(sessionStorage.getItem('current_session') || localStorage.getItem('current_session') || 'null');
     if (!currentSession) {
@@ -323,7 +323,7 @@
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
     function abrirDashboardFiltrado() {
-      resetInactivityTimer();
+      registrarActividadGlobal();
       const deptoSeleccionado = selectDepto.value;
       const muniSeleccionado = selectMuni.value;
       const urlDashboard = `dashboard_aguacate.html?depto=${encodeURIComponent(deptoSeleccionado)}&municipio=${encodeURIComponent(muniSeleccionado)}`;
@@ -331,7 +331,7 @@
     }
 
     function abrirModuloSesiones() {
-      resetInactivityTimer();
+      registrarActividadGlobal();
       window.open('sesiones.html', '_blank');
     }
 
@@ -569,41 +569,36 @@
       renderMapFeatures();
     });
 
-    // --- CONTROL DE INACTIVIDAD MULTI-PESTAÑA (3 Minutos Globales) ---
-    let inactivityTimer;
-    const INACTIVITY_LIMIT = 3 * 60 * 1000; // 3 minutos
+    // --- CONTROL DE INACTIVIDAD ROBUSTO BASADO EN MARCA DE TIEMPO (Inmune a suspensión móvil) ---
+    const INACTIVITY_LIMIT = 3 * 60 * 1000; // 3 minutos en milisegundos
 
-    // Canal de comunicación entre la ventana del Mapa y las otras pestañas (Dashboard / Sesiones)
-    let syncChannel;
-    try { syncChannel = new BroadcastChannel('sig_activity_channel'); } catch(e){}
+    function registrarActividadGlobal() {
+      localStorage.setItem('sig_last_active_time', Date.now().toString());
+    }
 
-    function resetInactivityTimer() {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(function() {
+    // Inicializar marca de tiempo al entrar si no existe
+    if (!localStorage.getItem('sig_last_active_time')) {
+      registrarActividadGlobal();
+    }
+
+    // Verificador continuo cada 5 segundos (funciona perfecto en móviles y escritorio)
+    setInterval(function() {
+      if (!currentSession) return;
+      
+      const lastActive = Number(localStorage.getItem('sig_last_active_time') || Date.now());
+      const now = Date.now();
+      const elapsed = now - lastActive;
+
+      if (elapsed >= INACTIVITY_LIMIT) {
         alert('Sesión cerrada automáticamente por 3 minutos de inactividad.');
         logout('Inactividad (3 min)');
-      }, INACTIVITY_LIMIT);
-    }
-
-    // Escuchar actividad proveniente del Dashboard o la Bitácora
-    if (syncChannel) {
-      syncChannel.onmessage = function(event) {
-        if (event.data === 'user_active') {
-          resetInactivityTimer();
-        }
-      };
-    }
-    window.addEventListener('storage', function(e) {
-      if (e.key === 'sig_last_active_ping') {
-        resetInactivityTimer();
       }
-    });
+    }, 5000);
 
-    // Detectar interacciones dentro de la misma página del mapa
+    // Registrar interacciones del usuario en el mapa
     ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(eventType => {
-      window.addEventListener(eventType, resetInactivityTimer, true);
+      window.addEventListener(eventType, registrarActividadGlobal, true);
     });
-    resetInactivityTimer();
 
     // REGISTRO DE SALIDA Y ACTUALIZACIÓN EN GOOGLE SHEETS
     function registrarSalidaSesion(tipoCierre) {
@@ -638,10 +633,10 @@
     }
 
     function logout(motivo = 'Cerrado Correctamente') {
-      clearTimeout(inactivityTimer);
       registrarSalidaSesion(motivo);
       sessionStorage.removeItem('current_session');
       localStorage.removeItem('current_session');
+      localStorage.removeItem('sig_last_active_time');
       setTimeout(function() {
         window.location.replace('login.html');
       }, 350);
