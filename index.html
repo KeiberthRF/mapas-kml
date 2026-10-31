@@ -224,13 +224,12 @@
 </head>
 <body>
 
-  <!-- Validación de Sesión Híbrida: Garantiza permanencia en celulares al abrir Dashboard -->
+  <!-- Validación de Sesión Híbrida: Persistente entre pestañas y celulares -->
   <script>
     let currentSession = JSON.parse(sessionStorage.getItem('current_session') || localStorage.getItem('current_session') || 'null');
     if (!currentSession) {
       window.location.replace('login.html');
     } else {
-      // Reasegurar la sesión en ambos almacenamientos para evitar expulsiones falsas en móviles
       sessionStorage.setItem('current_session', JSON.stringify(currentSession));
       localStorage.setItem('current_session', JSON.stringify(currentSession));
     }
@@ -307,7 +306,6 @@
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    // Verificar visibilidad de opción Administrador
     if (currentSession && (currentSession.role === 'admin' || String(currentSession.role).toLowerCase() === 'admin')) {
       document.getElementById('btn-logs').style.display = 'block';
     }
@@ -325,6 +323,7 @@
     function openPanel() { sidePanel.classList.remove('hidden'); }
 
     function abrirDashboardFiltrado() {
+      resetInactivityTimer();
       const deptoSeleccionado = selectDepto.value;
       const muniSeleccionado = selectMuni.value;
       const urlDashboard = `dashboard_aguacate.html?depto=${encodeURIComponent(deptoSeleccionado)}&municipio=${encodeURIComponent(muniSeleccionado)}`;
@@ -332,6 +331,7 @@
     }
 
     function abrirModuloSesiones() {
+      resetInactivityTimer();
       window.open('sesiones.html', '_blank');
     }
 
@@ -569,9 +569,13 @@
       renderMapFeatures();
     });
 
-    // --- CONTROL DE INACTIVIDAD (3 Minutos) ---
+    // --- CONTROL DE INACTIVIDAD MULTI-PESTAÑA (3 Minutos Globales) ---
     let inactivityTimer;
     const INACTIVITY_LIMIT = 3 * 60 * 1000; // 3 minutos
+
+    // Canal de comunicación entre la ventana del Mapa y las otras pestañas (Dashboard / Sesiones)
+    let syncChannel;
+    try { syncChannel = new BroadcastChannel('sig_activity_channel'); } catch(e){}
 
     function resetInactivityTimer() {
       clearTimeout(inactivityTimer);
@@ -581,7 +585,21 @@
       }, INACTIVITY_LIMIT);
     }
 
-    // Detectar movimientos, clics o toques para reiniciar el temporizador de inactividad
+    // Escuchar actividad proveniente del Dashboard o la Bitácora
+    if (syncChannel) {
+      syncChannel.onmessage = function(event) {
+        if (event.data === 'user_active') {
+          resetInactivityTimer();
+        }
+      };
+    }
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'sig_last_active_ping') {
+        resetInactivityTimer();
+      }
+    });
+
+    // Detectar interacciones dentro de la misma página del mapa
     ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(eventType => {
       window.addEventListener(eventType, resetInactivityTimer, true);
     });
@@ -596,7 +614,6 @@
         const durationMinutes = Math.max(1, Math.round(diffMs / 60000));
         const fechaHoraSalida = now.toLocaleDateString('es-HN') + ' ' + now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-        // Actualizar registros locales
         let accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
         if (accessLogs.length > 0) {
           for (let i = accessLogs.length - 1; i >= 0; i--) {
@@ -609,7 +626,6 @@
           localStorage.setItem('sig_access_logs', JSON.stringify(accessLogs));
         }
 
-        // Actualizar la fila en la nube
         try {
           document.getElementById('out_usuario').value = currentSession.user;
           document.getElementById('out_fechaHora').value = fechaHoraSalida;
@@ -631,7 +647,6 @@
       }, 350);
     }
 
-    // Capturar cierre de pestaña / navegador
     window.addEventListener('beforeunload', function() {
       if (currentSession) {
         registrarSalidaSesion('Cierre de Pestaña / Navegador');
