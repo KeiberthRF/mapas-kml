@@ -89,13 +89,13 @@
     </div>
   </div>
 
-  <!-- Formulario e iframe invisibles para envío a Google Sheets sin bloqueos de CORS -->
   <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
   <form id="cloud-form" action="https://script.google.com/macros/s/AKfycbyhyE9eQDA66Gq8IkIjxXbOmNz9KypQ_RH0G7wvyOoYalTJ0pfbP3KPPmOojijhe8MjRQ/exec" method="POST" target="hidden_iframe" style="display:none;">
     <input type="text" name="usuario" id="c_usuario">
     <input type="text" name="fechaHora" id="c_fechaHora">
     <input type="text" name="estado" id="c_estado">
     <input type="text" name="detalle" id="c_detalle">
+    <input type="text" name="permanencia" id="c_permanencia">
   </form>
 
   <script>
@@ -147,24 +147,29 @@
       const ahora = new Date();
       const fechaHora = ahora.toLocaleDateString('es-HN') + ' ' + ahora.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const detalleTexto = estado === 'Exitoso' ? 'Acceso Correcto' : 'Intento Fallido';
+      const permanenciaTexto = estado === 'Exitoso' ? 'Sesión Iniciada' : 'N/A';
 
-      // 1. Guardar en respaldo local
       try {
         let historialLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
-        historialLogs.push({ usuario: usuarioProporcionado || '(Vacío)', estado: estado, fechaHora: fechaHora, detalle: detalleTexto });
+        historialLogs.push({ 
+          usuario: usuarioProporcionado || '(Vacío)', 
+          estado: estado, 
+          fechaHora: fechaHora, 
+          detalle: detalleTexto,
+          permanencia: permanenciaTexto,
+          loginTimestamp: ahora.getTime()
+        });
         localStorage.setItem('sig_access_logs', JSON.stringify(historialLogs));
       } catch (err) {}
 
-      // 2. Envío a Google Sheets mediante el formulario oculto (POST directo sin bloqueo)
       try {
         document.getElementById('c_usuario').value = usuarioProporcionado || '(Vacío)';
         document.getElementById('c_fechaHora').value = fechaHora;
         document.getElementById('c_estado').value = estado;
         document.getElementById('c_detalle').value = detalleTexto;
+        document.getElementById('c_permanencia').value = permanenciaTexto;
         document.getElementById('cloud-form').submit();
-      } catch (e) {
-        console.error('Error al enviar registro:', e);
-      }
+      } catch (e) {}
     }
 
     function handleLogin(e) {
@@ -195,7 +200,6 @@
 
         sessionStorage.setItem('current_session', JSON.stringify(sessionData));
         
-        // Pequeño retardo de 300ms para asegurar que el iframe envíe la petición POST antes de cambiar de página
         setTimeout(function() {
           window.location.replace('index.html');
         }, 300);
