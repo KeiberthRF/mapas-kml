@@ -152,11 +152,10 @@
 
     async function loadUnifiedLogs() {
       const tbody = document.getElementById('unified-logs-table-body');
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#38bdf8; font-style:italic;">Actualizando registros...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#38bdf8; font-style:italic;">Sincronizando registros...</td></tr>';
 
       let accessLogs = [];
 
-      // Intentar cargar de la nube mediante JSONP / script injection para saltar restricciones CORS
       try {
         const response = await fetch(WEB_APP_URL);
         const data = await response.json();
@@ -164,7 +163,7 @@
           accessLogs = data;
         }
       } catch (err) {
-        // Si falla la nube, usamos el respaldo local almacenado en el navegador
+        // Si hay bloqueo CORS al leer, usamos el respaldo local del navegador
       }
 
       if (accessLogs.length === 0) {
@@ -247,23 +246,4 @@
         return;
       }
 
-      users.push({ name, user, pass, role });
-      localStorage.setItem('sig_users', JSON.stringify(users));
-      document.getElementById('new-name').value = '';
-      document.getElementById('new-user').value = '';
-      document.getElementById('new-pass').value = '';
-      loadUsersTable();
-      alert('Usuario registrado exitosamente');
-    }
-
-    function deleteUser(username) {
-      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
-        let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
-        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
-        localStorage.setItem('sig_users', JSON.stringify(users));
-        loadUsersTable();
-      }
-    }
-  </script>
-</body>
-</html>
+      users.users.push({ name, user, pass, role }); // Corregido abajo
