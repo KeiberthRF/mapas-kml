@@ -150,27 +150,18 @@
       }
     }
 
-    async function loadUnifiedLogs() {
+    // Función callback global para recibir los datos de Google Sheets saltando CORS mediante JSONP
+    window.processCloudLogs = function(data) {
       const tbody = document.getElementById('unified-logs-table-body');
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#38bdf8; font-style:italic;">Sincronizando registros...</td></tr>';
+      tbody.innerHTML = '';
 
       let accessLogs = [];
-
-      try {
-        const response = await fetch(WEB_APP_URL);
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          accessLogs = data;
-        }
-      } catch (err) {
-        // Si hay bloqueo CORS al leer, usamos el respaldo local del navegador
-      }
-
-      if (accessLogs.length === 0) {
+      if (Array.isArray(data) && data.length > 0) {
+        accessLogs = data;
+      } else {
         accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
       }
 
-      tbody.innerHTML = '';
       if (accessLogs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; font-style:italic;">No hay actividad registrada aún.</td></tr>';
         return;
@@ -190,19 +181,31 @@
         `;
         tbody.appendChild(tr);
       });
+    };
+
+    function loadUnifiedLogs() {
+      const tbody = document.getElementById('unified-logs-table-body');
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#38bdf8; font-style:italic;">Sincronizando registros desde la nube...</td></tr>';
+
+      // Eliminar script anterior si existe
+      const oldScript = document.getElementById('jsonp-script');
+      if (oldScript) oldScript.remove();
+
+      // Crear petición JSONP inyectando un script (evita bloqueos CORS de los navegadores)
+      const script = document.createElement('script');
+      script.id = 'jsonp-script';
+      script.src = `${WEB_APP_URL}?callback=processCloudLogs`;
+      script.onerror = function() {
+        // Fallback a localStorage si hay problemas de red
+        window.processCloudLogs([]);
+      };
+      document.body.appendChild(script);
     }
 
     async function downloadLogsTXT() {
       let accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
-      try {
-        const response = await fetch(WEB_APP_URL);
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          accessLogs = data;
-        }
-      } catch (e) {}
-
-      if (!accessLogs || accessLogs.length === 0) {
+      
+      if (accessLogs.length === 0) {
         alert('No existen registros almacenados actualmente.');
         return;
       }
@@ -246,4 +249,23 @@
         return;
       }
 
-      users.users.push({ name, user, pass, role }); // Corregido abajo
+      users.push({ name, user, pass, role });
+      localStorage.setItem('sig_users', JSON.stringify(users));
+      document.getElementById('new-name').value = '';
+      document.getElementById('new-user').value = '';
+      document.getElementById('new-pass').value = '';
+      loadUsersTable();
+      alert('Usuario registrado exitosamente');
+    }
+
+    function deleteUser(username) {
+      if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?`)) {
+        let users = JSON.parse(localStorage.getItem('sig_users') || '[]');
+        users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
+        localStorage.setItem('sig_users', JSON.stringify(users));
+        loadUsersTable();
+      }
+    }
+  </script>
+</body>
+</html>
