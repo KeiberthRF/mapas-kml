@@ -313,7 +313,7 @@
 
   <!-- MODALES EMERGENTES -->
 
-  <!-- 1. Modal Fincas por Raza (KPI 1 Desglose Completo) -->
+  <!-- 1. Modal Fincas por Raza (KPI 1 Desglose Completo con Gráfico de Barras Horizontales) -->
   <div class="modal fade" id="modalFincasRazas" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
       <div class="modal-content shadow">
@@ -324,7 +324,7 @@
         <div class="modal-body text-center">
           <p class="text-muted small mb-3">Conteo exacto de fincas registradas según la variedad o raza cultivada:</p>
           <div class="row mb-3 g-2" id="cardsFincasRazas"></div>
-          <div style="height: 220px;" class="d-flex justify-content-center">
+          <div style="height: 200px;" class="d-flex justify-content-center">
             <canvas id="chartFincasRazas"></canvas>
           </div>
         </div>
@@ -960,7 +960,7 @@
 
     // --- MODALES Y GRÁFICOS ---
 
-    // 1. Modal Fincas por Raza (KPI 1)
+    // 1. Modal Fincas por Raza (KPI 1) - Cambiado a Gráfico de Barras Horizontales
     function mostrarModalFincasRazas() {
       let fincasRaza = { 'Hass': 0, 'Antillano': 0, 'Criollo': 0 };
       let totalActual = fincasFiltradasActuales.length;
@@ -986,21 +986,36 @@
         `;
       });
 
-      if (chartFincasInst) chartFincasInst.destroy();
+      if (chartFincasInst) {
+        chartFincasInst.destroy();
+        chartFincasInst = null;
+      }
+
       let ctx = document.getElementById('chartFincasRazas').getContext('2d');
       chartFincasInst = new Chart(ctx, {
-        type: 'pie',
+        type: 'bar',
         data: {
           labels: Object.keys(fincasRaza),
           datasets: [{
+            label: 'Número de Fincas',
             data: Object.values(fincasRaza),
-            backgroundColor: ['#1b4d3e', '#d4a373', '#588157']
+            backgroundColor: ['#1b4d3e', '#d4a373', '#588157'],
+            borderRadius: 6
           }]
         },
         options: {
+          indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
         }
       });
 
