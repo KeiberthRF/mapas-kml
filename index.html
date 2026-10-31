@@ -224,12 +224,14 @@
 </head>
 <body>
 
-  <!-- Validación de Sesión Persistente (Resuelve problemas en móviles y pestañas de Dashboard) -->
+  <!-- Validación de Sesión Híbrida: Garantiza permanencia en celulares al abrir Dashboard -->
   <script>
-    const currentSession = JSON.parse(localStorage.getItem('current_session') || sessionStorage.getItem('current_session') || 'null');
+    let currentSession = JSON.parse(sessionStorage.getItem('current_session') || localStorage.getItem('current_session') || 'null');
     if (!currentSession) {
-      window.location.href = 'login.html';
+      window.location.replace('login.html');
     } else {
+      // Reasegurar la sesión en ambos almacenamientos para evitar expulsiones falsas en móviles
+      sessionStorage.setItem('current_session', JSON.stringify(currentSession));
       localStorage.setItem('current_session', JSON.stringify(currentSession));
     }
   </script>
@@ -283,13 +285,13 @@
 
     <div class="admin-bar">
       <button id="btn-logs" class="btn-admin btn-users" onclick="abrirModuloSesiones()" style="display:none;">Usuarios / Bitácora</button>
-      <button class="btn-admin btn-logout" onclick="logout()">Cerrar Sesión</button>
+      <button class="btn-admin btn-logout" onclick="logout('Manual')">Cerrar Sesión</button>
     </div>
   </div>
 
   <div id="map"></div>
 
-  <!-- Formulario oculto optimizado para actualizar la fila de entrada en Google Sheets con permanencia -->
+  <!-- Formulario oculto para actualizar la fila en Google Sheets -->
   <iframe name="hidden_iframe_logout" id="hidden_iframe_logout" style="display:none;"></iframe>
   <form id="logout-cloud-form" action="https://script.google.com/macros/s/AKfycbyhyE9eQDA66Gq8IkIjxXbOmNz9KypQ_RH0G7wvyOoYalTJ0pfbP3KPPmOojijhe8MjRQ/exec" method="POST" target="hidden_iframe_logout" style="display:none;">
     <input type="text" name="accion" value="cierre">
@@ -567,21 +569,38 @@
       renderMapFeatures();
     });
 
-    // REGISTRO DE SALIDA Y ACTUALIZACIÓN EN LA MISMA FILA DE GOOGLE SHEETS
+    // --- CONTROL DE INACTIVIDAD (3 Minutos) ---
+    let inactivityTimer;
+    const INACTIVITY_LIMIT = 3 * 60 * 1000; // 3 minutos
+
+    function resetInactivityTimer() {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(function() {
+        alert('Sesión cerrada automáticamente por 3 minutos de inactividad.');
+        logout('Inactividad (3 min)');
+      }, INACTIVITY_LIMIT);
+    }
+
+    // Detectar movimientos, clics o toques para reiniciar el temporizador de inactividad
+    ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(eventType => {
+      window.addEventListener(eventType, resetInactivityTimer, true);
+    });
+    resetInactivityTimer();
+
+    // REGISTRO DE SALIDA Y ACTUALIZACIÓN EN GOOGLE SHEETS
     function registrarSalidaSesion(tipoCierre) {
       if (currentSession) {
         const loginTime = Number(currentSession.loginTime) || (new Date().getTime() - 60000);
         const now = new Date();
         const diffMs = now.getTime() - loginTime;
         const durationMinutes = Math.max(1, Math.round(diffMs / 60000));
-
         const fechaHoraSalida = now.toLocaleDateString('es-HN') + ' ' + now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-        // Actualizar registros locales de respaldo
+        // Actualizar registros locales
         let accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
         if (accessLogs.length > 0) {
           for (let i = accessLogs.length - 1; i >= 0; i--) {
-            if (accessLogs[i].usuario === currentSession.user && accessLogs[i].permanencia === 'Sesión Iniciada') {
+            if (accessLogs[i].usuario === currentSession.user && (accessLogs[i].permanencia === 'Sesión Iniciada' || accessLogs[i].permanencia === 'N/A')) {
               accessLogs[i].permanencia = `${durationMinutes} min`;
               accessLogs[i].detalle = `Acceso Correcto (${tipoCierre})`;
               break;
@@ -590,7 +609,7 @@
           localStorage.setItem('sig_access_logs', JSON.stringify(accessLogs));
         }
 
-        // Enviar a la nube para actualizar la fila de entrada existente
+        // Actualizar la fila en la nube
         try {
           document.getElementById('out_usuario').value = currentSession.user;
           document.getElementById('out_fechaHora').value = fechaHoraSalida;
@@ -602,16 +621,17 @@
       }
     }
 
-    function logout() {
-      registrarSalidaSesion('Cerrado Correctamente');
-      localStorage.removeItem('current_session');
+    function logout(motivo = 'Cerrado Correctamente') {
+      clearTimeout(inactivityTimer);
+      registrarSalidaSesion(motivo);
       sessionStorage.removeItem('current_session');
+      localStorage.removeItem('current_session');
       setTimeout(function() {
-        window.location.href = 'login.html';
+        window.location.replace('login.html');
       }, 350);
     }
 
-    // Capturar cierre de ventana, pestaña o recarga sin duplicar filas
+    // Capturar cierre de pestaña / navegador
     window.addEventListener('beforeunload', function() {
       if (currentSession) {
         registrarSalidaSesion('Cierre de Pestaña / Navegador');
