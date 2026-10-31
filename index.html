@@ -112,4 +112,511 @@
 
     #side-panel label {
       font-size: 10px;
-      text-transform: uppercase
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    #side-panel select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #f8fafc;
+      font-size: 13px;
+      outline: none;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    #search-input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #f8fafc;
+      font-size: 13px;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .btn-clear-search {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-clear-search:hover { background: #0284c7; border-color: #38bdf8; }
+
+    .list-header {
+      font-size: 11px;
+      font-weight: bold;
+      color: #38bdf8;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 6px;
+      margin-top: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #producer-list-container { overflow-y: auto; max-height: 200px; }
+
+    #producer-list {
+      list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px;
+    }
+
+    #producer-list li {
+      padding: 8px 10px; border-radius: 6px; cursor: pointer; background: #1e293b; border: 1px solid #334155;
+      display: flex; flex-direction: column; gap: 2px; transition: all 0.2s;
+    }
+
+    #producer-list li .p-name { font-size: 12px; font-weight: 600; color: #f1f5f9; }
+    #producer-list li .p-location { font-size: 10px; color: #38bdf8; }
+    #producer-list li:hover { background: #0284c7; border-color: #38bdf8; }
+
+    .empty-prompt { font-size: 11px; color: #64748b; text-align: center; padding: 12px 5px; font-style: italic; }
+
+    .admin-bar {
+      display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 8px;
+    }
+
+    .btn-admin {
+      flex: 1; padding: 7px; border-radius: 6px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; text-align: center;
+    }
+
+    .btn-users { background: #0ea5e9; color: #fff; }
+    .btn-logout { background: #ef4444; color: #fff; }
+
+    .leaflet-popup-content-wrapper { border-radius: 8px; padding: 12px; max-height: 420px; max-width: 320px; overflow-y: auto; }
+    .leaflet-popup-content h3 { margin: 0 0 10px 0; color: #0f172a; font-size: 15px; border-bottom: 2px solid #16a34a; }
+
+    .custom-tooltip {
+      background: rgba(15, 23, 42, 0.92) !important;
+      border: 1px solid #38bdf8 !important;
+      color: #ffffff !important;
+      border-radius: 6px !important;
+      padding: 6px 10px !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+    }
+    .custom-tooltip-title { font-weight: bold; font-size: 12px; color: #ffffff; }
+    .custom-tooltip-sub { font-size: 10px; color: #38bdf8; }
+
+    @media (max-width: 600px) {
+      #side-panel { top: 10px; right: 10px; left: 10px; width: auto; }
+      #status-msg { top: auto; bottom: 15px; left: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Validación de Sesión Persistente (Resuelve problemas en móviles y pestañas de Dashboard) -->
+  <script>
+    const currentSession = JSON.parse(localStorage.getItem('current_session') || sessionStorage.getItem('current_session') || 'null');
+    if (!currentSession) {
+      window.location.href = 'login.html';
+    } else {
+      localStorage.setItem('current_session', JSON.stringify(currentSession));
+    }
+  </script>
+
+  <div id="status-msg">Cargando datos del KML...</div>
+
+  <button id="floating-search-btn" onclick="openPanel()">🔍 Buscar</button>
+
+  <div id="side-panel">
+    <div class="panel-header-bar">
+      <span>FILTROS Y BÚSQUEDA</span>
+      <button class="btn-close-panel" onclick="closePanel()">✖</button>
+    </div>
+
+    <label for="select-depto">Departamento</label>
+    <select id="select-depto">
+      <option value="todos">Todos los Departamentos</option>
+    </select>
+
+    <label for="select-muni">Municipio</label>
+    <select id="select-muni">
+      <option value="todos">Todos los Municipios</option>
+    </select>
+
+    <!-- Botón Dashboard Integrado -->
+    <button type="button" id="btn-dashboard-panel" onclick="abrirDashboardFiltrado()" style="width: 100%; margin-top: 4px; padding: 9px; background-color: #16a34a; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s; font-size: 12px;">
+      📊 Ver Dashboard Estadístico
+    </button>
+
+    <label for="search-input" style="margin-top: 4px;">Buscar Productor</label>
+    <div class="search-row">
+      <input type="text" id="search-input" placeholder="Escribe un nombre..." />
+      <button class="btn-clear-search" onclick="fullReset()" title="Limpiar y Regresar a la Vista General">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8 2 5 7 5 13C5 17.5 8 21 12 21C16 21 19 17.5 19 13C19 7 16 2 12 2Z" fill="#15803d" stroke="#86efac" stroke-width="1.5"/>
+          <path d="M12 5C9.5 5 7 8.5 7 13.5C7 16.8 9.2 19 12 19C14.8 19 17 16.8 17 13.5C17 8.5 14.5 5 12 5Z" fill="#facc15"/>
+          <circle cx="12" cy="14" r="2.8" fill="#78350f" stroke="#451a03" stroke-width="1"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="list-header">
+      <span>PRODUCTORES</span>
+      <span id="count-producers">0</span>
+    </div>
+
+    <div id="producer-list-container">
+      <ul id="producer-list"></ul>
+      <div id="empty-prompt" class="empty-prompt">Selecciona un filtro para desplegar el listado.</div>
+    </div>
+
+    <div class="admin-bar">
+      <button id="btn-logs" class="btn-admin btn-users" onclick="abrirModuloSesiones()" style="display:none;">Usuarios / Bitácora</button>
+      <button class="btn-admin btn-logout" onclick="logout()">Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <!-- Formulario oculto optimizado para actualizar la fila de entrada en Google Sheets con permanencia -->
+  <iframe name="hidden_iframe_logout" id="hidden_iframe_logout" style="display:none;"></iframe>
+  <form id="logout-cloud-form" action="https://script.google.com/macros/s/AKfycbyhyE9eQDA66Gq8IkIjxXbOmNz9KypQ_RH0G7wvyOoYalTJ0pfbP3KPPmOojijhe8MjRQ/exec" method="POST" target="hidden_iframe_logout" style="display:none;">
+    <input type="text" name="accion" value="cierre">
+    <input type="text" name="usuario" id="out_usuario">
+    <input type="text" name="fechaHora" id="out_fechaHora">
+    <input type="text" name="estado" id="out_estado">
+    <input type="text" name="detalle" id="out_detalle">
+    <input type="text" name="permanencia" id="out_permanencia">
+  </form>
+
+  <!-- Librerías Leaflet y Conversor KML -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+
+  <script>
+    // Verificar visibilidad de opción Administrador
+    if (currentSession && (currentSession.role === 'admin' || String(currentSession.role).toLowerCase() === 'admin')) {
+      document.getElementById('btn-logs').style.display = 'block';
+    }
+
+    var statusDiv = document.getElementById('status-msg');
+    var selectDepto = document.getElementById('select-depto');
+    var selectMuni = document.getElementById('select-muni');
+    var searchInput = document.getElementById('search-input');
+    var producerList = document.getElementById('producer-list');
+    var emptyPrompt = document.getElementById('empty-prompt');
+    var countProducers = document.getElementById('count-producers');
+    var sidePanel = document.getElementById('side-panel');
+
+    function closePanel() { sidePanel.classList.add('hidden'); }
+    function openPanel() { sidePanel.classList.remove('hidden'); }
+
+    function abrirDashboardFiltrado() {
+      const deptoSeleccionado = selectDepto.value;
+      const muniSeleccionado = selectMuni.value;
+      const urlDashboard = `dashboard_aguacate.html?depto=${encodeURIComponent(deptoSeleccionado)}&municipio=${encodeURIComponent(muniSeleccionado)}`;
+      window.open(urlDashboard, '_blank');
+    }
+
+    function abrirModuloSesiones() {
+      window.open('sesiones.html', '_blank');
+    }
+
+    function fullReset() {
+      searchInput.value = '';
+      selectDepto.value = 'todos';
+      updateMuniDropdown('todos');
+      map.closePopup();
+      renderMapFeatures();
+      map.flyTo([14.6, -87.8], 8, { duration: 1.8 });
+    }
+
+    var map = L.map('map', { maxZoom: 20 }).setView([14.6, -87.8], 3);
+
+    L.tileLayer('https://mt1.google.com/vt/lyrs=y,p&x={x}&y={y}&z={z}', {
+      maxZoom: 20, 
+      attribution: '© Google Earth Terrain'
+    }).addTo(map);
+
+    var googleEarthPin = L.divIcon({
+      className: 'google-earth-marker',
+      html: `
+        <svg width="28" height="40" viewBox="0 0 28 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.6));">
+          <path d="M14 0C6.26801 0 0 6.26801 0 14C0 24.5 14 40 14 40C14 40 28 24.5 28 14C28 6.26801 21.732 0 14 0Z" fill="#FDE047" stroke="#A16207" stroke-width="1.2"/>
+          <circle cx="14" cy="13.5" r="7" fill="#FFFFFF" stroke="#CA8A04" stroke-width="0.8"/>
+          <path d="M14 8L15.3 11.2 L18.8 11.4 L16.1 13.6 L17 17 L14 15.1 L11 17 L11.9 13.6 L9.2 11.4 L12.7 11.2 Z" fill="#000000"/>
+        </svg>
+      `,
+      iconSize: [28, 40], iconAnchor: [14, 40], popupAnchor: [0, -36]
+    });
+
+    function autolink(text) {
+      if (!text) return "";
+      var str = typeof text === 'string' ? text : String(text);
+      if (typeof text === 'object' && text.value) str = String(text.value);
+      var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+      return str.replace(exp, "<a href='$1' target='_blank'>Enlace KoboToolbox</a>");
+    }
+
+    function cleanDescriptionText(desc) {
+      if (!desc) return "";
+      var str = typeof desc === 'string' ? desc : (desc.value || "");
+      str = str.replace(/GPS_altitude:\s*([\d.]+)/gi, function(match, p1) {
+        return "GPS_altitude: " + Math.round(parseFloat(p1)) + " msnm";
+      });
+      return autolink(str);
+    }
+
+    var rawGeoJSON = null, kmlLayer = null, locationData = {}, featureMarkersMap = new Map();
+
+    function getProp(props, key) {
+      if (!props) return "";
+      var foundKey = Object.keys(props).find(k => k.toLowerCase() === key.toLowerCase());
+      return foundKey ? props[foundKey] : "";
+    }
+
+    function extractField(feature, fieldName) {
+      var props = feature.properties || {};
+      var val = getProp(props, fieldName);
+      if (val) return String(val).trim();
+      var desc = props.description || "";
+      var strDesc = typeof desc === 'string' ? desc : (desc.value || "");
+      if (strDesc) {
+        var regex = new RegExp(fieldName + "[^<]*</td>\\s*<td[^>]*>(.*?)</td>", "i");
+        var match = strDesc.match(regex);
+        if (match && match[1]) return match[1].replace(/<[^>]+>/g, '').trim();
+      }
+      return "";
+    }
+
+    fetch('./honduras.kml', { cache: 'no-cache' })
+      .then(r => {
+        if (!r.ok) throw new Error("No se pudo cargar el archivo honduras.kml");
+        return r.text();
+      })
+      .then(kmlText => {
+        var parser = new DOMParser();
+        var kmlDom = parser.parseFromString(kmlText, 'text/xml');
+        rawGeoJSON = toGeoJSON.kml(kmlDom);
+
+        if (rawGeoJSON && rawGeoJSON.features) {
+          rawGeoJSON.features.forEach(feature => {
+            var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
+            var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
+            if (!locationData[depto]) locationData[depto] = new Set();
+            if (muni) locationData[depto].add(muni);
+          });
+
+          Object.keys(locationData).sort().forEach(depto => {
+            var opt = document.createElement('option');
+            opt.value = depto; opt.textContent = depto;
+            selectDepto.appendChild(opt);
+          });
+
+          renderMapFeatures();
+        }
+
+        setTimeout(function() {
+          map.flyTo([14.6, -87.8], 8, { duration: 3.2, easeLinearity: 0.25 });
+        }, 200);
+
+        statusDiv.style.opacity = '0';
+        setTimeout(function() { statusDiv.style.display = 'none'; }, 500);
+      })
+      .catch(err => {
+        console.error(err);
+        statusDiv.innerText = "Error cargando archivo KML";
+        statusDiv.style.color = "#ef4444";
+      });
+
+    function selectAndFocusProducer(feat, marker) {
+      var props = feat.properties || {};
+      var nombre = props.name || "Productor sin nombre";
+      var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
+      var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
+
+      searchInput.value = nombre;
+      if (depto && selectDepto.value !== depto) {
+        selectDepto.value = depto;
+        updateMuniDropdown(depto);
+      }
+      if (muni) selectMuni.value = muni;
+
+      if (window.innerWidth <= 600) closePanel();
+
+      var targetMarker = marker || featureMarkersMap.get(feat);
+      if (targetMarker) {
+        var latLng = targetMarker.getLatLng();
+        var offset = window.innerWidth <= 600 ? [0, 0] : [120, 0];
+        var targetPoint = map.project(latLng, 15).subtract(offset);
+        map.flyTo(map.unproject(targetPoint, 15), 15, { duration: 1.2 });
+        targetMarker.openPopup();
+        targetMarker.openTooltip();
+      }
+    }
+
+    function renderMapFeatures() {
+      if (!rawGeoJSON) return;
+
+      var selectedDepto = selectDepto.value, selectedMuni = selectMuni.value, searchText = searchInput.value.toLowerCase().trim();
+
+      if (kmlLayer) map.removeLayer(kmlLayer);
+      producerList.innerHTML = ''; featureMarkersMap.clear();
+
+      var visibleFeatures = [];
+
+      kmlLayer = L.geoJSON(rawGeoJSON, {
+        filter: function(feature) {
+          var nombre = (feature.properties.name || "").toLowerCase();
+          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "Sin Departamento";
+          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "Sin Municipio";
+
+          var matchDepto = (selectedDepto === 'todos' || depto === selectedDepto);
+          var matchMuni = (selectedMuni === 'todos' || muni === selectedMuni);
+          var matchSearch = (searchText === '' || nombre.includes(searchText));
+
+          var isMatch = matchDepto && matchMuni && matchSearch;
+          if (isMatch) visibleFeatures.push(feature);
+          return isMatch;
+        },
+        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: googleEarthPin }),
+        onEachFeature: function(feature, layer) {
+          var nombre = feature.properties.name || "Productor sin nombre";
+          var depto = extractField(feature, "departamento") || extractField(feature, "depto") || "";
+          var muni = extractField(feature, "municipio") || extractField(feature, "muni") || "";
+
+          var popupContent = "<h3>" + nombre + "</h3><div>" + cleanDescriptionText(feature.properties.description) + "</div>";
+          layer.bindPopup(popupContent, { autoPan: false });
+
+          var tooltipContent = `
+            <div class="custom-tooltip-title">${nombre}</div>
+            <div class="custom-tooltip-sub">${depto}${muni ? ' • ' + muni : ''}</div>
+          `;
+          layer.bindTooltip(tooltipContent, { permanent: false, direction: 'top', className: 'custom-tooltip' });
+
+          layer.on('click', () => selectAndFocusProducer(feature, layer));
+          featureMarkersMap.set(feature, layer);
+        }
+      }).addTo(map);
+
+      visibleFeatures.sort((a, b) => (a.properties.name || "").localeCompare(b.properties.name || ""));
+      countProducers.innerText = visibleFeatures.length;
+
+      var hasActiveFilter = (selectedDepto !== 'todos' || selectedMuni !== 'todos' || searchText !== '');
+
+      if (hasActiveFilter) {
+        emptyPrompt.style.display = 'none'; producerList.style.display = 'flex';
+        visibleFeatures.forEach(feat => {
+          var nombre = feat.properties.name || "Productor sin nombre";
+          var depto = extractField(feat, "departamento") || extractField(feat, "depto") || "";
+          var muni = extractField(feat, "municipio") || extractField(feat, "muni") || "";
+
+          var li = document.createElement('li');
+          li.innerHTML = `<span class="p-name">${nombre}</span><span class="p-location">${depto}${muni ? ' • ' + muni : ''}</span>`;
+          li.addEventListener('click', () => selectAndFocusProducer(feat, featureMarkersMap.get(feat)));
+          producerList.appendChild(li);
+        });
+
+        if (kmlLayer.getBounds().isValid() && (selectedDepto !== 'todos' || selectedMuni !== 'todos')) {
+          map.fitBounds(kmlLayer.getBounds(), { padding: [60, 60], maxZoom: 13 });
+        }
+      } else {
+        emptyPrompt.style.display = 'block'; producerList.style.display = 'none';
+      }
+    }
+
+    function updateMuniDropdown(depto) {
+      selectMuni.innerHTML = '<option value="todos">Todos los Municipios</option>';
+      if (depto !== 'todos' && locationData[depto]) {
+        Array.from(locationData[depto]).sort().forEach(muni => {
+          var opt = document.createElement('option');
+          opt.value = muni; opt.textContent = muni; selectMuni.appendChild(opt);
+        });
+      }
+    }
+
+    selectDepto.addEventListener('change', function() { 
+      updateMuniDropdown(this.value); 
+      selectMuni.value = 'todos';
+      searchInput.value = '';
+      map.closePopup();
+      renderMapFeatures(); 
+    });
+
+    selectMuni.addEventListener('change', function() {
+      searchInput.value = '';
+      map.closePopup();
+      renderMapFeatures();
+    });
+    
+    searchInput.addEventListener('input', function() {
+      if (this.value.trim() === '') {
+        selectDepto.value = 'todos'; updateMuniDropdown('todos');
+      }
+      renderMapFeatures();
+    });
+
+    // REGISTRO DE SALIDA Y ACTUALIZACIÓN EN LA MISMA FILA DE GOOGLE SHEETS
+    function registrarSalidaSesion(tipoCierre) {
+      if (currentSession) {
+        const loginTime = Number(currentSession.loginTime) || (new Date().getTime() - 60000);
+        const now = new Date();
+        const diffMs = now.getTime() - loginTime;
+        const durationMinutes = Math.max(1, Math.round(diffMs / 60000));
+
+        const fechaHoraSalida = now.toLocaleDateString('es-HN') + ' ' + now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        // Actualizar registros locales de respaldo
+        let accessLogs = JSON.parse(localStorage.getItem('sig_access_logs') || '[]');
+        if (accessLogs.length > 0) {
+          for (let i = accessLogs.length - 1; i >= 0; i--) {
+            if (accessLogs[i].usuario === currentSession.user && accessLogs[i].permanencia === 'Sesión Iniciada') {
+              accessLogs[i].permanencia = `${durationMinutes} min`;
+              accessLogs[i].detalle = `Acceso Correcto (${tipoCierre})`;
+              break;
+            }
+          }
+          localStorage.setItem('sig_access_logs', JSON.stringify(accessLogs));
+        }
+
+        // Enviar a la nube para actualizar la fila de entrada existente
+        try {
+          document.getElementById('out_usuario').value = currentSession.user;
+          document.getElementById('out_fechaHora').value = fechaHoraSalida;
+          document.getElementById('out_estado').value = 'Exitoso';
+          document.getElementById('out_detalle').value = tipoCierre;
+          document.getElementById('out_permanencia').value = `${durationMinutes} min`;
+          document.getElementById('logout-cloud-form').submit();
+        } catch (e) {}
+      }
+    }
+
+    function logout() {
+      registrarSalidaSesion('Cerrado Correctamente');
+      localStorage.removeItem('current_session');
+      sessionStorage.removeItem('current_session');
+      setTimeout(function() {
+        window.location.href = 'login.html';
+      }, 350);
+    }
+
+    // Capturar cierre de ventana, pestaña o recarga sin duplicar filas
+    window.addEventListener('beforeunload', function() {
+      if (currentSession) {
+        registrarSalidaSesion('Cierre de Pestaña / Navegador');
+      }
+    });
+  </script>
+</body>
+</html>
